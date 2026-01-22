@@ -1,0 +1,29 @@
+@import "tailwindcss";
+/* Hide scrollbar for Chrome, Safari and Edge */
+/* Scrollbar hidden */
+.scrollbar-hover::-webkit-scrollbar {
+  width: 0;
+}
+
+/* Show scrollbar only on hover */
+.scrollbar-hover:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-hover::-webkit-scrollbar-thumb {
+  background: rgba(107, 107, 107, 0.3);
+  border-radius: 9999px;
+}
+
+/* Firefox support */
+.scrollbar-hover {
+  scrollbar-width: none;
+}
+
+.scrollbar-hover:hover {
+  scrollbar-width: thin;
+}
