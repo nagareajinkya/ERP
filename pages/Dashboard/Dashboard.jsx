@@ -1,144 +1,208 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
-  Users, ShoppingCart, Package, BarChart3, 
-  ChevronRight 
+  TrendingUp, ShoppingBag, AlertCircle, 
+  ArrowRight, Package, DollarSign, Zap, ArrowUpRight, ArrowDownRight, Plus
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// --- MOCK DATA: Period-Specific Datasets ---
+const CHART_DATA = {
+  'today': [
+    { name: '9 AM', sales: 1200 },
+    { name: '12 PM', sales: 4500 },
+    { name: '3 PM', sales: 3200 },
+    { name: '6 PM', sales: 8500 },
+    { name: '9 PM', sales: 6000 },
+  ],
+  'yesterday': [
+    { name: '9 AM', sales: 900 },
+    { name: '12 PM', sales: 3800 },
+    { name: '3 PM', sales: 4100 },
+    { name: '6 PM', sales: 7200 },
+    { name: '9 PM', sales: 5100 },
+  ],
+  'this_week': [
+    { name: 'Mon', sales: 4000 },
+    { name: 'Tue', sales: 3000 },
+    { name: 'Wed', sales: 5500 },
+    { name: 'Thu', sales: 4500 },
+    { name: 'Fri', sales: 7000 },
+    { name: 'Sat', sales: 8500 },
+    { name: 'Sun', sales: 6500 },
+  ],
+  'last_week': [
+    { name: 'Mon', sales: 3500 },
+    { name: 'Tue', sales: 4200 },
+    { name: 'Wed', sales: 3800 },
+    { name: 'Thu', sales: 4100 },
+    { name: 'Fri', sales: 6000 },
+    { name: 'Sat', sales: 7500 },
+    { name: 'Sun', sales: 5800 },
+  ],
+  'this_month': [
+    { name: 'Week 1', sales: 25000 },
+    { name: 'Week 2', sales: 28500 },
+    { name: 'Week 3', sales: 32000 },
+    { name: 'Week 4', sales: 39000 }, 
+  ]
+};
+
+const RECENT_TRANSACTIONS = [
+  { id: 'TRX-1092', customer: 'Ramesh Gupta', type: 'Sale', amount: 1250, time: '10 mins ago', status: 'Paid' },
+  { id: 'TRX-1091', customer: 'Walk-in', type: 'Sale', amount: 450, time: '45 mins ago', status: 'Paid' },
+  { id: 'TRX-1090', customer: 'Anita Desai', type: 'Sale', amount: 3200, time: '2 hours ago', status: 'Credit' },
+  { id: 'PUR-0042', customer: 'Metro Wholesalers', type: 'Purchase', amount: 15000, time: '5 hours ago', status: 'Paid' },
+];
+
+const LOW_STOCK_ITEMS = [
+  { id: 1, name: 'Maggi Noodles', current: 12, min: 20, unit: 'pkt' },
+  { id: 2, name: 'Tata Salt', current: 5, min: 15, unit: 'kg' },
+  { id: 3, name: 'Coca Cola', current: 8, min: 24, unit: 'ltr' },
+];
 
 const Dashboard = () => {
-  // 1. Top Stats Data
-  const statsData = [
-    { label: "To Receive", amount: "₹45,240", bg: "bg-green-50", text: "text-green-600", border: "border-green-100" },
-    { label: "To Pay", amount: "₹12,800", bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
-    { label: "Net Balance", amount: "₹32,440", bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-100" },
-    { label: "Today's Sales", amount: "₹8,450", bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-100" },
-  ];
-
-  // 2. Action Cards Data
-  const actionCards = [
-    { title: "Manage Parties", desc: "Customers & Suppliers", icon: Users, color: "bg-blue-500" },
-    { title: "New Activity", desc: "Sale or Purchase", icon: ShoppingCart, color: "bg-green-500" },
-    { title: "Inventory", desc: "Stock Management", icon: Package, color: "bg-purple-500" },
-    { title: "Reports", desc: "View Analytics", icon: BarChart3, color: "bg-orange-500" },
-  ];
-
-  // 3. Recent Activity Data
-  const recentActivity = [
-    { id: 1, name: "Sale to Amit Traders", time: "10 mins ago", amount: "+₹2,450", type: "credit" },
-    { id: 2, name: "Purchase from Supplier Co.", time: "2 hours ago", amount: "-₹5,200", type: "debit" },
-    { id: 3, name: "Sale to Rajesh Enterprises", time: "Yesterday", amount: "+₹1,800", type: "credit" },
-  ];
+  const navigate = useNavigate();
+  
+  // --- STATE FOR CHART FILTER ---
+  const [chartPeriod, setChartPeriod] = useState('today');
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6">
+    <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
       
-      {/* Header */}
-      <div className="mb-8">
-        <p className="text-gray-500 font-medium text-sm mb-1">Welcome,</p>
-        <h1 className="text-2xl font-semibold text-gray-800">Dashboard</h1>
-      </div>
-
-      {/* 1. Top Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 ">
-        {statsData.map((stat, index) => (
-          <div key={index} className={`${stat.bg} ${stat.border} border p-5 rounded-xl`}>
-            <p className={`text-sm font-medium ${stat.text} mb-2`}>{stat.label}</p>
-            <p className={`text-2xl font-bold ${stat.text}`}>{stat.amount}</p>
-          </div>
-        ))}
-      </div>
-
-      
-      {/* 2. Main Actions Grid (2x2) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {actionCards.map((card, index) => (
-          <button 
-            key={index} 
-            className="flex items-center justify-between bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group text-left"
-          >
-            <div className="flex items-center gap-5">
-              <div className={`${card.color} text-white p-4 rounded-xl`}>
-                <card.icon size={24} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
-                  {card.title}
-                </h3>
-                <p className="text-sm text-gray-500 mt-0.5">{card.desc}</p>
-              </div>
-            </div>
-            <ChevronRight className="text-gray-300 group-hover:text-blue-500 transition-colors" />
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Overview</h1>
+          <p className="text-sm text-gray-500 font-medium">Here's what's happening in your store today.</p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={() => navigate('/new-purchase')} className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm">
+            Add Purchase
           </button>
-        ))}
+          <button onClick={() => navigate('/new-sale')} className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-600/20 transition-all active:scale-[0.98]">
+            <Plus size={18} /> New Sale
+          </button>
+        </div>
       </div>
 
-      {/* 3. Bottom Section: Sales & Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* SUMMARY STATS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {/* Stat 1: Total Sales */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-green-50 text-green-600 rounded-xl"><DollarSign size={24} /></div>
+            <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+              <TrendingUp size={12} className="mr-1"/> +12.5%
+            </span>
+          </div>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Today's Sales</p>
+          <h3 className="text-3xl font-extrabold text-gray-800">₹23,400</h3>
+        </div>
+
+        {/* Stat 2: Orders */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><ShoppingBag size={24} /></div>
+            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">Daily Avg: 35</span>
+          </div>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Total Bills</p>
+          <h3 className="text-3xl font-extrabold text-gray-800">42</h3>
+        </div>
+
+        {/* Stat 3: Low Stock */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl"><AlertCircle size={24} /></div>
+            <span className="flex items-center text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">Action Required</span>
+          </div>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Low Stock Items</p>
+          <h3 className="text-3xl font-extrabold text-gray-800">{LOW_STOCK_ITEMS.length}</h3>
+        </div>
+
+        {/* Stat 4: Active Offers */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Zap size={24} /></div>
+          </div>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Active Offers</p>
+          <h3 className="text-3xl font-extrabold text-gray-800">4</h3>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Sales Card (Blue) */}
-        <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-lg shadow-blue-200 flex flex-col">
+        {/* LEFT/MIDDLE: Sales Trend Chart */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-gray-800">Sales Trend</h3>
+              <p className="text-xs font-medium text-gray-400">Track your store's sales performance</p>
+            </div>
+            {/* DYNAMIC FILTER */}
+            <select 
+              value={chartPeriod} 
+              onChange={(e) => setChartPeriod(e.target.value)} 
+              className="bg-gray-50 border border-gray-200 text-sm font-bold text-gray-600 rounded-lg px-3 py-1.5 outline-none focus:border-green-500 cursor-pointer"
+            >
+              <option value="today">Today (Hourly)</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="this_week">This Week</option>
+              <option value="last_week">Last Week</option>
+              <option value="this_month">This Month</option>
+            </select>
+          </div>
           
-          {/* Top: Title & Main Amount */}
-          <div className="mb-6">
-            <h3 className="text-blue-100 text-sm font-medium mb-2">Total Sales Today</h3>
-            <span className="text-4xl font-bold">₹8,450</span>
-          </div>
-
-          {/* Middle: Comparison Strips (Fill the empty space) */}
-          <div className="flex-1 flex flex-col justify-center gap-5 mb-6">
-             
-             {/* Yesterday Strip */}
-             <div className="group cursor-pointer">
-                <div className="flex justify-between text-xs text-blue-200 mb-1.5">
-                    <span>Yesterday</span>
-                    {/* Shows on hover */}
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity font-medium">₹7,200</span>
-                </div>
-                {/* Strip Line */}
-                <div className="h-2 bg-blue-800/40 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-300/60 w-[65%] rounded-full"></div>
-                </div>
-             </div>
-
-             {/* Today Strip */}
-             <div className="group cursor-pointer">
-                <div className="flex justify-between text-xs text-white mb-1.5">
-                    <span className="font-medium">Today</span>
-                    {/* Shows on hover */}
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity font-bold">₹8,450</span>
-                </div>
-                {/* Strip Line */}
-                <div className="h-2 bg-blue-800/40 rounded-full overflow-hidden">
-                    <div className="h-full bg-white w-[78%] rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
-                </div>
-             </div>
-
-          </div>
-
-          {/* Bottom: Breakdown Stats */}
-          <div className="grid grid-cols-2 gap-4">
-             <div className="bg-blue-500/30 p-4 rounded-xl backdrop-blur-sm border border-blue-500/30">
-                <p className="text-xs text-blue-100 mb-1">Bills Created</p>
-                <p className="text-xl font-bold">14</p>
-             </div>
-             <div className="bg-blue-500/30 p-4 rounded-xl backdrop-blur-sm border border-blue-500/30">
-                <p className="text-xs text-blue-100 mb-1">Cash Received</p>
-                <p className="text-xl font-bold">₹3,200</p>
-             </div>
+          <div className="flex-1 min-h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={CHART_DATA[chartPeriod]}>
+                <defs>
+                  {/* Single Clean Gradient for Sales */}
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12, fontWeight: 600}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12, fontWeight: 600}} tickFormatter={(value) => `₹${value/1000}k`} dx={-10} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1f2937', borderRadius: '12px', border: 'none', color: '#fff', fontWeight: 'bold' }}
+                  itemStyle={{ fontSize: 14, color: '#4ade80' }}
+                  formatter={(value) => [`₹${value.toLocaleString()}`, 'Total Sales']}
+                />
+                <Area type="monotone" dataKey="sales" stroke="#16a34a" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Recent Activity List */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <h3 className="font-bold text-gray-800 mb-6">Recent Activity</h3>
-          <div className="space-y-6">
-            {recentActivity.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-800 font-medium">{item.name}</p>
-                  <p className="text-xs text-gray-400 mt-1">{item.time}</p>
+        {/* RIGHT: Low Stock Alert */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold text-gray-800">Low Stock Alert</h3>
+            <button onClick={() => navigate('/inventory')} className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1">
+              View All <ArrowRight size={14} />
+            </button>
+          </div>
+          <div className="flex-1 space-y-4">
+            {LOW_STOCK_ITEMS.map(item => (
+              <div key={item.id} className="flex justify-between items-center p-3 bg-red-50/50 border border-red-100 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
+                    <Package size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800">{item.name}</h4>
+                    <p className="text-xs text-red-500 font-medium">Only {item.current} {item.unit} left</p>
+                  </div>
                 </div>
-                <div className={`font-semibold ${item.type === 'credit' ? 'text-green-600' : 'text-red-500'}`}>
-                  {item.amount}
+                <div className="text-right">
+                  <p className="text-xs text-gray-400 font-medium mb-1">Min: {item.min}</p>
+                  <button className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-lg transition-all shadow-sm">
+                    Reorder
+                  </button>
                 </div>
               </div>
             ))}
@@ -146,6 +210,55 @@ const Dashboard = () => {
         </div>
 
       </div>
+
+      {/* BOTTOM: Recent Transactions Table */}
+      <div className="mt-6 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-bold text-gray-800">Recent Transactions</h3>
+          <button onClick={() => navigate('/transactions')} className="text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors">
+            See all history
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <th className="pb-4">Transaction ID</th>
+                <th className="pb-4">Party</th>
+                <th className="pb-4">Type</th>
+                <th className="pb-4">Time</th>
+                <th className="pb-4">Status</th>
+                <th className="pb-4 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {RECENT_TRANSACTIONS.map((trx, index) => (
+                <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-4 font-bold text-gray-800">{trx.id}</td>
+                  <td className="py-4 font-medium text-gray-600">{trx.customer}</td>
+                  <td className="py-4">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${trx.type === 'Sale' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      {trx.type === 'Sale' ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
+                      {trx.type}
+                    </span>
+                  </td>
+                  <td className="py-4 text-gray-400 font-medium">{trx.time}</td>
+                  <td className="py-4">
+                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${trx.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'}`}>
+                      {trx.status}
+                    </span>
+                  </td>
+                  <td className={`py-4 text-right font-extrabold ${trx.type === 'Sale' ? 'text-green-600' : 'text-gray-800'}`}>
+                    {trx.type === 'Sale' ? '+' : '-'} ₹{trx.amount.toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 };
