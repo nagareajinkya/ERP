@@ -6,6 +6,7 @@ import {
   FileText, Download, Play, X, Check, Tag,
   Instagram, MessageCircle, Save, Scissors, Percent
 } from 'lucide-react';
+import {billItems} from '../../src/data/printerData'
 
 // --- 1. CUSTOM INDIAN RUPEE ICON (Defined first to avoid ReferenceError) ---
 const IndianRupee = ({ size = 20, className = "" }) => (
@@ -46,10 +47,7 @@ const Printer = () => {
     whatsapp: '9876543210'
   });
 
-  const billItems = [
-    { sn: 1, name: 'Basmati Rice 5kg', hsn: '1006', price: 450, disc: '5%', total: 427.5 },
-    { sn: 2, name: 'Amul Butter 500g', hsn: '0405', price: 260, disc: '0%', total: 260.0 },
-  ];
+
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">

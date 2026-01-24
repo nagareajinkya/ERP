@@ -4,6 +4,19 @@ import {
   Tag, Ruler, Check, X, ShoppingBag, Box, Coffee, 
   Zap, Heart, Smile, Star, Sun
 } from 'lucide-react';
+import { CATEGORY_STYLES, INITIAL_CATEGORIES, INITIAL_UNITS, allProducts } from '../../src/data/propertiesData';
+const ICON_MAP = {
+  'package': Package,
+  'shopping-bag': ShoppingBag,
+  'star': Star,
+  'coffee': Coffee,
+  'zap': Zap,
+  'heart': Heart,
+  'box': Box,
+  'tag': Tag,
+  'sun': Sun,
+  'smile': Smile,
+};
 
 const Properties = () => {
   // --- STATE ---
@@ -25,50 +38,10 @@ const Properties = () => {
   const [selectedStyle, setSelectedStyle] = useState(0); // Index of selected style
 
   // --- 1. CONFIGURATION ---
-  
-  // 10 Default Styles (Color + Icon Mock) for Categories
-  const CATEGORY_STYLES = [
-    { id: 0, bg: 'bg-blue-100', text: 'text-blue-600', icon: Package },
-    { id: 1, bg: 'bg-green-100', text: 'text-green-600', icon: ShoppingBag },
-    { id: 2, bg: 'bg-yellow-100', text: 'text-yellow-600', icon: Star },
-    { id: 3, bg: 'bg-orange-100', text: 'text-orange-600', icon: Coffee },
-    { id: 4, bg: 'bg-purple-100', text: 'text-purple-600', icon: Zap },
-    { id: 5, bg: 'bg-pink-100', text: 'text-pink-600', icon: Heart },
-    { id: 6, bg: 'bg-red-100', text: 'text-red-600', icon: Box },
-    { id: 7, bg: 'bg-indigo-100', text: 'text-indigo-600', icon: Tag },
-    { id: 8, bg: 'bg-teal-100', text: 'text-teal-600', icon: Sun },
-    { id: 9, bg: 'bg-gray-100', text: 'text-gray-600', icon: Smile },
-  ];
 
-  // --- 2. MOCK DATA ---
-  
-  // Products (To show inside categories)
-  const allProducts = [
-    { id: 101, name: "Basmati Rice", categoryId: 1 },
-    { id: 102, name: "Brown Rice", categoryId: 1 },
-    { id: 103, name: "Sunflower Oil", categoryId: 1 },
-    { id: 201, name: "Tomato", categoryId: 2 },
-    { id: 202, name: "Potato", categoryId: 2 },
-    { id: 301, name: "Milk", categoryId: 3 },
-    { id: 302, name: "Cheese", categoryId: 3 },
-  ];
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [units, setUnits] = useState(INITIAL_UNITS);
 
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'Groceries', styleId: 0 },
-    { id: 2, name: 'Vegetables', styleId: 1 },
-    { id: 3, name: 'Dairy Products', styleId: 2 },
-    { id: 4, name: 'Beverages', styleId: 3 },
-    { id: 5, name: 'Snacks', styleId: 4 },
-  ]);
-
-  const [units, setUnits] = useState([
-    { id: 1, name: 'Kilogram', short: 'kg' },
-    { id: 2, name: 'Liter', short: 'ltr' },
-    { id: 3, name: 'Piece', short: 'pc' },
-    { id: 4, name: 'Dozen', short: 'dz' },
-  ]);
-
-  // --- 3. HELPERS ---
 
   // Get product count for a category
   const getProductCount = (catId) => {
@@ -189,7 +162,7 @@ const Properties = () => {
           {filteredCategories.map((cat) => {
             // Get the style object based on the saved ID (or default to 0)
             const style = CATEGORY_STYLES[cat.styleId] || CATEGORY_STYLES[0];
-            const Icon = style.icon;
+            const Icon = ICON_MAP[style.icon];
 
             return (
               <div 

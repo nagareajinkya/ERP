@@ -9,6 +9,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
+import { categoryData, topProducts } from '../../src/data/reportsData';
 
 const Reports = () => {
   const [dateRange, setDateRange] = useState('This Month');
@@ -57,20 +58,6 @@ const Reports = () => {
       summary: { sales: '₹8,39,000', profit: '₹3,14,000', gst: '₹72,000', deadStock: '15' }
     }
   }), []);
-
-  const categoryData = [
-    { name: 'Grains', value: 45, color: '#3B82F6' },
-    { name: 'Dairy', value: 25, color: '#10B981' },
-    { name: 'Snacks', value: 20, color: '#F59E0B' },
-    { name: 'Others', value: 10, color: '#8B5CF6' },
-  ];
-
-  const topProducts = [
-    { id: 1, name: 'Basmati Rice (Premium)', qty: '450 kg', revenue: '₹40,500', profit: '₹4,500' },
-    { id: 2, name: 'Fortune Oil 1L', qty: '210 pcs', revenue: '₹31,500', profit: '₹2,100' },
-    { id: 3, name: 'Amul Butter 500g', qty: '125 pcs', revenue: '₹12,500', profit: '₹1,500' },
-    { id: 4, name: 'Maggi Family Pack', qty: '320 pkts', revenue: '₹28,800', profit: '₹3,200' },
-  ];
 
   const currentData = dataSets[dateRange];
 

@@ -4,6 +4,7 @@ import {
   Bell, Shield, Lock, Eye, EyeOff, Save, X, 
   CheckCircle2, Plus, Edit2, AlertTriangle, FileText
 } from 'lucide-react';
+import { allCategories, initialData } from './../../src/data/profileData';
 
 const Profile = () => {
   // --- STATE ---
@@ -16,29 +17,6 @@ const Profile = () => {
   const [categories, setCategories] = useState(['Retail Store']);
   const [categoryInput, setCategoryInput] = useState('');
   const [showCatDropdown, setShowCatDropdown] = useState(false);
-  
-  const allCategories = [
-    'Retail Store', 'Wholesale', 'Supermarket', 'Electronics', 
-    'Pharma', 'Textiles', 'FMCG', 'Hardware', 'Restaurant', 'Bakery'
-  ];
-
-  // Form Data
-  const initialData = {
-    fullName: 'Rajesh Kumar',
-    phone: '+91 98765 43210',
-    email: 'rajesh@example.com',
-    shopName: 'Rajesh General Store',
-    address: '123 Main Street, Market Road',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400001',
-    gstin: '27AABCU9603R1ZM',
-    upiId: 'rajeshstore@oksbi',
-    accountName: 'Rajesh Kumar',
-    accountNumber: '1234567890',
-    ifsc: 'SBIN0001234',
-    invoicePrefix: 'INV-2024-', // Invoice Setting
-  };
 
   const [formData, setFormData] = useState(initialData);
 
