@@ -1,0 +1,6 @@
+@SBMS.Parties_HostAddress = http://localhost:5244
+
+GET {{SBMS.Parties_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
