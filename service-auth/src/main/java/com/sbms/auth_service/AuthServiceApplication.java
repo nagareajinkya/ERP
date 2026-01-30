@@ -15,12 +15,8 @@ public class AuthServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(AuthServiceApplication.class, args);
 	}
-	
-	@Bean
-	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
 
+	@Bean
 	public ModelMapper modelMapper() {
 		ModelMapper modelMapper = new ModelMapper();
 		modelMapper.getConfiguration()

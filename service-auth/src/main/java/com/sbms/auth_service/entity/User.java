@@ -1,5 +1,12 @@
 package com.sbms.auth_service.entity;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -13,7 +20,7 @@ import lombok.Data;
 @Entity
 @Table(name = "users")
 @AttributeOverride(name = "id", column = @Column(name = "user_id"))
-public class User extends BaseEntity {
+public class User extends BaseEntity implements UserDetails {
 	@Column(name = "full_name", length = 30, nullable = false)
 	private String fullName;
 	@Column(length = 100, unique = true, nullable = false)
@@ -29,5 +36,26 @@ public class User extends BaseEntity {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "business_id", referencedColumnName = "business_id", nullable = false, unique = true)
     private Business business;
+
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return List.of(new SimpleGrantedAuthority("ROLE_OWNER"));
+	}
+
+	@Override
+	public String getUsername() {
+		return email;
+	}
 	
+	@Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }	
 }
