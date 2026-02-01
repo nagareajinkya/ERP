@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String headerValue = request.getHeader("Authorization");
         
         if (headerValue != null && headerValue.startsWith("Bearer ")) {
-            String jwt = headerValue.substring(7);
+            String jwt = headerValue.substring(7).trim();
 
             try {
                 // 1. Extract Business ID (This verifies the signature internally)
@@ -51,7 +51,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 request.setAttribute("businessId", businessId);
 
             } catch (Exception e) {
-                // Token invalid - clear context
+            	System.out.println("JWT Verification Failed: " + e.getMessage());
+                e.printStackTrace(); // <-- Add this line temporarily
+                
                 SecurityContextHolder.clearContext();
             }
         }

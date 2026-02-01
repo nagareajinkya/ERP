@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class ProductResponse {
 
-    private UUID id;
+    private Long id;
     private UUID businessId; 
 
     private Long categoryId;

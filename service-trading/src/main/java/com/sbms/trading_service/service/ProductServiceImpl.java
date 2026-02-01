@@ -49,6 +49,8 @@ public class ProductServiceImpl implements ProductService {
         Product savedProduct = productRepository.save(product);
 
         ProductResponse response = modelMapper.map(savedProduct, ProductResponse.class);
+        response.setCategoryId(savedProduct.getCategory().getId());
+        response.setUnitId(savedProduct.getUnit().getId());
         response.setCategoryName(savedProduct.getCategory().getName());
         response.setUnitName(savedProduct.getUnit().getName());
         
@@ -60,6 +62,8 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.findAllByBusinessId(businessId).stream()
                 .map(product -> {
                     ProductResponse response = modelMapper.map(product, ProductResponse.class);
+                    response.setCategoryId(product.getCategory().getId());
+                    response.setUnitId(product.getUnit().getId());
                     response.setCategoryName(product.getCategory().getName());
                     response.setUnitName(product.getUnit().getName());
                     return response;
