@@ -1,5 +1,6 @@
 package com.sbms.trading_service.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -9,4 +10,5 @@ import com.sbms.trading_service.entity.Category;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 	Optional<Category> findByNameAndBusinessId(String name, UUID businessId);
+	List<Category> findAllByBusinessId(UUID businessId);
 }
