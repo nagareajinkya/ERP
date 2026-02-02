@@ -9,4 +9,6 @@ import com.sbms.trading_service.dto.ProductResponse;
 public interface ProductService {
 	public ProductResponse addProduct(ProductRequest request, UUID businessId);
 	public List<ProductResponse> getMyProducts(UUID businessId);
+	ProductResponse updateProduct(Long productId, ProductRequest request, UUID businessId);
+    String deleteProduct(Long productId, UUID businessId);
 }
