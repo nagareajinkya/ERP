@@ -13,4 +13,8 @@ public class UserRegisterDto {
     // Business Details (Initial Setup)
     private String businessName;
     private String addressState;
+    
+    // Optional Business Details
+    private String gstin;
+    private String upiId;
 }

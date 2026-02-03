@@ -37,6 +37,7 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS).permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/send-otp", "/api/auth/verify-otp", "/api/auth/login", "/api/auth/register").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

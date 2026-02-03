@@ -81,8 +81,15 @@ public class AuthServiceImpl implements AuthService {
 			throw new RuntimeException("Invalid OTP"); 
 		}
 
-		User user = userRepository.findByPhoneNumber(request.getPhone())
-				.orElseThrow(() -> new UserNotFoundException("User not found with phone: " + request.getPhone()));
+		Optional<User> userOptional = userRepository.findByPhoneNumber(request.getPhone());
+		
+		if (userOptional.isEmpty()) {
+			// If user is not found, return empty response so frontend can proceed to signup flow
+			// (Note: The frontend is responsible for calling register after this if needed)
+			return new AuthResponse();
+		}
+
+		User user = userOptional.get();
 
 		String jwtToken = jwtService.generateToken(user);
 		AuthResponse response = modelMapper.map(user, AuthResponse.class);
