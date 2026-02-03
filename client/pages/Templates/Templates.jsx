@@ -5,6 +5,7 @@ import {
   Trash2, Edit2, X, Users, Search, Check, 
   MessageCircle, Receipt, Download, ShieldCheck, ChevronRight
 } from 'lucide-react';
+import FormLabel from '../../components/common/FormLabel';
 import { INITIAL_TEMPLATES, TEMPLATE_PARTIES } from './../../src/data/templateData';
 
 // --- CUSTOM WHATSAPP ICON COMPONENT ---
@@ -108,11 +109,11 @@ const Templates = () => {
                   <div className="p-6 space-y-6 flex-1">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Name</label>
+                        <FormLabel text="Name" className="text-[10px] font-black text-gray-400 uppercase ml-1"/>
                         <input type="text" value={tempName} onChange={e=>setTempName(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm outline-none mt-1" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Category</label>
+                        <FormLabel text="Category" className="text-[10px] font-black text-gray-400 uppercase ml-1"/>
                         <select value={tempCategory} onChange={e=>setTempCategory(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm outline-none mt-1">
                           <option>Payment</option><option>Order</option><option>Marketing</option>
                         </select>
@@ -120,7 +121,7 @@ const Templates = () => {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Content</label>
+                      <FormLabel text="Content" className="text-[10px] font-black text-gray-400 uppercase ml-1"/>
                       <div className="flex flex-wrap gap-2 my-2">
                         {['customer_name', 'pending_amount', 'order_id', 'shop_name'].map(tag => (
                           <button key={tag} onClick={() => insertVariable(tag)} className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-tight hover:bg-blue-600 hover:text-white transition-all">
