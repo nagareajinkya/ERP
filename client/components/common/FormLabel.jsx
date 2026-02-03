@@ -12,10 +12,31 @@ import React from 'react';
 const FormLabel = ({ 
   text, 
   required = false, 
-  className = "block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
+  variant = 'default',
+  className = ''
 }) => {
+  const variants = {
+    default: 'block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5',
+    compact: 'block text-[10px] font-black text-gray-400 uppercase mb-1.5',
+    small: 'block text-sm font-bold text-gray-600 mb-1.5',
+    medium: 'block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide',
+    section: 'text-xs font-bold text-gray-400 uppercase tracking-wider mb-4'
+  };
+
+  const baseClass = variants[variant] || variants.default;
+  const combined = `${baseClass} ${className}`.trim();
+
+  if (variant === 'section') {
+    return (
+      <h3 className={combined}>
+        {text}
+        {required && <span className="text-red-500"> *</span>}
+      </h3>
+    );
+  }
+
   return (
-    <label className={className}>
+    <label className={combined}>
       {text}
       {required && <span className="text-red-500"> *</span>}
     </label>
