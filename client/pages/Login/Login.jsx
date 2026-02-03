@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import api from '../../src/api';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, ArrowRight, ShieldCheck, Lock, CheckCircle2, ChevronLeft, Store, User, MapPin, FileText, QrCode, Search, ChevronDown } from 'lucide-react';
 import FormLabel from '../../components/common/FormLabel';
@@ -6,38 +7,38 @@ import FormLabel from '../../components/common/FormLabel';
 // --- GOOGLE ICON SVG ---
 const GoogleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
   </svg>
 );
 
 const Login = () => {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
-  
+
   // --- UI STATE ---
-  const [mode, setMode] = useState('login'); 
-  const [method, setMethod] = useState('phone'); 
-  const [step, setStep] = useState(1); 
-  
+  const [mode, setMode] = useState('login');
+  const [method, setMethod] = useState('phone');
+  const [step, setStep] = useState(1);
+
   // --- FORM STATE ---
   const [storeName, setStoreName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+
   // State API & Dropdown logic
-  const [bizState, setBizState] = useState(''); 
+  const [bizState, setBizState] = useState('');
   const [statesList, setStatesList] = useState([]);
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
   const stateDropdownRef = useRef(null);
 
   const [otp, setOtp] = useState(['', '', '', '']);
   const [gstin, setGstin] = useState('');
-  const [upiId, setUpiId] = useState(''); 
+  const [upiId, setUpiId] = useState('');
 
   const otpRefs = [useRef(), useRef(), useRef(), useRef()];
 
@@ -48,15 +49,15 @@ const Login = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ country: "India" })
     })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.error) {
-        // Map names and sort alphabetically
-        const sortedStates = data.data.states.map(s => s.name).sort((a, b) => a.localeCompare(b));
-        setStatesList(sortedStates);
-      }
-    })
-    .catch(err => console.error("Failed to fetch states:", err));
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          // Map names and sort alphabetically
+          const sortedStates = data.data.states.map(s => s.name).sort((a, b) => a.localeCompare(b));
+          setStatesList(sortedStates);
+        }
+      })
+      .catch(err => console.error("Failed to fetch states:", err));
   }, []);
 
   // --- 2. CLICK OUTSIDE TO CLOSE STATE DROPDOWN ---
@@ -144,20 +145,49 @@ const Login = () => {
   }, []);
 
   // --- HANDLERS ---
-  const handleAuthSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
     if (mode === 'signup') {
-        setStep(2);
-        setTimeout(() => otpRefs[0].current.focus(), 100);
-    } else {
-        navigate('/');
+      setStep(2);
+      setTimeout(() => otpRefs[0].current.focus(), 100);
+      return;
+    }
+
+    // Email/password login
+    try {
+      setLoading(true);
+      setError('');
+      const res = await api.post('/auth/login', { email, password });
+      const token = res.data?.token;
+      if (token) {
+        localStorage.setItem('token', token);
+        navigate('/Dashboard');
+      } else {
+        setError('Login failed: no token returned');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSendOTP = (e) => {
+  const handleSendOTP = async (e) => {
     e.preventDefault();
-    setStep(2); 
-    setTimeout(() => otpRefs[0].current.focus(), 100);
+    try {
+      setLoading(true);
+      setError('');
+      await api.post('/auth/send-otp', { phone: `+91${phone}` });
+      setStep(2);
+      setTimeout(() => otpRefs[0].current.focus(), 100);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOTPChange = (index, value) => {
@@ -170,20 +200,66 @@ const Login = () => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) otpRefs[index - 1].current.focus();
   };
 
-  const handleVerifyOTP = (e) => {
+  const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    if (mode === 'signup') setStep(3); 
-    else navigate('/');
+    try {
+      setLoading(true);
+      setError('');
+      const res = await api.post('/auth/verify-otp', { phone: `+91${phone}`, code: otp.join('') });
+      const token = res.data?.token;
+      if (token) {
+        localStorage.setItem('token', token);
+        navigate('/Dashboard');
+      } else if (mode === 'signup') {
+        setStep(3);
+      } else {
+        setError('Invalid OTP or no token returned');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'OTP verification failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCompleteProfile = (e) => {
+  const handleCompleteProfile = async (e) => {
     e.preventDefault();
-    navigate('/');
+    try {
+      setLoading(true);
+      setError('');
+
+      const payload = {
+        fullName: ownerName,
+        email: email,
+        phoneNumber: `+91${phone}`,
+        password: password,
+        businessName: storeName,
+        addressState: bizState,
+        gstin: gstin || null,
+        upiId: upiId || null
+      };
+
+      const res = await api.post('/auth/register', payload);
+      const token = res.data?.token;
+
+      if (token) {
+        localStorage.setItem('token', token);
+        navigate('/Dashboard');
+      } else {
+        setError('Registration successful but no token received. Please login.');
+        setTimeout(() => setStep(1), 2000);
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError(err.response?.data?.message || err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleMode = () => {
     setMode(mode === 'login' ? 'signup' : 'login');
-    setStep(1); 
+    setStep(1);
   };
 
   return (
@@ -202,7 +278,7 @@ const Login = () => {
 
       {/* MAIN CARD */}
       <div className={`relative z-10 ${mode === 'signup' && step === 1 ? 'w-full max-w-xl' : 'w-full max-w-md'} bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-500 transition-all`}>
-        
+
         {step === 1 ? (
           <>
             <div className="mb-6">
@@ -224,21 +300,21 @@ const Login = () => {
 
             {/* FORM */}
             <form onSubmit={mode === 'login' && method === 'phone' ? handleSendOTP : handleAuthSubmit} className="space-y-5">
-              
+
               {/* --- COMPACT SIGNUP GRID --- */}
               {mode === 'signup' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                   <div>
                     <FormLabel text="Store Name" />
                     <div className="relative">
-                      <input type="text" placeholder="e.g. Rahul Supermarket" required value={storeName} onChange={e=>setStoreName(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
+                      <input type="text" placeholder="e.g. Rahul Supermarket" required value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Store className="absolute left-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
                   <div>
                     <FormLabel text="Owner Name" />
                     <div className="relative">
-                      <input type="text" placeholder="Your Full Name" required value={ownerName} onChange={e=>setOwnerName(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
+                      <input type="text" placeholder="Your Full Name" required value={ownerName} onChange={e => setOwnerName(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <User className="absolute left-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
@@ -246,44 +322,44 @@ const Login = () => {
                     <FormLabel text="Mobile Number" />
                     <div className="relative">
                       <span className="absolute left-4 top-3.5 text-gray-400 font-bold border-r border-gray-600 pr-3">+91</span>
-                      <input type="tel" maxLength="10" placeholder="99999 99999" required value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g, ''))} className="w-full pl-16 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
+                      <input type="tel" maxLength="10" placeholder="99999 99999" required value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} className="w-full pl-16 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Phone className="absolute right-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
                   <div>
                     <FormLabel text="Email Address" />
                     <div className="relative">
-                      <input type="email" placeholder="admin@store.com" required value={email} onChange={e=>setEmail(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
+                      <input type="email" placeholder="admin@store.com" required value={email} onChange={e => setEmail(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Mail className="absolute left-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
                   <div>
                     <FormLabel text="Password" />
                     <div className="relative">
-                      <input type="password" placeholder="••••••••" required value={password} onChange={e=>setPassword(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
+                      <input type="password" placeholder="••••••••" required value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Lock className="absolute left-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
-                  
+
                   {/* --- SMART STATE SELECTION WITH API --- */}
                   <div ref={stateDropdownRef} className="relative z-50">
                     <FormLabel text="State (Required)" />
                     <div className="relative">
-                      <input 
-                        type="text" 
-                        placeholder="Search State..." 
-                        required 
-                        value={bizState} 
+                      <input
+                        type="text"
+                        placeholder="Search State..."
+                        required
+                        value={bizState}
                         onChange={e => {
-                            setBizState(e.target.value);
-                            setIsStateDropdownOpen(true);
+                          setBizState(e.target.value);
+                          setIsStateDropdownOpen(true);
                         }}
                         onFocus={() => setIsStateDropdownOpen(true)}
-                        className="w-full pl-10 pr-10 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" 
+                        className="w-full pl-10 pr-10 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all"
                       />
                       <MapPin className="absolute left-3.5 top-4 text-gray-500" size={16} />
                       <ChevronDown className="absolute right-3.5 top-4 text-gray-500 pointer-events-none" size={16} />
-                      
+
                       {/* State Dropdown */}
                       {isStateDropdownOpen && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-[#1B2332] border border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50">
@@ -291,8 +367,8 @@ const Login = () => {
                             <div className="p-3 text-sm text-gray-400 text-center">Loading states...</div>
                           ) : filteredStates.length > 0 ? (
                             filteredStates.map((state, idx) => (
-                              <div 
-                                key={idx} 
+                              <div
+                                key={idx}
                                 onClick={() => {
                                   setBizState(state);
                                   setIsStateDropdownOpen(false);
@@ -336,7 +412,7 @@ const Login = () => {
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <FormLabel text="Password" className="block text-xs font-bold text-gray-400 uppercase tracking-wider" />
-                        <button type="button" className="text-xs font-bold text-green-500 hover:text-green-400">Forgot?</button>
+                      <button type="button" className="text-xs font-bold text-green-500 hover:text-green-400">Forgot?</button>
                     </div>
                     <div className="relative">
                       <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
@@ -346,10 +422,12 @@ const Login = () => {
                 </div>
               )}
 
-              <button type="submit" disabled={mode === 'login' && method === 'phone' ? phone.length !== 10 : false} className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(22,163,74,0.3)] transition-all active:scale-[0.98] mt-4">
+              <button type="submit" disabled={loading || (mode === 'login' && method === 'phone' ? phone.length !== 10 : false)} className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(22,163,74,0.3)] transition-all active:scale-[0.98] mt-4">
                 {mode === 'signup' ? 'Continue & Verify' : (method === 'phone' ? 'Get OTP' : 'Login')} <ArrowRight size={20} />
               </button>
             </form>
+
+            {error && <div className="mt-3 text-sm text-red-400 font-medium">{error}</div>}
 
             <div className="relative mt-8 mb-6">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
@@ -382,7 +460,7 @@ const Login = () => {
                 ))}
               </div>
               <div className="space-y-4">
-                <button type="submit" disabled={otp.join('').length !== 4} className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(22,163,74,0.3)] transition-all active:scale-[0.98]">
+                <button type="submit" disabled={loading || otp.join('').length !== 4} className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(22,163,74,0.3)] transition-all active:scale-[0.98]">
                   {mode === 'signup' ? 'Verify' : 'Verify & Login'} <CheckCircle2 size={20} />
                 </button>
                 <div className="text-center"><button type="button" className="text-sm font-bold text-gray-400 hover:text-green-500 transition-colors">Resend Code</button></div>
@@ -401,20 +479,20 @@ const Login = () => {
               <div>
                 <FormLabel text="GSTIN / Tax ID" />
                 <div className="relative">
-                  <input type="text" placeholder="Optional" value={gstin} onChange={e=>setGstin(e.target.value.toUpperCase())} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
+                  <input type="text" placeholder="Optional" value={gstin} onChange={e => setGstin(e.target.value.toUpperCase())} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                   <FileText className="absolute left-3.5 top-4 text-gray-500" size={18} />
                 </div>
               </div>
               <div>
                 <FormLabel text="UPI ID (For QR Code Generation)" />
                 <div className="relative">
-                  <input type="text" placeholder="storename@upi" value={upiId} onChange={e=>setUpiId(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
+                  <input type="text" placeholder="storename@upi" value={upiId} onChange={e => setUpiId(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                   <QrCode className="absolute left-3.5 top-4 text-gray-500" size={18} />
                 </div>
               </div>
 
               <div className="flex gap-4 mt-8">
-                <button type="button" onClick={() => navigate('/')} className="flex-1 py-4 bg-transparent border border-white/10 text-white font-bold rounded-xl hover:bg-white/5 transition-all">
+                <button type="button" onClick={() => navigate('/Dashboard')} className="flex-1 py-4 bg-transparent border border-white/10 text-white font-bold rounded-xl hover:bg-white/5 transition-all">
                   Skip for now
                 </button>
                 <button type="submit" className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl font-bold shadow-[0_0_20px_rgba(22,163,74,0.3)] transition-all">
