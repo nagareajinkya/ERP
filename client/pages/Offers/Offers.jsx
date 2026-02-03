@@ -238,7 +238,7 @@ const Offers = () => {
     <div className="min-h-screen bg-gray-50/50 p-8">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div><h1 className="text-2xl font-semibold text-gray-800">Smart Offers</h1><p className="text-sm text-gray-500 mt-1">Manage promotions and auto-apply discounts</p></div>
+        <div><h1 className="text-2xl font-bold text-gray-800">Smart Offers</h1><p className="text-sm text-gray-500 mt-1">Manage promotions and auto-apply discounts</p></div>
         <button onClick={handleCreateNew} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-green-600/20 transition-all active:scale-[0.98]"><Plus size={18} /> Create Offer</button>
       </div>
 

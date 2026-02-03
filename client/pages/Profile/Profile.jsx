@@ -83,7 +83,7 @@ const Profile = () => {
       {/* --- HEADER --- */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Profile & Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Profile & Settings</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your business details</p>
         </div>
         
