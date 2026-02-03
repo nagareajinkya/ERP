@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import TabsBar from '../../components/common/TabsBar';
 import SearchBar from '../../components/common/SearchBar';
+import FormLabel from '../../components/common/FormLabel';
 import { CATEGORY_STYLES, INITIAL_CATEGORIES, INITIAL_UNITS, allProducts } from '../../src/data/propertiesData';
 const ICON_MAP = {
   'package': Package,
@@ -246,7 +247,7 @@ const Properties = () => {
 
               <div className="space-y-4">
                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+                    <FormLabel text="Name" className="block text-sm font-medium text-gray-700 mb-1.5" />
                     <input 
                       type="text" 
                       value={newItemName}
@@ -259,7 +260,7 @@ const Properties = () => {
                  {/* Unit Short Code Input */}
                  {activeTab === 'units' && (
                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Short Code</label>
+                      <FormLabel text="Short Code" className="block text-sm font-medium text-gray-700 mb-1.5" />
                       <input 
                         type="text" 
                         value={newItemShort}
@@ -273,8 +274,8 @@ const Properties = () => {
                  {/* CATEGORY STYLE PICKER */}
                  {activeTab === 'categories' && (
                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">Choose Style</label>
-                      <div className="grid grid-cols-5 gap-3">
+                     <FormLabel text="Choose Style" className="block text-sm font-medium text-gray-700 mb-3" />
+                     <div className="grid grid-cols-5 gap-3">
                         {CATEGORY_STYLES.map((style, index) => {
                           const Icon = style.icon;
                           const isSelected = selectedStyle === index;

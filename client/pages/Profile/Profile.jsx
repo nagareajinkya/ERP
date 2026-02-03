@@ -5,6 +5,7 @@ import {
   CheckCircle2, Plus, Edit2, AlertTriangle, FileText
 } from 'lucide-react';
 import { allCategories, initialData } from './../../src/data/profileData';
+import FormLabel from '../../components/common/FormLabel';
 
 const Profile = () => {
   // --- STATE ---
@@ -139,15 +140,15 @@ const Profile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                      <FormLabel text="Full Name" required={true} className="block text-sm font-medium text-gray-700 mb-1.5" />
                       <input type="text" disabled={!isEditing} value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                    </div>
                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number <span className="text-red-500">*</span></label>
+                      <FormLabel text="Phone Number" required={true} className="block text-sm font-medium text-gray-700 mb-1.5" />
                       <input type="text" disabled={!isEditing} value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                    </div>
                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address <span className="text-red-500">*</span></label>
+                      <FormLabel text="Email Address" required={true} className="block text-sm font-medium text-gray-700 mb-1.5" />
                       <input type="email" disabled={!isEditing} value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                    </div>
                 </div>
@@ -156,13 +157,13 @@ const Profile = () => {
             {/* Shop Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Shop Name</label>
+                  <FormLabel text="Shop Name" className="block text-sm font-medium text-gray-700 mb-1.5" />
                   <input type="text" disabled={!isEditing} value={formData.shopName} onChange={(e) => setFormData({...formData, shopName: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                 </div>
                 
                 {/* Category Multi-Select */}
                 <div className="md:col-span-2 relative">
-                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Business Categories</label>
+                   <FormLabel text="Business Categories" className="block text-sm font-medium text-gray-700 mb-1.5" />
                    <div className={`w-full min-h-[50px] px-2 py-2 rounded-xl flex flex-wrap gap-2 items-center border transition-all ${isEditing ? 'bg-white border-gray-200 focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-50' : 'bg-gray-50 border-transparent'}`}>
                       {categories.map((cat) => (
                         <span key={cat} className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-1 rounded-lg text-sm font-medium flex items-center gap-1.5">
@@ -188,20 +189,20 @@ const Profile = () => {
             {/* Address */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Street Address</label>
+                   <FormLabel text="Street Address" className="block text-sm font-medium text-gray-700 mb-1.5" />
                    <input type="text" disabled={!isEditing} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                 </div>
                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1.5">City</label>
+                   <FormLabel text="City" className="block text-sm font-medium text-gray-700 mb-1.5" />
                    <input type="text" disabled={!isEditing} value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">State</label>
+                      <FormLabel text="State" className="block text-sm font-medium text-gray-700 mb-1.5" />
                       <input type="text" disabled={!isEditing} value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                    </div>
                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Pincode</label>
+                      <FormLabel text="Pincode" className="block text-sm font-medium text-gray-700 mb-1.5" />
                       <input type="text" disabled={!isEditing} value={formData.pincode} onChange={(e) => setFormData({...formData, pincode: e.target.value})} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
                    </div>
                 </div>
