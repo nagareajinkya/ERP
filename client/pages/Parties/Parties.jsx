@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, Truck, Search, Plus, MessageCircle, 
   Phone, ArrowUpRight, ArrowDownLeft, X, CheckCircle2, 
   Receipt, Download, ShieldCheck, Building2, UserCircle2, 
   Edit2, Trash2, MapPin, FileText, AlertTriangle, Briefcase
 } from 'lucide-react';
-import { MOCK_PARTIES, MOCK_LEDGER } from '../../src/data/partiesData';
+import SearchBar from '../../components/common/SearchBar';
+import FormLabel from '../../components/common/FormLabel';
+import api from '../../src/api';
 
 const Parties = () => {
-  const [parties, setParties] = useState(MOCK_PARTIES);
+  const [parties, setParties] = useState([]);
   const [activeTab, setActiveTab] = useState('all'); 
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
   
   const [selectedParty, setSelectedParty] = useState(null); 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -21,19 +24,52 @@ const Parties = () => {
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [editingPartyId, setEditingPartyId] = useState(null);
 
-  // FULL FORM STATES RESTORED
   const [customerForm, setCustomerForm] = useState({ name: '', phone: '', city: '', gstin: '', creditLimit: '', openingBalance: '', notes: '' });
   const [supplierForm, setSupplierForm] = useState({ name: '', contactPerson: '', phone: '', city: '', gsn: '', openingBalance: '', notes: '' });
 
-  // --- STATS LOGIC ---
-  const totalToReceive = parties.filter(p => p.type === 'customer').reduce((sum, p) => sum + (p.balanceType === 'receive' ? p.balance : 0), 0);
-  const totalToPay = parties.filter(p => p.type === 'supplier').reduce((sum, p) => sum + (p.balanceType === 'pay' ? p.balance : 0), 0);
-  const netBalance = totalToReceive - totalToPay;
+  // --- FETCH FINANCIAL SUMMARY & PARTIES FROM API ---
+  const [financialSummary, setFinancialSummary] = useState({ totalToReceive: 0, totalToPay: 0, netBalance: 0 });
 
-  const filteredParties = parties.filter(p => 
-    (activeTab === 'all' || p.type === activeTab) && 
-    (p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.phone.includes(searchQuery))
-  );
+  useEffect(() => {
+    const fetchParties = async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get('/parties/search', {
+          params: { type: activeTab, query: searchQuery }
+        });
+        setParties(data.data || []);
+      } catch (error) {
+        console.error('Error fetching parties:', error);
+        setParties([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      fetchParties();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [activeTab, searchQuery]);
+
+  useEffect(() => {
+    const fetchFinancialSummary = async () => {
+      try {
+        const { data } = await api.get('/parties/financial-summary');
+        setFinancialSummary(data);
+      } catch (error) {
+        console.error('Error fetching financial summary:', error);
+      }
+    };
+
+    fetchFinancialSummary();
+  }, [parties]);
+
+  const { totalToReceive, totalToPay, netBalance } = financialSummary;
+
+  const filteredParties = parties;
+  
 
   const handleOpenAddModal = () => {
     setEditingPartyId(null);
@@ -87,7 +123,7 @@ const Parties = () => {
             <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 md:flex-none px-8 py-2.5 text-sm font-bold rounded-lg transition-all capitalize ${activeTab === tab ? 'bg-white text-gray-800 shadow-sm ring-1 ring-gray-200' : 'text-gray-400 hover:text-gray-700'}`}>{tab}</button>
           ))}
         </div>
-        <div className="relative w-full md:w-96"><Search className="absolute left-4 top-3 text-gray-400" size={20} /><input type="text" placeholder="Search by name or phone..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all shadow-inner"/></div>
+        <div className="relative w-full md:w-96"><SearchBar placeholder="Search by name or phone..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
       </div>
 
       {/* LIST VIEW */}
@@ -140,19 +176,19 @@ const Parties = () => {
             </div>
             <form className="p-8 space-y-5" onSubmit={(e) => e.preventDefault()}>
               <div className="grid grid-cols-2 gap-5">
-                <div className="col-span-2"><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Customer Name *</label><input autoFocus required type="text" placeholder="Full Name" value={customerForm.name} onChange={e=>setCustomerForm({...customerForm, name: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500 outline-none font-bold text-gray-800 transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Phone (Optional)</label><input type="tel" value={customerForm.phone} onChange={e=>setCustomerForm({...customerForm, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">City (Optional)</label><input type="text" value={customerForm.city} onChange={e=>setCustomerForm({...customerForm, city: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">GSTIN (Optional)</label><input type="text" value={customerForm.gstin} onChange={e=>setCustomerForm({...customerForm, gstin: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 uppercase transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Credit Limit (Optional)</label><input type="number" value={customerForm.creditLimit} onChange={e=>setCustomerForm({...customerForm, creditLimit: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div className="col-span-2"><FormLabel text="Customer Name" required={true} className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input autoFocus required type="text" placeholder="Full Name" value={customerForm.name} onChange={e=>setCustomerForm({...customerForm, name: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500 outline-none font-bold text-gray-800 transition-all"/></div>
+                <div><FormLabel text="Phone (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="tel" value={customerForm.phone} onChange={e=>setCustomerForm({...customerForm, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div><FormLabel text="City (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="text" value={customerForm.city} onChange={e=>setCustomerForm({...customerForm, city: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div><FormLabel text="GSTIN (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="text" value={customerForm.gstin} onChange={e=>setCustomerForm({...customerForm, gstin: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 uppercase transition-all"/></div>
+                <div><FormLabel text="Credit Limit (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="number" value={customerForm.creditLimit} onChange={e=>setCustomerForm({...customerForm, creditLimit: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
                 
                 {!editingPartyId && (
                   <div className="col-span-2 bg-green-50 p-4 rounded-2xl border border-green-100">
-                    <label className="block text-[10px] font-black text-green-700 uppercase mb-1.5 flex items-center gap-1"><ArrowDownLeft size={12}/> Opening Balance (Old Udhaar)</label>
+                    <FormLabel text="Opening Balance (Old Udhaar)" className="block text-[10px] font-black text-green-700 uppercase mb-1.5 flex items-center gap-1" />
                     <input type="number" placeholder="0.00" value={customerForm.openingBalance} onChange={e=>setCustomerForm({...customerForm, openingBalance: e.target.value})} className="w-full p-3 bg-white border-2 border-green-200 rounded-xl focus:border-green-500 outline-none font-bold text-gray-800 transition-all"/>
                   </div>
                 )}
-                <div className="col-span-2"><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Notes (Optional)</label><input type="text" value={customerForm.notes} onChange={e=>setCustomerForm({...customerForm, notes: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div className="col-span-2"><FormLabel text="Notes (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="text" value={customerForm.notes} onChange={e=>setCustomerForm({...customerForm, notes: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
               </div>
               <div className="flex gap-4"><button type="button" onClick={() => setIsCustomerModalOpen(false)} className="flex-1 py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl">Cancel</button><button type="submit" className="flex-1 py-4 text-white bg-blue-600 hover:bg-blue-700 font-bold rounded-2xl shadow-lg shadow-blue-600/20 transition-all">{editingPartyId ? 'Update' : 'Save'} Customer</button></div>
             </form>
@@ -170,19 +206,19 @@ const Parties = () => {
             </div>
             <form className="p-8 space-y-5" onSubmit={(e) => e.preventDefault()}>
               <div className="grid grid-cols-2 gap-5">
-                <div className="col-span-2"><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Business Name *</label><input autoFocus required type="text" value={supplierForm.name} onChange={e=>setSupplierForm({...supplierForm, name: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-purple-500 outline-none font-bold text-gray-800 transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Contact Person (Optional)</label><input type="text" value={supplierForm.contactPerson} onChange={e=>setSupplierForm({...supplierForm, contactPerson: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Phone (Optional)</label><input type="tel" value={supplierForm.phone} onChange={e=>setSupplierForm({...supplierForm, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">City (Optional)</label><input type="text" value={supplierForm.city} onChange={e=>setSupplierForm({...supplierForm, city: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">GSTIN (Optional)</label><input type="text" value={supplierForm.gstin} onChange={e=>setSupplierForm({...supplierForm, gstin: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 uppercase transition-all"/></div>
+                <div className="col-span-2"><FormLabel text="Business Name" required={true} className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input autoFocus required type="text" value={supplierForm.name} onChange={e=>setSupplierForm({...supplierForm, name: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-purple-500 outline-none font-bold text-gray-800 transition-all"/></div>
+                <div><FormLabel text="Contact Person (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="text" value={supplierForm.contactPerson} onChange={e=>setSupplierForm({...supplierForm, contactPerson: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div><FormLabel text="Phone (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="tel" value={supplierForm.phone} onChange={e=>setSupplierForm({...supplierForm, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div><FormLabel text="City (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="text" value={supplierForm.city} onChange={e=>setSupplierForm({...supplierForm, city: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div><FormLabel text="GSTIN (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="text" value={supplierForm.gstin} onChange={e=>setSupplierForm({...supplierForm, gstin: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 uppercase transition-all"/></div>
                 
                 {!editingPartyId && (
                   <div className="col-span-2 bg-red-50 p-4 rounded-2xl border border-red-100">
-                    <label className="block text-[10px] font-black text-red-700 uppercase mb-1.5 flex items-center gap-1"><ArrowUpRight size={12}/> Opening Balance (Money you owe)</label>
+                    <FormLabel text="Opening Balance (Money you owe)" className="block text-[10px] font-black text-red-700 uppercase mb-1.5 flex items-center gap-1" />
                     <input type="number" placeholder="0.00" value={supplierForm.openingBalance} onChange={e=>setSupplierForm({...supplierForm, openingBalance: e.target.value})} className="w-full p-3 bg-white border-2 border-red-200 rounded-xl focus:border-red-500 outline-none font-bold text-gray-800 transition-all"/>
                   </div>
                 )}
-                <div className="col-span-2"><label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Notes (Optional)</label><input type="text" value={supplierForm.notes} onChange={e=>setSupplierForm({...supplierForm, notes: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
+                <div className="col-span-2"><FormLabel text="Notes (Optional)" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5"/><input type="text" value={supplierForm.notes} onChange={e=>setSupplierForm({...supplierForm, notes: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all"/></div>
               </div>
               <div className="flex gap-4"><button type="button" onClick={() => setIsSupplierModalOpen(false)} className="flex-1 py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl">Cancel</button><button type="submit" className="flex-1 py-4 text-white bg-purple-600 hover:bg-purple-700 font-bold rounded-2xl shadow-lg shadow-purple-600/20 transition-all">{editingPartyId ? 'Update' : 'Save'} Supplier</button></div>
             </form>
