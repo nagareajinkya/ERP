@@ -1,30 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, Calendar, ArrowUpRight, ArrowDownRight, 
   RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer 
 } from 'lucide-react';
-import { MOCK_TRANSACTIONS } from '../../src/data/transactionsHistoryData';
+import api from '../../src/api';
+import SearchBar from '../../components/common/SearchBar';
+import TabsBar from '../../components/common/TabsBar';
 
 const Transactions = () => {
   // --- STATE ---
-  const [transactions] = useState(MOCK_TRANSACTIONS);
+  const [transactions, setTransactions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('All'); // All, Sale, Purchase, Adjustment
+  const [filterType, setFilterType] = useState('All');
   const [dateFilter, setDateFilter] = useState('This Month');
+  const [loading, setLoading] = useState(false);
   
   // Modal State
   const [selectedBill, setSelectedBill] = useState(null);
 
-  // --- FILTER LOGIC ---
-  const filteredData = transactions.filter(trx => {
-    const matchesSearch = 
-      trx.party.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      trx.id.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesType = filterType === 'All' || trx.type === filterType;
-    
-    return matchesSearch && matchesType;
-  });
+  // --- FETCH TRANSACTIONS FROM API ---
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get('/transactions/search', {
+          params: { query: searchQuery, type: filterType, dateRange: dateFilter }
+        });
+        setTransactions(data.data || []);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        setTransactions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      fetchTransactions();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, filterType, dateFilter]);
+
+  const filteredData = transactions;
 
   // --- HELPER: Status Badge ---
   const getStatusBadge = (status) => {
@@ -64,30 +82,11 @@ const Transactions = () => {
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
         
         {/* TABS */}
-        <div className="flex p-1 bg-gray-50 rounded-xl w-full md:w-auto">
-          {['All', 'Sale', 'Purchase', 'Adjustment'].map(tab => (
-            <button 
-              key={tab}
-              onClick={() => setFilterType(tab)}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${filterType === tab ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        <TabsBar tabs={['All', 'Sale', 'Purchase', 'Adjustment']} activeTab={filterType} onTabChange={setFilterType} variant="default" className="flex p-1 bg-gray-50 rounded-xl w-full md:w-auto" />
 
         {/* SEARCH & DATE */}
         <div className="flex gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search Invoice or Party..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all"
-            />
-          </div>
+          <SearchBar placeholder="Search Invoice or Party..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="flex-1 md:w-64" />
           <div className="relative">
             <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
             <select 

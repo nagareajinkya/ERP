@@ -4,10 +4,9 @@ import {
   Save, Share2, Plus, Trash2, Calendar, 
   Search, Zap, CheckCircle2, X, Gift, History
 } from 'lucide-react';
-import { PRODUCTS, CUSTOMERS, ALL_OFFERS } from '../../src/data/transactionsData';
+import api from '../../src/api';
 
 
-// --- WALK-IN MODAL ---
 const WalkInModal = ({ isOpen, onClose, onSave }) => {
     const [details, setDetails] = useState({ name: '', phone: '', address: '', gstin: '', state: '' });
     if (!isOpen) return null;
@@ -85,7 +84,6 @@ const NewTransaction = ({ type = 'sale' }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- SMART ENGINE: OFFER & FREE ITEMS LOGIC ---
   useEffect(() => {
     if (!isSale) {
         const sub = items.reduce((acc, i) => acc + (Number(i.price||0) * Number(i.qty||0)), 0);
@@ -93,103 +91,29 @@ const NewTransaction = ({ type = 'sale' }) => {
         return;
     }
 
-    let newItems = [...items];
-    let hasChanges = false;
-    let newApplied = [];
-    let newAvailable = [];
-    let cartDiscountPercent = 0;
-    let flatDiscount = 0;
+    const calculateTotals = async () => {
+      try {
+        const { data } = await api.post('/transactions/calculate-totals', {
+          items: items.filter(i => i.name),
+          selectedCustomer,
+          transactionType: 'sale',
+          date,
+          removedOfferIds
+        });
 
-    // 1. Process "Auto-Add" Offers (Free Items)
-    ALL_OFFERS.filter(o => o.action === 'auto_add').forEach(offer => {
-        
-        // Strict Customer Check
-        if (offer.requiredCustomer && selectedCustomer?.type !== offer.requiredCustomer) return;
+        setItems(data.items);
+        setTotals(data.totals);
+        setAppliedOffers(data.appliedOffers);
+        setAvailableOffers(data.availableOffers);
+      } catch (error) {
+        console.error('Error calculating totals:', error);
+        const sub = items.reduce((acc, i) => acc + (Number(i.price||0) * Number(i.qty||0)), 0);
+        setTotals({ sub, disc: 0, total: sub });
+      }
+    };
 
-        if (removedOfferIds.includes(offer.id)) { newAvailable.push(offer); return; }
-
-        const triggerIdx = newItems.findIndex(i => i.name.toLowerCase() === offer.triggerProduct.toLowerCase() && !i.isFree);
-        
-        if (triggerIdx !== -1) {
-            const triggerItem = newItems[triggerIdx];
-            const multiplier = Math.floor(triggerItem.qty / (offer.minQty || 1));
-
-            if (multiplier > 0) {
-                const rewardQty = multiplier * (offer.rewardQty || 1);
-                const rewardProduct = PRODUCTS.find(p => p.name === offer.rewardProduct);
-
-                // Find existing free item *right after* trigger
-                const nextItem = newItems[triggerIdx + 1];
-                const isNextFree = nextItem && nextItem.isFree && nextItem.offerId === offer.id;
-
-                if (isNextFree) {
-                    if (!nextItem.manual && nextItem.qty !== rewardQty) {
-                        newItems[triggerIdx + 1] = { ...nextItem, qty: rewardQty, amount: rewardQty * offer.price };
-                        hasChanges = true;
-                    }
-                    newApplied.push(offer);
-                } else if (rewardProduct) {
-                    const newItem = {
-                        id: Date.now() + Math.random(), 
-                        name: rewardProduct.name,
-                        qty: rewardQty,
-                        price: offer.price,
-                        amount: rewardQty * offer.price,
-                        isFree: true,
-                        offerId: offer.id,
-                        manual: false
-                    };
-                    newItems.splice(triggerIdx + 1, 0, newItem);
-                    hasChanges = true;
-                    newApplied.push(offer);
-                }
-            } else {
-                newAvailable.push(offer); // Eligible but qty not met
-            }
-        } else {
-            // Check if user is eligible for this product offer even if item not in cart
-            newAvailable.push(offer);
-        }
-    });
-
-    // 2. Process Discounts
-    ALL_OFFERS.forEach(offer => {
-        if (offer.action === 'auto_add') return;
-        if (offer.requiredCustomer && selectedCustomer?.type !== offer.requiredCustomer) return;
-        if (removedOfferIds.includes(offer.id)) { newAvailable.push(offer); return; }
-        
-        let isApplicable = false;
-        let multiplier = 1;
-
-        if (offer.triggerType === 'all') isApplicable = true;
-        else if (offer.triggerType === 'customer_type' && offer.triggerValue === selectedCustomer?.type) isApplicable = true;
-        else if (offer.triggerType === 'product_buy') {
-            const triggerItem = newItems.find(i => i.name.toLowerCase() === offer.triggerProduct.toLowerCase() && !i.isFree);
-            if (triggerItem && triggerItem.qty >= (offer.minQty || 1)) isApplicable = true;
-        }
-
-        if (isApplicable) {
-            if (offer.action === 'cart_discount') cartDiscountPercent += offer.value;
-            if (offer.action === 'item_discount') flatDiscount += offer.value;
-            newApplied.push(offer);
-        } else {
-            newAvailable.push(offer);
-        }
-    });
-
-    if (hasChanges) setItems(newItems);
-
-    // 3. Totals
-    const sub = newItems.reduce((acc, i) => acc + (Number(i.price||0) * Number(i.qty||0)), 0);
-    const percentDiscVal = (sub * cartDiscountPercent) / 100;
-    const totalDisc = flatDiscount + percentDiscVal;
-    const total = Math.max(0, sub - totalDisc);
-
-    setTotals({ sub, disc: totalDisc, total });
-    setAppliedOffers(newApplied);
-    setAvailableOffers(newAvailable);
-
-  }, [items, selectedCustomer, removedOfferIds, isSale]);
+    calculateTotals();
+  }, [items, selectedCustomer, removedOfferIds, isSale, date]);
 
 
   // --- HANDLERS ---
