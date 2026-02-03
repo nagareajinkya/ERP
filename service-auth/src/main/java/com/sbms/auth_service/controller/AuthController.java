@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sbms.auth_service.dto.AuthResponse;
+import com.sbms.auth_service.dto.OtpRequest;
+import com.sbms.auth_service.dto.OtpVerifyRequest;
+import com.sbms.auth_service.dto.UserLoginDto;
 import com.sbms.auth_service.dto.UserRegisterDto;
 import com.sbms.auth_service.service.AuthServiceImpl;
 
@@ -23,4 +26,20 @@ public class AuthController {
 	public ResponseEntity<AuthResponse> register(@RequestBody UserRegisterDto userDto){
 		return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(userDto));
 	}
+	
+	@PostMapping("/login")
+	public ResponseEntity<AuthResponse> login(@RequestBody UserLoginDto request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+	
+	@PostMapping("/send-otp")
+    public ResponseEntity<String> sendOtp(@RequestBody OtpRequest request) {
+        authService.sendOtp(request);
+        return ResponseEntity.ok("OTP sent successfully");
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(@RequestBody OtpVerifyRequest request) {
+        return ResponseEntity.ok(authService.verifyOtp(request));
+    }
 }

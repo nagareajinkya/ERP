@@ -12,6 +12,8 @@ import com.sbms.auth_service.entity.User;
 public interface UserRepository extends JpaRepository<User, UUID> {
 
 	Optional<User> findByEmailOrPhoneNumber(String email, String phoneNumber);
+	
+	Optional<User> findByPhoneNumber(String phoneNumber);
 
     // Used for validation during Registration
     Boolean existsByEmail(String email);

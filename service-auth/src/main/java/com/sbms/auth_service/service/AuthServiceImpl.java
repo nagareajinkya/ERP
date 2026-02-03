@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sbms.auth_service.custom_exceptions.UserAlreadyExistsException;
 import com.sbms.auth_service.custom_exceptions.UserNotFoundException;
 import com.sbms.auth_service.dto.AuthResponse;
+import com.sbms.auth_service.dto.OtpRequest;
+import com.sbms.auth_service.dto.OtpVerifyRequest;
 import com.sbms.auth_service.dto.UserLoginDto;
 import com.sbms.auth_service.dto.UserRegisterDto;
 import com.sbms.auth_service.entity.Business;
@@ -58,6 +60,30 @@ public class AuthServiceImpl implements AuthService {
 		User user = userRepository.findByEmailOrPhoneNumber(loginDto.getIdentifier(), loginDto.getIdentifier())
 									.orElseThrow( ()-> new UserNotFoundException("User not found"));
 		
+		String jwtToken = jwtService.generateToken(user);
+		AuthResponse response = modelMapper.map(user, AuthResponse.class);
+		response.setToken(jwtToken);
+		response.setBusinessId(user.getBusiness().getId());
+		response.setUserId(user.getId());
+		response.setBusinessName(user.getBusiness().getBusinessName());
+		return response;
+	}
+
+	@Override
+	public void sendOtp(OtpRequest request) {
+		// Temporary implementation: Log the OTP request (console only)
+		System.out.println("OTP Requested for phone: " + request.getPhone() + ". use code 1234");
+	}
+
+	@Override
+	public AuthResponse verifyOtp(OtpVerifyRequest request) {
+		if (!"1234".equals(request.getCode())) {
+			throw new RuntimeException("Invalid OTP"); 
+		}
+
+		User user = userRepository.findByPhoneNumber(request.getPhone())
+				.orElseThrow(() -> new UserNotFoundException("User not found with phone: " + request.getPhone()));
+
 		String jwtToken = jwtService.generateToken(user);
 		AuthResponse response = modelMapper.map(user, AuthResponse.class);
 		response.setToken(jwtToken);
