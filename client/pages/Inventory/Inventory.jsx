@@ -4,13 +4,19 @@ import {
   CheckCircle2, Filter, Tag, ChevronDown, UploadCloud, 
   RefreshCw, AlertCircle, ArrowRight 
 } from 'lucide-react';
-import {INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_UNITS, GST_PRESETS, ADJUSTMENT_REASONS} from './../../src/data/inventoryData';
+import {INITIAL_CATEGORIES, INITIAL_UNITS, GST_PRESETS, ADJUSTMENT_REASONS} from './../../src/data/inventoryData';
+import api from '../../src/api';
+import SearchBar from '../../components/common/SearchBar';
+import FilterSelect from '../../components/common/FilterSelect';
+import StatCard from '../../components/common/StatCard';
+import FormLabel from '../../components/common/FormLabel';
 
 const Inventory = () => {
   // --- STATE ---
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState([]);
   const [categoriesDB, setCategoriesDB] = useState(INITIAL_CATEGORIES);
   const [unitsDB, setUnitsDB] = useState(INITIAL_UNITS);
+  const [loading, setLoading] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +48,31 @@ const Inventory = () => {
   const [adjustData, setAdjustData] = useState({ qty: '', reason: 'Loss', note: '' });
   
   // Errors
-  const [formErrors, setFormErrors] = useState({}); 
+  const [formErrors, setFormErrors] = useState({});
+
+  // --- FETCH PRODUCTS FROM API ---
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get('/products/search', {
+          params: { query: searchQuery, category: selectedCategory }
+        });
+        setProducts(data.data || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      fetchProducts();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, selectedCategory]);
 
   // --- EFFECT: Click Outside to Close Dropdowns ---
   useEffect(() => {
@@ -54,17 +84,30 @@ const Inventory = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- DERIVED DATA ---
-  const totalItems = products.length;
-  const lowStockCount = products.filter(p => p.qty <= p.minStock && p.qty > 0).length;
-  const outOfStockCount = products.filter(p => p.qty === 0).length;
-  const totalValue = products.reduce((acc, curr) => acc + (curr.qty * curr.buyPrice), 0);
-
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku.toLowerCase().includes(searchQuery.toLowerCase()) || p.hsn.includes(searchQuery);
-    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  // --- INVENTORY STATISTICS FROM API ---
+  const [inventoryStats, setInventoryStats] = useState({
+    totalItems: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    totalValue: 0
   });
+
+  useEffect(() => {
+    const fetchInventoryStats = async () => {
+      try {
+        const { data } = await api.get('/inventory/statistics');
+        setInventoryStats(data);
+      } catch (error) {
+        console.error('Error fetching inventory stats:', error);
+      }
+    };
+
+    fetchInventoryStats();
+  }, [products]);
+
+  const { totalItems, lowStockCount, outOfStockCount, totalValue } = inventoryStats;
+
+  const filteredProducts = products;
 
   const filteredCategories = categoriesDB.filter(c => c.toLowerCase().includes(formData.category.toLowerCase()));
   const filteredUnits = unitsDB.filter(u => u.toLowerCase().includes(formData.unit.toLowerCase()));
@@ -207,30 +250,18 @@ const Inventory = () => {
 
       {/* QUICK STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Items</p><h3 className="text-2xl font-extrabold text-gray-800">{totalItems}</h3></div>
-          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><Package size={20}/></div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Low Stock</p><h3 className="text-2xl font-extrabold text-red-600">{lowStockCount}</h3></div>
-          <div className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center"><AlertTriangle size={20}/></div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Out of Stock</p><h3 className="text-2xl font-extrabold text-gray-800">{outOfStockCount}</h3></div>
-          <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center"><X size={20}/></div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Stock Value</p><h3 className="text-2xl font-extrabold text-gray-800">₹{totalValue.toLocaleString()}</h3></div>
-          <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center"><CheckCircle2 size={20}/></div>
-        </div>
+        <StatCard label="Total Items" value={totalItems} icon={Package} iconColor="bg-blue-50 text-blue-600" borderColor="border-gray-100" />
+        <StatCard label="Low Stock" value={lowStockCount} icon={AlertTriangle} iconColor="bg-red-50 text-red-600" borderColor="border-gray-100" valueColor="text-red-600" />
+        <StatCard label="Out of Stock" value={outOfStockCount} icon={X} iconColor="bg-gray-100 text-gray-600" borderColor="border-gray-100" />
+        <StatCard label="Stock Value" value={totalValue} icon={CheckCircle2} iconColor="bg-green-50 text-green-600" borderColor="border-gray-100" />
       </div>
 
       {/* MAIN CONTENT AREA */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[600px]">
         {/* Toolbar */}
         <div className="p-4 border-b border-gray-100 flex justify-between items-center gap-4">
-          <div className="relative w-96"><Search className="absolute left-3 top-2.5 text-gray-400" size={18} /><input type="text" placeholder="Search by name, SKU, or HSN..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all"/></div>
-          <div className="relative w-64"><Filter className="absolute left-3 top-2.5 text-gray-400" size={18} /><select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all cursor-pointer appearance-none"><option value="All">All Categories</option>{categoriesDB.map(cat => (<option key={cat} value={cat}>{cat}</option>))}</select></div>
+          <SearchBar placeholder="Search by name, SKU, or HSN..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-96" />
+          <FilterSelect placeholder="All Categories" options={categoriesDB} value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-64" />
         </div>
 
         {/* Product Table */}
@@ -291,7 +322,7 @@ const Inventory = () => {
                     
                     {/* CUSTOM CATEGORY DROPDOWN */}
                     <div ref={catRef} className="relative">
-                      <label className="block text-sm font-bold text-gray-600 mb-1.5">Category <span className="text-red-500">*</span></label>
+                      <FormLabel text="Category" required={true} className="block text-sm font-bold text-gray-600 mb-1.5" />
                       <input type="text" value={formData.category} onFocus={()=>setIsCatDropdownOpen(true)} onChange={e => {handleFieldChange('category', e.target.value); setIsCatDropdownOpen(true);}} placeholder="Type to search..." className={`w-full p-3 bg-gray-50 border rounded-xl outline-none focus:bg-white focus:ring-4 transition-all font-bold ${formErrors.category ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`}/>
                       <ChevronDown className="absolute right-3 top-11 text-gray-400 pointer-events-none" size={16}/>
                       {formErrors.category && <p className="text-xs text-red-500 font-bold mt-1 flex items-center gap-1"><AlertCircle size={12}/> {formErrors.category}</p>}
@@ -311,7 +342,7 @@ const Inventory = () => {
 
                     {/* CUSTOM UNIT DROPDOWN */}
                     <div ref={unitRef} className="relative">
-                      <label className="block text-sm font-bold text-gray-600 mb-1.5">Unit <span className="text-red-500">*</span></label>
+                      <FormLabel text="Unit" required={true} className="block text-sm font-bold text-gray-600 mb-1.5" />
                       <input type="text" value={formData.unit} onFocus={()=>setIsUnitDropdownOpen(true)} onChange={e => {handleFieldChange('unit', e.target.value); setIsUnitDropdownOpen(true);}} placeholder="e.g. kg, pc" className={`w-full p-3 bg-gray-50 border rounded-xl outline-none focus:bg-white focus:ring-4 transition-all font-bold ${formErrors.unit ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`}/>
                       <ChevronDown className="absolute right-3 top-11 text-gray-400 pointer-events-none" size={16}/>
                       {formErrors.unit && <p className="text-xs text-red-500 font-bold mt-1 flex items-center gap-1"><AlertCircle size={12}/> {formErrors.unit}</p>}
