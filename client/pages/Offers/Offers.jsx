@@ -31,7 +31,7 @@ const ProductSearch = ({ label, placeholder, value, onSelect, unit, onUnitChange
 
   return (
     <div className="flex-1 relative" ref={wrapperRef}>
-       <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">{label}</label>
+      <FormLabel text={label} className="block text-xs font-bold text-gray-500 uppercase mb-1.5" />
        <div className="flex gap-2">
           <div className="relative flex-[2]">
              <input 
@@ -318,18 +318,24 @@ const Offers = () => {
               {/* Section 1: Basic & Type */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Offer Name <span className="text-red-500">*</span></label>
+                  <FormLabel text="Offer Name" required={true} className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5" />
                   <input ref={nameInputRef} type="text" value={formData.name} onChange={(e) => { setFormData({...formData, name: e.target.value}); setErrors({...errors, name: null}); }} placeholder="e.g. Diwali Dhamaka Sale" className={`w-full px-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:bg-white focus:ring-4 transition-all ${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`} />
                   {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-bold"><AlertCircle size={12}/> {errors.name}</p>}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Start Date <span className="text-red-500">*</span></label><input ref={dateInputRef} type="date" value={formData.startDate} onChange={(e) => { setFormData({...formData, startDate: e.target.value}); setErrors({...errors, startDate: null}); }} className={`w-full px-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:bg-white focus:ring-4 transition-all ${errors.startDate ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`} /></div>
-                  <div><label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">End Date</label><input type="date" value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl font-bold outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 transition-all" /></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <FormLabel text="Start Date" required={true} className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5" />
+                    <input ref={dateInputRef} type="date" value={formData.startDate} onChange={(e) => { setFormData({...formData, startDate: e.target.value}); setErrors({...errors, startDate: null}); }} className={`w-full px-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:bg-white focus:ring-4 transition-all ${errors.startDate ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`} />
+                  </div>
+                  <div>
+                    <FormLabel text="End Date" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5" />
+                    <input type="date" value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl font-bold outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 transition-all" />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Rule Type</label>
+                  <FormLabel text="Rule Type" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4" />
                   <div className="grid grid-cols-3 gap-2">
                     <button type="button" onClick={() => setFormData({...formData, ruleType: 'cart_value'})} className={`p-3 rounded-xl border text-sm font-bold transition-all ${formData.ruleType === 'cart_value' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>Bill Amount</button>
                     <button type="button" onClick={() => setFormData({...formData, ruleType: 'product_disc'})} className={`p-3 rounded-xl border text-sm font-bold transition-all ${formData.ruleType === 'product_disc' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>Product Disc.</button>
@@ -350,21 +356,21 @@ const Offers = () => {
                   <div className="space-y-4 animate-in slide-in-from-top-2">
                     <div className="flex gap-4 items-end">
                       <ProductSearch label="If Customer Buys" placeholder="e.g. Sugar" value={formData.buyProductName} unit={formData.buyProductUnit} onSelect={(p)=>setFormData({...formData, buyProductName: p.name, buyProductUnit: p.unit})} onUnitChange={(u) => setFormData({...formData, buyProductUnit: u})}/>
-                      <div className="w-24"><label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Min Qty</label><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => setFormData({...formData, buyQty: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
+                      <div className="w-24"><FormLabel text="Min Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => setFormData({...formData, buyQty: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
                     </div>
-                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Give Discount</label><div className="flex w-1/2"><input type="number" value={formData.discountValue} onChange={e => setFormData({...formData, discountValue: e.target.value})} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-l-xl outline-none focus:border-green-500 font-bold"/><select value={formData.discountType} onChange={e => setFormData({...formData, discountType: e.target.value})} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select></div></div>
+                    <div><FormLabel text="Give Discount" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><div className="flex w-1/2"><input type="number" value={formData.discountValue} onChange={e => setFormData({...formData, discountValue: e.target.value})} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-l-xl outline-none focus:border-green-500 font-bold"/><select value={formData.discountType} onChange={e => setFormData({...formData, discountType: e.target.value})} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select></div></div>
                   </div>
                 )}
                 {formData.ruleType === 'bogo' && (
                   <div className="space-y-4 animate-in slide-in-from-top-2">
                     <div className="flex gap-4 items-end">
                       <ProductSearch label="Buy" placeholder="e.g. Biscuits" value={formData.buyProductName} unit={formData.buyProductUnit} onSelect={(p)=>setFormData({...formData, buyProductName: p.name, buyProductUnit: p.unit})} onUnitChange={(u) => setFormData({...formData, buyProductUnit: u})}/>
-                      <div className="w-24"><label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Qty</label><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => setFormData({...formData, buyQty: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
+                      <div className="w-24"><FormLabel text="Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => setFormData({...formData, buyQty: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
                     </div>
                     <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase my-1"><ArrowDownIcon /> Then Get Free</div>
                     <div className="flex gap-4 items-end">
                       <ProductSearch label="Get Free" placeholder="e.g. Maggi" value={formData.getProductName} unit={formData.getProductUnit} onSelect={(p)=>setFormData({...formData, getProductName: p.name, getProductUnit: p.unit})} onUnitChange={(u) => setFormData({...formData, getProductUnit: u})}/>
-                      <div className="w-24"><label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Qty</label><input type="number" min="1" placeholder="1" value={formData.getQty} onChange={(e) => setFormData({...formData, getQty: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
+                      <div className="w-24"><FormLabel text="Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.getQty} onChange={(e) => setFormData({...formData, getQty: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
                     </div>
                   </div>
                 )}
@@ -379,7 +385,7 @@ const Offers = () => {
 
               {/* Section 4: Target Audience */}
               <div className="space-y-4">
-                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Who is this offer for?</label>
+                 <FormLabel text="Who is this offer for?" className="block text-xs font-bold text-gray-400 uppercase tracking-wider" />
                  <select value={formData.targetType} onChange={(e) => setFormData({...formData, targetType: e.target.value, selectedCustomers: []})} className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl font-bold outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50"><option value="all">All Customers</option><option value="top_spenders">Top Spenders</option><option value="frequent">Frequent Visitors</option><option value="specific">Specific Customers</option></select>
 
                  {formData.targetType === 'top_spenders' && (
