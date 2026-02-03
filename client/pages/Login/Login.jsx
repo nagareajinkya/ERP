@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, ArrowRight, ShieldCheck, Lock, CheckCircle2, ChevronLeft, Store, User, MapPin, FileText, QrCode, Search, ChevronDown } from 'lucide-react';
+import FormLabel from '../../components/common/FormLabel';
 
 // --- GOOGLE ICON SVG ---
 const GoogleIcon = () => (
@@ -228,21 +229,21 @@ const Login = () => {
               {mode === 'signup' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Store Name</label>
+                    <FormLabel text="Store Name" />
                     <div className="relative">
                       <input type="text" placeholder="e.g. Rahul Supermarket" required value={storeName} onChange={e=>setStoreName(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Store className="absolute left-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Owner Name</label>
+                    <FormLabel text="Owner Name" />
                     <div className="relative">
                       <input type="text" placeholder="Your Full Name" required value={ownerName} onChange={e=>setOwnerName(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <User className="absolute left-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mobile Number</label>
+                    <FormLabel text="Mobile Number" />
                     <div className="relative">
                       <span className="absolute left-4 top-3.5 text-gray-400 font-bold border-r border-gray-600 pr-3">+91</span>
                       <input type="tel" maxLength="10" placeholder="99999 99999" required value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g, ''))} className="w-full pl-16 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
@@ -250,14 +251,14 @@ const Login = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
+                    <FormLabel text="Email Address" />
                     <div className="relative">
                       <input type="email" placeholder="admin@store.com" required value={email} onChange={e=>setEmail(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Mail className="absolute left-3.5 top-4 text-gray-500" size={16} />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Password</label>
+                    <FormLabel text="Password" />
                     <div className="relative">
                       <input type="password" placeholder="••••••••" required value={password} onChange={e=>setPassword(e.target.value)} className="w-full pl-10 pr-3 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Lock className="absolute left-3.5 top-4 text-gray-500" size={16} />
@@ -266,7 +267,7 @@ const Login = () => {
                   
                   {/* --- SMART STATE SELECTION WITH API --- */}
                   <div ref={stateDropdownRef} className="relative z-50">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">State (Required)</label>
+                    <FormLabel text="State (Required)" />
                     <div className="relative">
                       <input 
                         type="text" 
@@ -314,7 +315,7 @@ const Login = () => {
               {/* --- LOGIN MODE --- */}
               {mode === 'login' && method === 'phone' && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mobile Number</label>
+                  <FormLabel text="Mobile Number" />
                   <div className="relative">
                     <span className="absolute left-4 top-3.5 text-gray-400 font-bold border-r border-gray-600 pr-3">+91</span>
                     <input type="tel" maxLength="10" placeholder="99999 99999" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} autoFocus className="w-full pl-16 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl font-bold text-white placeholder-gray-600 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all text-lg tracking-wider" />
@@ -326,7 +327,7 @@ const Login = () => {
               {mode === 'login' && method === 'email' && (
                 <div className="space-y-5 animate-in fade-in">
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
+                    <FormLabel text="Email Address" />
                     <div className="relative">
                       <input type="email" placeholder="admin@store.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                       <Mail className="absolute left-3.5 top-4 text-gray-500" size={18} />
@@ -334,7 +335,7 @@ const Login = () => {
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Password</label>
+                      <FormLabel text="Password" className="block text-xs font-bold text-gray-400 uppercase tracking-wider" />
                         <button type="button" className="text-xs font-bold text-green-500 hover:text-green-400">Forgot?</button>
                     </div>
                     <div className="relative">
@@ -398,14 +399,14 @@ const Login = () => {
 
             <form onSubmit={handleCompleteProfile} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">GSTIN / Tax ID</label>
+                <FormLabel text="GSTIN / Tax ID" />
                 <div className="relative">
                   <input type="text" placeholder="Optional" value={gstin} onChange={e=>setGstin(e.target.value.toUpperCase())} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                   <FileText className="absolute left-3.5 top-4 text-gray-500" size={18} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">UPI ID (For QR Code Generation)</label>
+                <FormLabel text="UPI ID (For QR Code Generation)" />
                 <div className="relative">
                   <input type="text" placeholder="storename@upi" value={upiId} onChange={e=>setUpiId(e.target.value)} className="w-full pl-10 pr-4 py-3.5 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all" />
                   <QrCode className="absolute left-3.5 top-4 text-gray-500" size={18} />
