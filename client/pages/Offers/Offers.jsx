@@ -7,6 +7,10 @@ import {
   StopCircle, PlayCircle
 } from 'lucide-react';
 import { MOCK_PRODUCTS, MOCK_CUSTOMERS, REDEMPTIONS_DATA } from '../../src/data/offersData';
+import SearchBar from '../../components/common/SearchBar';
+import TabsBar from '../../components/common/TabsBar';
+import StatCard from '../../components/common/StatCard';
+import FormLabel from '../../components/common/FormLabel';
 
 const ProductSearch = ({ label, placeholder, value, onSelect, unit, onUnitChange, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -240,33 +244,15 @@ const Offers = () => {
 
       {/* --- DYNAMIC ANALYTICS SECTION --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-green-50 text-green-600 rounded-xl"><Tag size={24}/></div>
-            <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Active Offers</p>
-                <h3 className="text-2xl font-extrabold text-gray-800">{activeOffersCount}</h3>
-            </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Users size={24}/></div>
-            <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Redeemed</p>
-                <h3 className="text-2xl font-extrabold text-gray-800">{totalRedeemed}</h3>
-            </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><Gift size={24}/></div>
-            <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Discount Given</p>
-                <h3 className="text-2xl font-extrabold text-gray-800">₹{totalDiscountValue.toLocaleString()}</h3>
-            </div>
-        </div>
+        <StatCard label="Active Offers" value={activeOffersCount} icon={Tag} iconColor="bg-green-50 text-green-600" borderColor="border-green-100" />
+        <StatCard label="Redeemed" value={totalRedeemed} icon={Users} iconColor="bg-blue-50 text-blue-600" borderColor="border-blue-100" />
+        <StatCard label="Discount Given" value={totalDiscountValue} icon={Gift} iconColor="bg-orange-50 text-orange-600" borderColor="border-orange-100" />
       </div>
 
       {/* TABS & SEARCH */}
       <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-        <div className="flex bg-gray-50 p-1 rounded-xl w-full md:w-auto">{['all', 'active', 'paused', 'scheduled', 'expired'].map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-xs font-bold uppercase whitespace-nowrap rounded-lg transition-all ${activeTab === tab ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-700'}`}>{tab}</button>))}</div>
-        <div className="relative w-full md:w-64"><Search className="absolute left-3 top-2.5 text-gray-400" size={18} /><input type="text" placeholder="Search offers..." value={offerSearch} onChange={(e) => setOfferSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all" /></div>
+        <TabsBar tabs={['all', 'active', 'paused', 'scheduled', 'expired']} activeTab={activeTab} onTabChange={setActiveTab} variant="default" className="flex bg-gray-50 p-1 rounded-xl w-full md:w-auto" />
+        <SearchBar placeholder="Search offers..." value={offerSearch} onChange={(e) => setOfferSearch(e.target.value)} className="w-full md:w-64" />
       </div>
 
       {/* OFFERS GRID */}
@@ -356,8 +342,8 @@ const Offers = () => {
               <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
                 {formData.ruleType === 'cart_value' && (
                   <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
-                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Min Bill Amount (₹)</label><input type="number" placeholder="e.g. 500" value={formData.minPurchase} onChange={(e) => setFormData({...formData, minPurchase: e.target.value})} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-green-500 font-bold" /></div>
-                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Discount</label><div className="flex"><input type="number" value={formData.discountValue} onChange={e => setFormData({...formData, discountValue: e.target.value})} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-l-xl outline-none focus:border-green-500 font-bold"/><select value={formData.discountType} onChange={e => setFormData({...formData, discountType: e.target.value})} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select></div></div>
+                    <div><FormLabel text="Min Bill Amount (₹)" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" placeholder="e.g. 500" value={formData.minPurchase} onChange={(e) => setFormData({...formData, minPurchase: e.target.value})} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-green-500 font-bold" /></div>
+                    <div><FormLabel text="Discount" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><div className="flex"><input type="number" value={formData.discountValue} onChange={e => setFormData({...formData, discountValue: e.target.value})} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-l-xl outline-none focus:border-green-500 font-bold"/><select value={formData.discountType} onChange={e => setFormData({...formData, discountType: e.target.value})} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select></div></div>
                   </div>
                 )}
                 {formData.ruleType === 'product_disc' && (
