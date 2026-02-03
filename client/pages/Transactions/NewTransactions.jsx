@@ -4,6 +4,7 @@ import {
   Save, Share2, Plus, Trash2, Calendar, 
   Search, Zap, CheckCircle2, X, Gift, History
 } from 'lucide-react';
+import FormLabel from '../../components/common/FormLabel';
 import api from '../../src/api';
 
 
@@ -19,13 +20,13 @@ const WalkInModal = ({ isOpen, onClose, onSave }) => {
                 </div>
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-xs font-bold text-gray-500 uppercase">Name</label><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" autoFocus value={details.name} onChange={e=>setDetails({...details, name: e.target.value})}/></div>
-                        <div><label className="text-xs font-bold text-gray-500 uppercase">Phone</label><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.phone} onChange={e=>setDetails({...details, phone: e.target.value})}/></div>
+                        <div><FormLabel text="Name" className="text-xs font-bold text-gray-500 uppercase"/><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" autoFocus value={details.name} onChange={e=>setDetails({...details, name: e.target.value})}/></div>
+                        <div><FormLabel text="Phone" className="text-xs font-bold text-gray-500 uppercase"/><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.phone} onChange={e=>setDetails({...details, phone: e.target.value})}/></div>
                     </div>
-                    <div><label className="text-xs font-bold text-gray-500 uppercase">Address</label><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.address} onChange={e=>setDetails({...details, address: e.target.value})}/></div>
+                    <div><FormLabel text="Address" className="text-xs font-bold text-gray-500 uppercase"/><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.address} onChange={e=>setDetails({...details, address: e.target.value})}/></div>
                     <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-xs font-bold text-gray-500 uppercase">GSTIN</label><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.gstin} onChange={e=>setDetails({...details, gstin: e.target.value})}/></div>
-                        <div><label className="text-xs font-bold text-gray-500 uppercase">State</label><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.state} onChange={e=>setDetails({...details, state: e.target.value})}/></div>
+                        <div><FormLabel text="GSTIN" className="text-xs font-bold text-gray-500 uppercase"/><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.gstin} onChange={e=>setDetails({...details, gstin: e.target.value})}/></div>
+                        <div><FormLabel text="State" className="text-xs font-bold text-gray-500 uppercase"/><input type="text" className="w-full border-b border-gray-300 py-1.5 outline-none focus:border-green-500 font-medium" value={details.state} onChange={e=>setDetails({...details, state: e.target.value})}/></div>
                     </div>
                 </div>
                 <div className="p-5 border-t border-gray-100 flex justify-end gap-3">
@@ -219,7 +220,7 @@ const NewTransaction = ({ type = 'sale' }) => {
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative z-20">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div ref={custInputRef} className="relative">
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Select Party</label>
+                <FormLabel text="Select Party" className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide"/>
                 <div className="relative">
                     <input 
                         type="text" 
@@ -252,7 +253,7 @@ const NewTransaction = ({ type = 'sale' }) => {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Date</label>
+                <FormLabel text="Date" className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide"/>
                 <div className="relative"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`w-full p-3 bg-gray-50 border-none rounded-xl text-gray-800 font-medium focus:ring-2 ${theme.border} outline-none`} /><Calendar className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" size={18} /></div>
               </div>
             </div>
@@ -337,7 +338,7 @@ const NewTransaction = ({ type = 'sale' }) => {
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">{isSale ? 'Amount Received' : 'Amount Paid'}</label>
+                <FormLabel text={isSale ? 'Amount Received' : 'Amount Paid'} className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide"/>
                 <div className="relative"><span className="absolute left-4 top-3 text-gray-400 font-medium">₹</span><input type="number" placeholder="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-gray-50 border-none rounded-xl text-gray-800 font-bold focus:ring-2 ${theme.border} outline-none transition-all`} /></div>
               </div>
               
