@@ -10,6 +10,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
 import { categoryData, topProducts } from '../../src/data/reportsData';
+import StatCard from '../../components/common/StatCard';
 
 const Reports = () => {
   const [dateRange, setDateRange] = useState('This Month');
@@ -99,90 +100,43 @@ const Reports = () => {
 
       {/* SUMMARY STATS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm group hover:border-blue-300 transition-colors">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><ShoppingBag size={20}/></div>
-            <span className="flex items-center text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-full"><ArrowUpRight size={12}/> 12%</span>
-          </div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Sales</p>
-          <h3 className="text-2xl font-black text-gray-800 mt-1">{currentData.summary.sales}</h3>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm group hover:border-green-300 transition-colors">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2.5 bg-green-50 text-green-600 rounded-xl"><DollarSign size={20}/></div>
-            <span className="flex items-center text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-full"><ArrowUpRight size={12}/> 18%</span>
-          </div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Net Profit</p>
-          <h3 className="text-2xl font-black text-gray-800 mt-1">{currentData.summary.profit}</h3>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-purple-100 shadow-sm group hover:border-purple-300 transition-colors">
-          <div className="flex justify-between items-start mb-4"><div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl"><Receipt size={20}/></div></div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">GST Collected</p>
-          <h3 className="text-2xl font-black text-gray-800 mt-1">{currentData.summary.gst}</h3>
-          <p className="text-[10px] font-bold text-purple-500 mt-1">Ready for filing</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm group hover:border-orange-300 transition-colors">
-          <div className="flex justify-between items-start mb-4"><div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl"><Box size={20}/></div></div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Dead Stock</p>
-          <h3 className="text-2xl font-black text-orange-600 mt-1">{currentData.summary.deadStock} Items</h3>
-          <p className="text-[10px] font-bold text-gray-400 mt-1">Low movement</p>
-        </div>
+        <StatCard label="Total Sales" value={currentData.summary.sales} icon={ShoppingBag} iconColor="bg-blue-50 text-blue-600" borderColor="border-blue-100" />
+        <StatCard label="Net Profit" value={currentData.summary.profit} icon={DollarSign} iconColor="bg-green-50 text-green-600" borderColor="border-green-100" />
+        <StatCard label="GST Collected" value={currentData.summary.gst} icon={Receipt} iconColor="bg-purple-50 text-purple-600" borderColor="border-purple-100" />
+        <StatCard label="Dead Stock" value={`${currentData.summary.deadStock} Items`} icon={Box} iconColor="bg-orange-50 text-orange-600" borderColor="border-orange-100" valueColor="text-orange-600" />
       </div>
 
-      {/* CHARTS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="font-bold text-gray-800 flex items-center gap-2"><TrendingUp size={18} className="text-green-500"/> Performance Trend</h3>
-            <div className="flex gap-4">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Sales</span>
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase"><div className="w-2 h-2 rounded-full bg-green-500"></div> Profit</span>
-            </div>
-          </div>
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={currentData.chart}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1}/><stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/></linearGradient>
-                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10B981" stopOpacity={0}/></linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 10, fontWeight: 700}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 10, fontWeight: 700}} />
-                <Tooltip contentStyle={{ backgroundColor: '#111827', borderRadius: '12px', border: 'none', color: '#fff' }} itemStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                <Area type="monotone" dataKey="sales" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
-                <Area type="monotone" dataKey="profit" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
-              </AreaChart>
-            </ResponsiveContainer>
+      {/* SUMMARY STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard label="Total Sales" value={currentData.summary.sales} icon={ShoppingBag} iconColor="bg-blue-50 text-blue-600" borderColor="border-blue-100" />
+        <StatCard label="Net Profit" value={currentData.summary.profit} icon={DollarSign} iconColor="bg-green-50 text-green-600" borderColor="border-green-100" />
+        <StatCard label="GST Collected" value={currentData.summary.gst} icon={Receipt} iconColor="bg-purple-50 text-purple-600" borderColor="border-purple-100" />
+        <StatCard label="Dead Stock" value={`${currentData.summary.deadStock} Items`} icon={Box} iconColor="bg-orange-50 text-orange-600" borderColor="border-orange-100" valueColor="text-orange-600" />
+      </div>
+      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+        <h3 className="font-bold text-gray-800 mb-8">Sales by Category</h3>
+        <div className="h-56 w-full relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={categoryData} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value">
+                {categoryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} cornerRadius={4} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Market Share</span>
+            <span className="text-2xl font-black text-gray-800">100%</span>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
-          <h3 className="font-bold text-gray-800 mb-8">Sales by Category</h3>
-          <div className="h-56 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={categoryData} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value">
-                  {categoryData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} cornerRadius={4} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Market Share</span>
-              <span className="text-2xl font-black text-gray-800">100%</span>
-            </div>
-          </div>
           <div className="mt-8 space-y-3 flex-1 overflow-y-auto">
             {categoryData.map((cat) => (
               <div key={cat.name} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }}></div><span className="text-sm font-bold text-gray-600">{cat.name}</span></div><span className="text-sm font-black text-gray-800">{cat.value}%</span></div>
             ))}
           </div>
         </div>
-      </div>
 
       {/* TOP PRODUCTS TABLE */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mb-8">
