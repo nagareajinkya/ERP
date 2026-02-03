@@ -6,6 +6,7 @@ import {
   FileText, Download, Play, X, Check, Tag,
   Instagram, MessageCircle, Save, Scissors, Percent
 } from 'lucide-react';
+import FormLabel from '../../components/common/FormLabel';
 import {billItems} from '../../src/data/printerData'
 
 // --- 1. CUSTOM INDIAN RUPEE ICON (Defined first to avoid ReferenceError) ---
@@ -120,11 +121,11 @@ const Printer = () => {
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Header Title</label>
+                    <FormLabel text="Header Title" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"/>
                     <input type="text" value={layout.invoiceTitle} onChange={e=>setLayout({...layout, invoiceTitle: e.target.value})} className="w-full mt-1.5 p-3.5 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-500 rounded-xl font-bold outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Logo Placement</label>
+                    <FormLabel text="Logo Placement" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"/>
                     <div className="grid grid-cols-2 gap-2 mt-1.5">
                       <button onClick={()=>setLayout({...layout, logoPosition: 'left'})} className={`py-3 rounded-xl font-bold text-xs ${layout.logoPosition === 'left' ? 'bg-gray-800 text-white shadow-lg shadow-gray-200' : 'bg-gray-50 text-gray-400'}`}>Left</button>
                       <button onClick={()=>setLayout({...layout, logoPosition: 'center'})} className={`py-3 rounded-xl font-bold text-xs ${layout.logoPosition === 'center' ? 'bg-gray-800 text-white shadow-lg shadow-gray-200' : 'bg-gray-50 text-gray-400'}`}>Center</button>
@@ -148,7 +149,7 @@ const Printer = () => {
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">T&C / Footer Note</label>
+                      <FormLabel text="T&C / Footer Note" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"/>
                       <textarea value={layout.terms} onChange={e=>setLayout({...layout, terms: e.target.value})} className="w-full mt-1.5 p-4 bg-gray-50 rounded-xl font-bold text-xs h-28 resize-none outline-none focus:bg-white focus:border-blue-500 border-2 border-transparent" />
                     </div>
                     <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl">
