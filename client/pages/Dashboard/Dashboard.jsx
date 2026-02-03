@@ -1,17 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, ShoppingBag, AlertCircle, 
   ArrowRight, Package, DollarSign, Zap, ArrowUpRight, ArrowDownRight, Plus
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import {CHART_DATA, RECENT_TRANSACTIONS, LOW_STOCK_ITEMS} from './../../src/data/dashboardData';
+import api from '../../src/api';
+import { CHART_DATA, RECENT_TRANSACTIONS, LOW_STOCK_ITEMS } from '../../src/data/dashboardData';
+import StatCard from '../../components/common/StatCard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   
-  // --- STATE FOR CHART FILTER ---
+  // --- STATE FOR CHART FILTER & DATA ---
   const [chartPeriod, setChartPeriod] = useState('today');
+  const [dashboardData, setDashboardData] = useState({
+    stats: { todaysSales: 0, salesTrend: '0%', totalBills: 0, dailyAverage: 0, lowStockItems: 0, activeOffers: 0 },
+    chartData: [],
+    recentTransactions: [],
+    lowStockItems: []
+  });
+  const [loading, setLoading] = useState(false);
+
+  // --- FETCH DASHBOARD DATA FROM API ---
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get('/dashboard/summary', {
+          params: { period: chartPeriod }
+        });
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [chartPeriod]);
+
+  const { stats, chartData, recentTransactions, lowStockItems } = dashboardData;
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
@@ -34,46 +64,10 @@ const Dashboard = () => {
 
       {/* SUMMARY STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        {/* Stat 1: Total Sales */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-green-50 text-green-600 rounded-xl"><DollarSign size={24} /></div>
-            <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-              <TrendingUp size={12} className="mr-1"/> +12.5%
-            </span>
-          </div>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Today's Sales</p>
-          <h3 className="text-3xl font-extrabold text-gray-800">₹23,400</h3>
-        </div>
-
-        {/* Stat 2: Orders */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><ShoppingBag size={24} /></div>
-            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">Daily Avg: 35</span>
-          </div>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Total Bills</p>
-          <h3 className="text-3xl font-extrabold text-gray-800">42</h3>
-        </div>
-
-        {/* Stat 3: Low Stock */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl"><AlertCircle size={24} /></div>
-            <span className="flex items-center text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">Action Required</span>
-          </div>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Low Stock Items</p>
-          <h3 className="text-3xl font-extrabold text-gray-800">{LOW_STOCK_ITEMS.length}</h3>
-        </div>
-
-        {/* Stat 4: Active Offers */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Zap size={24} /></div>
-          </div>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Active Offers</p>
-          <h3 className="text-3xl font-extrabold text-gray-800">4</h3>
-        </div>
+        <StatCard label="Today's Sales" value={stats.todaysSales} icon={DollarSign} iconColor="bg-green-50 text-green-600" borderColor="border-gray-100" />
+        <StatCard label="Total Bills" value={stats.totalBills} icon={ShoppingBag} iconColor="bg-blue-50 text-blue-600" borderColor="border-gray-100" />
+        <StatCard label="Low Stock Items" value={stats.lowStockItems} icon={AlertCircle} iconColor="bg-red-50 text-red-600" borderColor="border-gray-100" />
+        <StatCard label="Active Offers" value={stats.activeOffers} icon={Zap} iconColor="bg-amber-50 text-amber-600" borderColor="border-gray-100" />
       </div>
 
       {/* MAIN CONTENT GRID */}
