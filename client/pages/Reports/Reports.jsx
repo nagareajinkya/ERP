@@ -106,13 +106,6 @@ const Reports = () => {
         <StatCard label="Dead Stock" value={`${currentData.summary.deadStock} Items`} icon={Box} iconColor="bg-orange-50 text-orange-600" borderColor="border-orange-100" valueColor="text-orange-600" />
       </div>
 
-      {/* SUMMARY STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard label="Total Sales" value={currentData.summary.sales} icon={ShoppingBag} iconColor="bg-blue-50 text-blue-600" borderColor="border-blue-100" />
-        <StatCard label="Net Profit" value={currentData.summary.profit} icon={DollarSign} iconColor="bg-green-50 text-green-600" borderColor="border-green-100" />
-        <StatCard label="GST Collected" value={currentData.summary.gst} icon={Receipt} iconColor="bg-purple-50 text-purple-600" borderColor="border-purple-100" />
-        <StatCard label="Dead Stock" value={`${currentData.summary.deadStock} Items`} icon={Box} iconColor="bg-orange-50 text-orange-600" borderColor="border-orange-100" valueColor="text-orange-600" />
-      </div>
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
         <h3 className="font-bold text-gray-800 mb-8">Sales by Category</h3>
         <div className="h-56 w-full relative">
