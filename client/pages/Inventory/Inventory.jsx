@@ -314,11 +314,11 @@ const Inventory = () => {
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Basic Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="md:col-span-3">
-                      <label className="block text-sm font-bold text-gray-600 mb-1.5">Product Name <span className="text-red-500">*</span></label>
+                      <FormLabel text="Product Name" required={true} className="block text-sm font-bold text-gray-600 mb-1.5" />
                       <input type="text" placeholder="e.g. Parle-G" value={formData.name} onChange={e => handleFieldChange('name', e.target.value)} className={`w-full p-3 bg-gray-50 border rounded-xl outline-none focus:bg-white focus:ring-4 transition-all font-bold ${formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`} />
                       {formErrors.name && <p className="text-xs text-red-500 font-bold mt-1 flex items-center gap-1"><AlertCircle size={12}/> {formErrors.name}</p>}
                     </div>
-                    <div><label className="block text-sm font-bold text-gray-600 mb-1.5">SKU / Code</label><input type="text" placeholder="e.g. PAR-01" value={formData.sku} onChange={e => handleFieldChange('sku', e.target.value)} className="w-full p-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none font-bold" /></div>
+                    <div><FormLabel text="SKU / Code" className="block text-sm font-bold text-gray-600 mb-1.5" /><input type="text" placeholder="e.g. PAR-01" value={formData.sku} onChange={e => handleFieldChange('sku', e.target.value)} className="w-full p-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none font-bold" /></div>
                     
                     {/* CUSTOM CATEGORY DROPDOWN */}
                     <div ref={catRef} className="relative">
@@ -368,7 +368,7 @@ const Inventory = () => {
                     
                     {/* CURRENT STOCK */}
                     <div>
-                      <label className="block text-sm font-bold text-gray-600 mb-1.5">Current Stock <span className="text-red-500">*</span></label>
+                      <FormLabel text="Current Stock" required={true} className="block text-sm font-bold text-gray-600 mb-1.5" />
                       <div className="flex gap-2">
                         <input 
                           type="number" min="0" 
@@ -387,14 +387,14 @@ const Inventory = () => {
                       {isEditing && <p className="text-[10px] text-gray-400 mt-1 font-medium">Locked. Use 'New Purchase' or Adjust icon.</p>}
                     </div>
 
-                    <div><label className="block text-sm font-bold text-gray-600 mb-1.5">Min Stock <span className="text-red-500">*</span></label><input type="number" min="0" placeholder="e.g. 10" value={formData.minStock} onChange={e => handleFieldChange('minStock', e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold" /></div>
+                    <div><FormLabel text="Min Stock" required={true} className="block text-sm font-bold text-gray-600 mb-1.5" /><input type="number" min="0" placeholder="e.g. 10" value={formData.minStock} onChange={e => handleFieldChange('minStock', e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold" /></div>
                     
                     {/* HIDE BUY PRICE ON EDIT */}
                     {!isEditing && (
-                      <div><label className="block text-sm font-bold text-gray-600 mb-1.5">Buy Price (₹)</label><input type="number" min="0" placeholder="e.g. 45" value={formData.buyPrice} onChange={e => handleFieldChange('buyPrice', e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold" /></div>
+                      <div><FormLabel text="Buy Price (₹)" className="block text-sm font-bold text-gray-600 mb-1.5" /><input type="number" min="0" placeholder="e.g. 45" value={formData.buyPrice} onChange={e => handleFieldChange('buyPrice', e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold" /></div>
                     )}
                     
-                    <div><label className="block text-sm font-bold text-gray-600 mb-1.5">Sell Price (₹)</label><input type="number" min="0" placeholder="Optional" value={formData.sellPrice} onChange={e => handleFieldChange('sellPrice', e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold" /></div>
+                    <div><FormLabel text="Sell Price (₹)" className="block text-sm font-bold text-gray-600 mb-1.5" /><input type="number" min="0" placeholder="Optional" value={formData.sellPrice} onChange={e => handleFieldChange('sellPrice', e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold" /></div>
                   </div>
                 </div>
 
@@ -403,7 +403,7 @@ const Inventory = () => {
                   <h3 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Tag size={14} /> Tax Details (Included in Price)</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div>
-                      <label className="block text-sm font-bold text-gray-600 mb-1.5">GST Rate (%)</label>
+                      <FormLabel text="GST Rate (%)" className="block text-sm font-bold text-gray-600 mb-1.5" />
                       <input type="number" min="0" placeholder="e.g. 18" value={formData.gstRate} onChange={e => handleFieldChange('gstRate', e.target.value)} className="w-full p-3 bg-white border border-green-100 rounded-xl outline-none focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold mb-2"/>
                       <div className="flex gap-1.5 flex-wrap">
                         {GST_PRESETS.map(rate => (
@@ -412,7 +412,7 @@ const Inventory = () => {
                       </div>
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-gray-600 mb-1.5">HSN / SAC Code</label>
+                      <FormLabel text="HSN / SAC Code" className="block text-sm font-bold text-gray-600 mb-1.5" />
                       <input type="text" placeholder="e.g. 1006" value={formData.hsn} onChange={e => handleFieldChange('hsn', e.target.value)} className="w-full p-3 bg-white border border-green-100 rounded-xl outline-none focus:border-green-500 focus:ring-4 focus:ring-green-50 font-bold" />
                     </div>
                   </div>
@@ -437,8 +437,8 @@ const Inventory = () => {
             <p className="text-sm text-gray-500 mb-4">Remove items from stock due to loss or returns.</p>
             
             <form onSubmit={handleAdjustSubmit} className="space-y-4">
-              <div><label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Quantity to Remove</label><input autoFocus type="number" min="1" max={formData.qty} required value={adjustData.qty} onChange={e=>setAdjustData({...adjustData, qty: e.target.value})} className="w-full p-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-50 outline-none font-bold" placeholder="e.g. 2"/></div>
-              <div><label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Reason</label><select value={adjustData.reason} onChange={e=>setAdjustData({...adjustData, reason: e.target.value})} className="w-full p-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-50 outline-none font-bold">{ADJUSTMENT_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
+              <div><FormLabel text="Quantity to Remove" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5" /><input autoFocus type="number" min="1" max={formData.qty} required value={adjustData.qty} onChange={e=>setAdjustData({...adjustData, qty: e.target.value})} className="w-full p-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-50 outline-none font-bold" placeholder="e.g. 2"/></div>
+              <div><FormLabel text="Reason" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5" /><select value={adjustData.reason} onChange={e=>setAdjustData({...adjustData, reason: e.target.value})} className="w-full p-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-50 outline-none font-bold">{ADJUSTMENT_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
               
               {/* Dynamic Note for Users */}
               {adjustData.reason === 'Return' ? (
