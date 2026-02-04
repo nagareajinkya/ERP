@@ -12,6 +12,6 @@ public interface AuthService {
 	
 	void sendOtp(OtpRequest request);
 	AuthResponse verifyOtp(OtpVerifyRequest request);
-	AuthResponse getCurrentUser(String identifier);
+	com.sbms.auth_service.dto.SidebarDto getCurrentUser(String identifier);
 
 }

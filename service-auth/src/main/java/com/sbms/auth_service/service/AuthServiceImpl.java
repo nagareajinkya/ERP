@@ -14,6 +14,7 @@ import com.sbms.auth_service.custom_exceptions.UserNotFoundException;
 import com.sbms.auth_service.dto.AuthResponse;
 import com.sbms.auth_service.dto.OtpRequest;
 import com.sbms.auth_service.dto.OtpVerifyRequest;
+import com.sbms.auth_service.dto.SidebarDto;
 import com.sbms.auth_service.dto.UserLoginDto;
 import com.sbms.auth_service.dto.UserRegisterDto;
 import com.sbms.auth_service.entity.Business;
@@ -49,8 +50,11 @@ public class AuthServiceImpl implements AuthService {
 		AuthResponse response = modelMapper.map(savedUser, AuthResponse.class);
 		response.setBusinessName(savedUser.getBusiness().getBusinessName());
 		response.setBusinessId(savedUser.getBusiness().getId());
+		response.setBusinessId(savedUser.getBusiness().getId());
 		response.setUserId(savedUser.getId());
 		response.setToken(jwtToken);
+		
+		
 		return response;
 	}
 
@@ -66,6 +70,8 @@ public class AuthServiceImpl implements AuthService {
 		response.setBusinessId(user.getBusiness().getId());
 		response.setUserId(user.getId());
 		response.setBusinessName(user.getBusiness().getBusinessName());
+		
+		
 		return response;
 	}
 
@@ -97,18 +103,24 @@ public class AuthServiceImpl implements AuthService {
 		response.setBusinessId(user.getBusiness().getId());
 		response.setUserId(user.getId());
 		response.setBusinessName(user.getBusiness().getBusinessName());
+		
+		
 		return response;
 	}
 
 	@Override
-	public AuthResponse getCurrentUser(String identifier) {
+	public SidebarDto getCurrentUser(String identifier) {
 		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 		
-		AuthResponse response = modelMapper.map(user, AuthResponse.class);
+		SidebarDto response = modelMapper.map(user, SidebarDto.class);
 		response.setBusinessName(user.getBusiness().getBusinessName());
 		response.setBusinessId(user.getBusiness().getId());
 		response.setUserId(user.getId());
+		
+		response.setToReceive(0.0);
+		response.setToPay(0.0);
+		
 		return response;
 	}
 

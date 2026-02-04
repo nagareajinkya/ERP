@@ -46,7 +46,7 @@ public class AuthController {
     }
 
     @org.springframework.web.bind.annotation.GetMapping("/me")
-    public ResponseEntity<AuthResponse> getCurrentUser(Principal principal) {
+    public ResponseEntity<com.sbms.auth_service.dto.SidebarDto> getCurrentUser(Principal principal) {
         return ResponseEntity.ok(authService.getCurrentUser(principal.getName()));
     }
 }
