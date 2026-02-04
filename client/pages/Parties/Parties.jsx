@@ -2,12 +2,34 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Truck, Search, Plus, MessageCircle,
   Phone, ArrowUpRight, ArrowDownLeft, X, CheckCircle2,
-  Receipt, Download, ShieldCheck, Building2, UserCircle2,
+  Receipt, Download, ShieldCheck, Building2, UserCircle2, Wallet, Banknote, Map, Hash,
   Edit2, Trash2, MapPin, FileText, AlertTriangle, Briefcase, Loader2
 } from 'lucide-react';
 import SearchBar from '../../components/common/SearchBar';
 import FormLabel from '../../components/common/FormLabel';
 import api from '../../src/api';
+
+// --- HELPER COMPONENT FOR STYLISH INPUTS ---
+const InputWithIcon = ({ label, icon: Icon, value, onChange, placeholder, type = "text", required = false, className = "" }) => (
+  <div className={`space-y-1.5 ${className}`}>
+    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative group">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+        <Icon size={18} />
+      </div>
+      <input
+        type={type}
+        required={required}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-semibold text-gray-700 placeholder:text-gray-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+      />
+    </div>
+  </div>
+);
 
 const Parties = () => {
   const [parties, setParties] = useState([]);
@@ -288,62 +310,227 @@ const Parties = () => {
       )}
 
       {/* --- MODAL: CUSTOMER FORM --- */}
+      {/* --- MODAL: CUSTOMER FORM (REDESIGNED) --- */}
       {isCustomerModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-blue-600 text-white">
-              <h3 className="text-lg font-bold flex items-center gap-2"><UserCircle2 size={20} /> {editingPartyId ? 'Edit' : 'New'} Customer</h3>
-              <button onClick={() => setIsCustomerModalOpen(false)} className="p-1 hover:bg-blue-500 rounded-full transition-colors"><X size={20} /></button>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all">
+          <div className="bg-white rounded-[24px] w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+
+            {/* Modal Header */}
+            <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white flex justify-between items-center sticky top-0 z-10">
+              <div>
+                <h3 className="text-xl font-black text-gray-800 flex items-center gap-2">
+                  <span className="p-2 bg-blue-600 text-white rounded-lg shadow-blue-200 shadow-lg"><UserCircle2 size={20} /></span>
+                  {editingPartyId ? 'Edit Customer' : 'Add New Customer'}
+                </h3>
+                <p className="text-sm text-gray-400 font-medium ml-1 mt-1">Enter customer details to track sales & balance.</p>
+              </div>
+              <button onClick={() => setIsCustomerModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
             </div>
-            <form className="p-8 space-y-5" onSubmit={handleSaveCustomer}>
-              <div className="grid grid-cols-2 gap-5">
-                <div className="col-span-2"><FormLabel text="Customer Name" required={true} className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input autoFocus required type="text" placeholder="Full Name" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500 outline-none font-bold text-gray-800 transition-all" /></div>
-                <div><FormLabel text="Phone" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="tel" value={customerForm.phoneNumber} onChange={e => setCustomerForm({ ...customerForm, phoneNumber: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all" /></div>
-                <div><FormLabel text="City" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="text" value={customerForm.city} onChange={e => setCustomerForm({ ...customerForm, city: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all" /></div>
-                <div><FormLabel text="GSTIN" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="text" value={customerForm.gstin} onChange={e => setCustomerForm({ ...customerForm, gstin: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 uppercase transition-all" /></div>
 
-                {/* CreditLimit Removed as per backend */}
+            {/* Scrollable Form Body */}
+            <div className="overflow-y-auto p-8 custom-scrollbar">
+              <form id="customerForm" onSubmit={handleSaveCustomer} className="space-y-8">
 
-                <div className="col-span-2 bg-green-50 p-4 rounded-2xl border border-green-100">
-                  <FormLabel text="Opening Balance (Positive=Receivable, Negative=Payable)" className="block text-[10px] font-black text-green-700 uppercase mb-1.5 flex items-center gap-1" />
-                  <input type="number" placeholder="0.00" value={customerForm.currentBalance} onChange={e => setCustomerForm({ ...customerForm, currentBalance: e.target.value })} className="w-full p-3 bg-white border-2 border-green-200 rounded-xl focus:border-green-500 outline-none font-bold text-gray-800 transition-all" />
+                {/* Section 1: Basic Identity */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest border-b border-blue-100 pb-2 mb-4">Basic Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <InputWithIcon
+                      label="Customer / Business Name"
+                      icon={UserCircle2}
+                      placeholder="e.g. Rahul General Store"
+                      value={customerForm.name}
+                      onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
+                      required
+                      className="md:col-span-2"
+                    />
+                    <InputWithIcon
+                      label="Phone Number"
+                      icon={Phone}
+                      type="tel"
+                      placeholder="e.g. 98765 43210"
+                      value={customerForm.phoneNumber}
+                      onChange={e => setCustomerForm({ ...customerForm, phoneNumber: e.target.value })}
+                    />
+                    <InputWithIcon
+                      label="City / Location"
+                      icon={Map}
+                      placeholder="e.g. Andheri, Mumbai"
+                      value={customerForm.city}
+                      onChange={e => setCustomerForm({ ...customerForm, city: e.target.value })}
+                    />
+                  </div>
                 </div>
 
-                <div className="col-span-2"><FormLabel text="Notes" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="text" value={customerForm.notes} onChange={e => setCustomerForm({ ...customerForm, notes: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all" /></div>
-              </div>
-              <div className="flex gap-4"><button type="button" onClick={() => setIsCustomerModalOpen(false)} className="flex-1 py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl">Cancel</button><button type="submit" className="flex-1 py-4 text-white bg-blue-600 hover:bg-blue-700 font-bold rounded-2xl shadow-lg shadow-blue-600/20 transition-all">{editingPartyId ? 'Update' : 'Save'} Customer</button></div>
-            </form>
+                {/* Section 2: Financials & Tax */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest border-b border-blue-100 pb-2 mb-4">Billing Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <InputWithIcon
+                      label="GSTIN (Optional)"
+                      icon={Hash}
+                      placeholder="e.g. 27ABCDE1234F1Z5"
+                      value={customerForm.gstin}
+                      onChange={e => setCustomerForm({ ...customerForm, gstin: e.target.value.toUpperCase() })}
+                    />
+
+                    {!editingPartyId && (
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">Opening Balance</label>
+                        <div className="relative group">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-green-600">
+                            <Wallet size={18} />
+                          </div>
+                          <input
+                            type="number"
+                            placeholder="0.00"
+                            value={customerForm.currentBalance}
+                            onChange={e => setCustomerForm({ ...customerForm, currentBalance: e.target.value })}
+                            className="w-full pl-12 pr-4 py-3.5 bg-green-50/50 border border-green-200 rounded-xl font-bold text-green-800 placeholder:text-green-300 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all"
+                          />
+                          <p className="text-[10px] text-green-600 font-bold mt-1.5 ml-1">Positive (+) = You will receive money</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section 3: Additional */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Private Notes</label>
+                  <textarea
+                    rows="3"
+                    placeholder="e.g. Usually pays on weekends..."
+                    value={customerForm.notes}
+                    onChange={e => setCustomerForm({ ...customerForm, notes: e.target.value })}
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 placeholder:text-gray-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none"
+                  />
+                </div>
+
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-4">
+              <button onClick={() => setIsCustomerModalOpen(false)} className="flex-1 py-4 text-gray-600 font-bold bg-white border border-gray-200 hover:bg-gray-100 rounded-xl transition-all">Cancel</button>
+              <button type="submit" form="customerForm" className="flex-[2] py-4 text-white bg-blue-600 hover:bg-blue-700 font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
+                <CheckCircle2 size={20} /> {editingPartyId ? 'Update Customer' : 'Save Customer'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
 
       {/* --- MODAL: SUPPLIER FORM --- */}
+      {/* --- MODAL: SUPPLIER FORM (REDESIGNED) --- */}
       {isSupplierModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-purple-600 text-white">
-              <h3 className="text-lg font-bold flex items-center gap-2"><Building2 size={20} /> {editingPartyId ? 'Edit' : 'New'} Supplier</h3>
-              <button onClick={() => setIsSupplierModalOpen(false)} className="p-1 hover:bg-purple-500 rounded-full transition-colors"><X size={20} /></button>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all">
+          <div className="bg-white rounded-[24px] w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+
+            {/* Modal Header */}
+            <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white flex justify-between items-center sticky top-0 z-10">
+              <div>
+                <h3 className="text-xl font-black text-gray-800 flex items-center gap-2">
+                  <span className="p-2 bg-purple-600 text-white rounded-lg shadow-purple-200 shadow-lg"><Truck size={20} /></span>
+                  {editingPartyId ? 'Edit Supplier' : 'Add New Supplier'}
+                </h3>
+                <p className="text-sm text-gray-400 font-medium ml-1 mt-1">Manage vendors you purchase goods from.</p>
+              </div>
+              <button onClick={() => setIsSupplierModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
             </div>
-            <form className="p-8 space-y-5" onSubmit={handleSaveSupplier}>
-              <div className="grid grid-cols-2 gap-5">
-                <div className="col-span-2"><FormLabel text="Business Name" required={true} className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input autoFocus required type="text" value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-purple-500 outline-none font-bold text-gray-800 transition-all" /></div>
 
-                {/* ContactPerson Removed as per backend */}
+            {/* Scrollable Form Body */}
+            <div className="overflow-y-auto p-8 custom-scrollbar">
+              <form id="supplierForm" onSubmit={handleSaveSupplier} className="space-y-8">
 
-                <div><FormLabel text="Phone" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="tel" value={supplierForm.phoneNumber} onChange={e => setSupplierForm({ ...supplierForm, phoneNumber: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all" /></div>
-                <div><FormLabel text="City" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="text" value={supplierForm.city} onChange={e => setSupplierForm({ ...supplierForm, city: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all" /></div>
-                <div><FormLabel text="GSTIN" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="text" value={supplierForm.gstin} onChange={e => setSupplierForm({ ...supplierForm, gstin: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 uppercase transition-all" /></div>
-
-                <div className="col-span-2 bg-red-50 p-4 rounded-2xl border border-red-100">
-                  <FormLabel text="Opening Balance (Money you owe)" className="block text-[10px] font-black text-red-700 uppercase mb-1.5 flex items-center gap-1" />
-                  <input type="number" placeholder="0.00" value={supplierForm.currentBalance} onChange={e => setSupplierForm({ ...supplierForm, currentBalance: e.target.value })} className="w-full p-3 bg-white border-2 border-red-200 rounded-xl focus:border-red-500 outline-none font-bold text-gray-800 transition-all" />
+                {/* Section 1: Business Info */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-purple-600 uppercase tracking-widest border-b border-purple-100 pb-2 mb-4">Vendor Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <InputWithIcon
+                      label="Supplier / Agency Name"
+                      icon={Building2}
+                      placeholder="e.g. Coca Cola Agency"
+                      value={supplierForm.name}
+                      onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })}
+                      required
+                      className="md:col-span-2"
+                    />
+                    <InputWithIcon
+                      label="Phone Number"
+                      icon={Phone}
+                      type="tel"
+                      placeholder="e.g. 022 2424 5050"
+                      value={supplierForm.phoneNumber}
+                      onChange={e => setSupplierForm({ ...supplierForm, phoneNumber: e.target.value })}
+                    />
+                    <InputWithIcon
+                      label="City / Depot Location"
+                      icon={Map}
+                      placeholder="e.g. Pune Ind. Estate"
+                      value={supplierForm.city}
+                      onChange={e => setSupplierForm({ ...supplierForm, city: e.target.value })}
+                    />
+                  </div>
                 </div>
 
-                <div className="col-span-2"><FormLabel text="Notes" className="block text-[10px] font-black text-gray-400 uppercase mb-1.5" /><input type="text" value={supplierForm.notes} onChange={e => setSupplierForm({ ...supplierForm, notes: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white outline-none font-bold text-gray-800 transition-all" /></div>
-              </div>
-              <div className="flex gap-4"><button type="button" onClick={() => setIsSupplierModalOpen(false)} className="flex-1 py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl">Cancel</button><button type="submit" className="flex-1 py-4 text-white bg-purple-600 hover:bg-purple-700 font-bold rounded-2xl shadow-lg shadow-purple-600/20 transition-all">{editingPartyId ? 'Update' : 'Save'} Supplier</button></div>
-            </form>
+                {/* Section 2: Financials */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-purple-600 uppercase tracking-widest border-b border-purple-100 pb-2 mb-4">Accounts</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <InputWithIcon
+                      label="GSTIN (Optional)"
+                      icon={Hash}
+                      placeholder="e.g. 27ABCDE1234F1Z5"
+                      value={supplierForm.gstin}
+                      onChange={e => setSupplierForm({ ...supplierForm, gstin: e.target.value.toUpperCase() })}
+                    />
+
+                    {!editingPartyId && (
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">Opening Payable</label>
+                        <div className="relative group">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-600">
+                            <Banknote size={18} />
+                          </div>
+                          <input
+                            type="number"
+                            placeholder="0.00"
+                            value={supplierForm.currentBalance}
+                            onChange={e => setSupplierForm({ ...supplierForm, currentBalance: e.target.value })}
+                            className="w-full pl-12 pr-4 py-3.5 bg-red-50/50 border border-red-200 rounded-xl font-bold text-red-800 placeholder:text-red-300 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition-all"
+                          />
+                          <p className="text-[10px] text-red-500 font-bold mt-1.5 ml-1">Negative (-) = You owe money</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section 3: Notes */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Internal Notes</label>
+                  <textarea
+                    rows="3"
+                    placeholder="e.g. Order on Mondays only..."
+                    value={supplierForm.notes}
+                    onChange={e => setSupplierForm({ ...supplierForm, notes: e.target.value })}
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all resize-none"
+                  />
+                </div>
+
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-4">
+              <button onClick={() => setIsSupplierModalOpen(false)} className="flex-1 py-4 text-gray-600 font-bold bg-white border border-gray-200 hover:bg-gray-100 rounded-xl transition-all">Cancel</button>
+              <button type="submit" form="supplierForm" className="flex-[2] py-4 text-white bg-purple-600 hover:bg-purple-700 font-bold rounded-xl shadow-lg shadow-purple-600/20 transition-all flex items-center justify-center gap-2">
+                <CheckCircle2 size={20} /> {editingPartyId ? 'Update Supplier' : 'Save Supplier'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
