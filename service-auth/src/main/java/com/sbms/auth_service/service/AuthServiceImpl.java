@@ -33,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
 	private final ModelMapper modelMapper;
 	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
+
 	
 	public AuthResponse register(UserRegisterDto registerDto) {
 		if(userRepository.existsByEmail(registerDto.getEmail())) 
@@ -117,9 +118,6 @@ public class AuthServiceImpl implements AuthService {
 		response.setBusinessName(user.getBusiness().getBusinessName());
 		response.setBusinessId(user.getBusiness().getId());
 		response.setUserId(user.getId());
-		
-		response.setToReceive(0.0);
-		response.setToPay(0.0);
 		
 		return response;
 	}
