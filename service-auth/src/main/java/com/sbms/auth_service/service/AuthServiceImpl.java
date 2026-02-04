@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sbms.auth_service.custom_exceptions.UserAlreadyExistsException;
 import com.sbms.auth_service.custom_exceptions.UserNotFoundException;
 import com.sbms.auth_service.dto.AuthResponse;
+import com.sbms.auth_service.dto.ChangePasswordRequest;
 import com.sbms.auth_service.dto.OtpRequest;
 import com.sbms.auth_service.dto.OtpVerifyRequest;
+import com.sbms.auth_service.dto.ProfileDto;
 import com.sbms.auth_service.dto.SidebarDto;
 import com.sbms.auth_service.dto.UserLoginDto;
 import com.sbms.auth_service.dto.UserRegisterDto;
@@ -91,8 +93,6 @@ public class AuthServiceImpl implements AuthService {
 		Optional<User> userOptional = userRepository.findByPhoneNumber(request.getPhone());
 		
 		if (userOptional.isEmpty()) {
-			// If user is not found, return empty response so frontend can proceed to signup flow
-			// (Note: The frontend is responsible for calling register after this if needed)
 			return new AuthResponse();
 		}
 
@@ -120,6 +120,105 @@ public class AuthServiceImpl implements AuthService {
 		response.setUserId(user.getId());
 		
 		return response;
+	}
+
+	@Override
+	public ProfileDto getProfile(String identifier) {
+		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		
+		ProfileDto dto = new ProfileDto();
+		
+		// User Info
+		dto.setFullName(user.getFullName());
+		dto.setEmail(user.getEmail());
+		dto.setPhone(user.getPhoneNumber());
+		
+		// Business Info
+		Business biz = user.getBusiness();
+		if (biz != null) {
+			dto.setBusinessName(biz.getBusinessName());
+			dto.setGstin(biz.getGstin());
+			
+			dto.setAddress(biz.getAddressStreet());
+			dto.setCity(biz.getAddressCity());
+			dto.setState(biz.getAddressState());
+			dto.setPincode(biz.getAddressPincode());
+			
+			dto.setUpiId(biz.getUpiId());
+			dto.setAccountName(biz.getBankAccountName());
+			dto.setAccountNumber(biz.getBankAccountNo());
+			dto.setIfsc(biz.getBankIfsc());
+			
+			dto.setInvoicePrefix(biz.getInvoicePrefix());
+			dto.setNotifySales(biz.isNotifySales());
+			dto.setNotifyPayments(biz.isNotifyPayments());
+			dto.setNotifyLowStock(biz.isNotifyLowStock());
+		}
+		
+		return dto;
+	}
+
+	@Override
+	public ProfileDto updateProfile(String identifier, ProfileDto dto) {
+		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		
+		// Update User Info
+		user.setFullName(dto.getFullName());
+		// Updating unique fields like email/phone might need validation/check if exists logic for MVP skipping it partially or trusting user input
+		// Assuming identifier (email) matches context, changing email would need re-login.
+		// For MVP: Update non-identifying fields safely. 
+		// If phone changed
+		if(!user.getPhoneNumber().equals(dto.getPhone())) {
+			if(userRepository.existsByPhoneNumber(dto.getPhone())) throw new UserAlreadyExistsException("Phone already in use");
+			user.setPhoneNumber(dto.getPhone());
+		}
+		// If email changed
+		if(!user.getEmail().equals(dto.getEmail())) {
+			if(userRepository.existsByEmail(dto.getEmail())) throw new UserAlreadyExistsException("Email already in use");
+			user.setEmail(dto.getEmail());
+		}
+		
+		// Update Business Info
+		Business biz = user.getBusiness();
+		if (biz == null) biz = new Business();
+		
+		biz.setBusinessName(dto.getBusinessName());
+		biz.setGstin(dto.getGstin());
+		
+		biz.setAddressStreet(dto.getAddress());
+		biz.setAddressCity(dto.getCity());
+		biz.setAddressState(dto.getState());
+		biz.setAddressPincode(dto.getPincode());
+		
+		biz.setUpiId(dto.getUpiId());
+		biz.setBankAccountName(dto.getAccountName());
+		biz.setBankAccountNo(dto.getAccountNumber());
+		biz.setBankIfsc(dto.getIfsc());
+		
+		biz.setInvoicePrefix(dto.getInvoicePrefix());
+		biz.setNotifySales(dto.isNotifySales());
+		biz.setNotifyPayments(dto.isNotifyPayments());
+		biz.setNotifyLowStock(dto.isNotifyLowStock());
+		
+		user.setBusiness(biz);
+		userRepository.save(user);
+		
+		return getProfile(user.getEmail()); // Return updated profile
+	}
+
+	@Override
+	public void changePassword(String identifier, ChangePasswordRequest request) {
+		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+				
+		if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+			throw new RuntimeException("Invalid current password");
+		}
+		
+		user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+		userRepository.save(user);
 	}
 
 }
