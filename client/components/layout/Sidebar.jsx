@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     LayoutDashboard, Users, ShoppingCart, ShoppingBag, Package, 
     BarChart3, User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
     History // <--- Imported History Icon
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
+import api from '../../src/api';
 
 function Sidebar() {
     const location = useLocation();
@@ -19,7 +20,7 @@ function Sidebar() {
         {id: 3, icon: ShoppingCart, label: 'New Sale', path:'/new-sale'},
         {id: 4, icon: ShoppingBag, label: 'New Purchase', path:'/new-purchase'}, 
         {id: 5, icon: Package, label: 'Inventory', path:'/inventory'},
-        {id: 6, icon: History, label: 'Transactions', path:'/transactions'}, // <--- Added Transactions Here
+        {id: 6, icon: History, label: 'Transactions', path:'/transactions'},
         {id: 7, icon: BarChart3, label: 'Reports', path:'/reports'},
     ];
     
@@ -31,24 +32,73 @@ function Sidebar() {
         { id: 12, icon: Printer, label: 'Printer & Invoice', path: '/printer' },
     ];
 
-    const moneyStats = [
-        { 
-            id: 1, 
-            label: 'To Receive', 
-            amount: '₹45,240', 
-            bg: 'bg-green-50', 
-            border: 'border-green-100',
-            textColor: 'text-green-600' 
-        },
-        { 
-            id: 2, 
-            label: 'To Pay', 
-            amount: '₹12,800', 
-            bg: 'bg-red-50', 
-            border: 'border-red-100',
-            textColor: 'text-red-600' 
+    const [userData, setUserData] = useState(null);
+
+    // helper: decode JWT payload safely (handles base64url)
+    const decodeJwtPayload = (token) => {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            return null;
         }
-    ];
+    };
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            let profile = null;
+            // try fetching profile from API (if backend provides /auth/me)
+            try {
+                const res = await api.get('/auth/me');
+                if (res?.data) profile = res.data;
+            } catch (e) {
+                // ignore, fallbacks below
+            }
+
+            if (!profile) {
+                const stored = localStorage.getItem('user');
+                if (stored) {
+                    try { profile = JSON.parse(stored); } catch (e) { profile = null; }
+                }
+            }
+
+            if (!profile) {
+                const token = localStorage.getItem('token');
+                if (token && token.split('.').length === 3) {
+                    profile = decodeJwtPayload(token);
+                }
+            }
+
+            if (mounted && profile) setUserData(profile);
+        })();
+
+        return () => { mounted = false };
+    }, []);
+
+    const fmtMoney = (val) => {
+        if (val === undefined || val === null) return null;
+        const num = Number(val);
+        if (Number.isNaN(num)) return String(val);
+        return '₹' + num.toLocaleString('en-IN');
+    };
+
+    const moneyStats = (() => {
+        const toReceive = userData?.stats?.toReceive ?? userData?.toReceive ?? userData?.totals?.toReceive;
+        const toPay = userData?.stats?.toPay ?? userData?.toPay ?? userData?.totals?.toPay;
+
+        return [
+            { id: 1, label: 'To Receive', amount: fmtMoney(toReceive) || '₹45,240', bg: 'bg-green-50', border: 'border-green-100', textColor: 'text-green-600' },
+            { id: 2, label: 'To Pay', amount: fmtMoney(toPay) || '₹12,800', bg: 'bg-red-50', border: 'border-red-100', textColor: 'text-red-600' }
+        ];
+    })();
+
+    const businessName = userData?.businessName ?? userData?.business ?? userData?.storeName ?? userData?.shopName ?? userData?.name;
+    const ownerName = userData?.fullName ?? userData?.ownerName ?? userData?.name ?? null;
 
     const SidebarLink = ({item}) => (
         <li>
@@ -67,8 +117,8 @@ function Sidebar() {
             
             {/* Header */}
             <div className='p-6 border-b-2 border-gray-100 z-10 bg-white'>
-                <h2 className='text-lg font-bold text-gray-800'>Gurudev Kirana Store</h2>
-                <p className='text-xs text-gray-400 mt-1'>Digital Ledger</p>
+                <h2 className='text-lg font-bold text-gray-800'>{businessName}</h2>
+                <p className='text-xs text-gray-400 mt-1'>{ownerName ? ownerName : 'Digital Ledger'}</p>
             </div>
 
             {/* ANIMATED CURTAIN SECTION */}
