@@ -110,7 +110,7 @@ function Sidebar() {
         ];
     })();
 
-    const businessName = userData?.businessName ?? userData?.business ?? userData?.storeName ?? userData?.shopName ?? userData?.name;
+    const businessName = userData?.businessName ?? userData?.business ?? userData?.storeName ?? userData?.name;
     const ownerName = userData?.fullName ?? userData?.ownerName ?? userData?.name ?? null;
 
     const SidebarLink = ({ item }) => (
