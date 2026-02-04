@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Edit2, Trash2, Package, Check, X, ShoppingBag,
-  Coffee, Zap, Heart, Box, Tag, Sun, Smile, Star,
+  Plus, Edit2, Check, X,
+  Package, ShoppingBag, Star, Coffee, Zap, Heart, Box, Tag, Sun, Smile,
   Ruler
 } from 'lucide-react';
 import TabsBar from '../../components/common/TabsBar';
 import SearchBar from '../../components/common/SearchBar';
-import FormLabel from '../../components/common/FormLabel';
 import { CATEGORY_STYLES } from '../../src/data/propertiesData';
 import api from '../../src/api';
+// Import the new reusable modal
+import AddPropertyModal from '../../components/common/AddPropertyModal';
 
-// Icon Map needs to match CATEGORY_STYLES in data file or be defined locally
-// Assuming CATEGORY_STYLES is imported, but we need the components for dynamic rendering
+// Icon Map (Ideally should be shared or imported if used in Modal too, but keeping local for rendering grid)
 const ICON_MAP = {
   'package': Package,
   'shopping-bag': ShoppingBag,
@@ -43,11 +43,6 @@ const Properties = () => {
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [editShort, setEditShort] = useState('');
-
-  // Form State (For Adding)
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemShort, setNewItemShort] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState(0);
 
   // --- FETCH DATA ---
   useEffect(() => {
@@ -96,35 +91,7 @@ const Properties = () => {
 
   // --- ACTIONS ---
 
-  const handleAddItem = async () => {
-    if (!newItemName.trim()) return;
-
-    try {
-      if (activeTab === 'categories') {
-        await api.post('/trading/categories', {
-          name: newItemName,
-          styleId: selectedStyle
-        });
-      } else {
-        await api.post('/trading/units', {
-          name: newItemName,
-          symbol: newItemShort || newItemName.substring(0, 3).toLowerCase()
-        });
-      }
-
-      // Refresh
-      await fetchMetadata();
-
-      // Reset & Close
-      setNewItemName('');
-      setNewItemShort('');
-      setIsAddModalOpen(false);
-
-    } catch (error) {
-      console.error("Error creating item:", error);
-      alert("Failed to create item.");
-    }
-  };
+  // NOTE: handleAddItem is removed because it's now handled by AddPropertyModal
 
   const startEdit = (item, type) => {
     setEditingId(item.id);
@@ -134,39 +101,15 @@ const Properties = () => {
 
   const saveEdit = async (type) => {
     try {
-      if (type === 'category') {
-        // Currently backend only supports creating, assume standard update pattern or skip if not implemented
-        // Note: Implementation plan didn't explicitly mention Update endpoints for generic PUT on these, 
-        // but usually they exist or we can skip for MVP if not ready.
-        // Checking controller... Controller only has GET and POST.
-        // I will skip backend UPDATE for now and alert user, OR better:
-        // Since I need to create the plan nicely, I should actually add PUT to backend if I want this to work.
-        // But for now, let's assume I can't update them yet properly without controller change.
-        // Wait, I am the developer. I CAN add PUT.
-        // BUT, I already finished backend taks. 
-        // Let's implement Client-Side Optimistic UI + Alert "Not saved to server"? No that's bad.
-        alert("Edit feature coming soon (Backend Update Endpoint Required)");
-        setEditingId(null);
-      } else {
-        alert("Edit feature coming soon (Backend Update Endpoint Required)");
-        setEditingId(null);
-      }
+      alert("Edit feature coming soon (Backend Update Endpoint Required)");
+      setEditingId(null);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const deleteItem = async (id, type, e) => {
-    e.stopPropagation();
-    if (window.confirm('Delete this item? functionality not fully wired yet')) {
-      // Similar to Edit, Backend needs DELETE endpoint.
-      // Current controllers only have GET/POST.
-      // I will comment this out or leave as TODO.
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50/50 p-8">
+    <div className="min-h-screen bg-gray-50/50 p-6">
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -195,16 +138,9 @@ const Properties = () => {
       {activeTab === 'categories' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCategories.map((cat) => {
-            // Get the style object based on the saved ID (or default to 0)
-            // handle null/undefined styleId
             const sId = cat.styleId !== undefined ? cat.styleId : 0;
             const style = CATEGORY_STYLES[sId] || CATEGORY_STYLES[0];
             const Icon = style.icon ? ICON_MAP[style.icon] || Package : Package;
-            // Note: CATEGORY_STYLES in data.js uses Lucide components directly usually, 
-            // but if we transfer over network it might be indices or strings.
-            // Let's assume the local constant CATEGORY_STYLES has components.
-            // But wait, the previous code used `const Icon = ICON_MAP[style.icon];`
-            // So style.icon is a string key.
 
             return (
               <div
@@ -227,7 +163,6 @@ const Properties = () => {
                     ) : (
                       <>
                         <button onClick={() => startEdit(cat, 'category')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button>
-                        {/* <button onClick={(e) => deleteItem(cat.id, 'category', e)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button> */}
                       </>
                     )}
                   </div>
@@ -285,7 +220,6 @@ const Properties = () => {
                   ) : (
                     <>
                       <button onClick={() => startEdit(unit, 'unit')} className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button>
-                      {/* <button onClick={(e) => deleteItem(unit.id, 'unit', e)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button> */}
                     </>
                   )}
                 </div>
@@ -295,75 +229,13 @@ const Properties = () => {
         </div>
       )}
 
-      {/* --- ADD MODAL (With Style Picker) --- */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-gray-800">
-                Add {activeTab === 'categories' ? 'Category' : 'Unit'}
-              </h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <FormLabel text="Name" className="block text-sm font-medium text-gray-700 mb-1.5" />
-                <input
-                  type="text"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  placeholder={activeTab === 'categories' ? "e.g. Frozen Foods" : "e.g. Milliliter"}
-                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-gray-800 outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-
-              {/* Unit Short Code Input */}
-              {activeTab === 'units' && (
-                <div>
-                  <FormLabel text="Short Code" className="block text-sm font-medium text-gray-700 mb-1.5" />
-                  <input
-                    type="text"
-                    value={newItemShort}
-                    onChange={(e) => setNewItemShort(e.target.value)}
-                    placeholder="e.g. ml"
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-gray-800 outline-none focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-              )}
-
-              {/* CATEGORY STYLE PICKER */}
-              {activeTab === 'categories' && (
-                <div>
-                  <FormLabel text="Choose Style" className="block text-sm font-medium text-gray-700 mb-3" />
-                  <div className="grid grid-cols-5 gap-3">
-                    {CATEGORY_STYLES.map((style, index) => {
-                      // Dynamic Icon
-                      const Icon = ICON_MAP[style.icon] || Package;
-                      const isSelected = selectedStyle === index;
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => setSelectedStyle(index)}
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${style.bg} ${style.text} ${isSelected ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
-                        >
-                          <Icon size={20} />
-                          {isSelected && <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-xl"><Check size={20} className="text-white drop-shadow-md" /></div>}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-8">
-              <button onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors">Cancel</button>
-              <button onClick={handleAddItem} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-lg shadow-blue-200 transition-colors">Save</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* --- REUSABLE ADD MODAL --- */}
+      <AddPropertyModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        type={activeTab === 'categories' ? 'category' : 'unit'}
+        onSuccess={fetchMetadata}
+      />
 
       {/* --- VIEW PRODUCTS MODAL (Drill-Down) --- */}
       {viewCategory && (
