@@ -31,9 +31,9 @@ public class Business extends BaseEntity {
     // --- Banking & UPI ---
 	@Column(name = "bank_acccount_holder", length = 50)
     private String bankAccountName;
-	@Column(name = "banck_account_no", length = 35)
+	@Column(name = "bank_account_no", length = 35)
     private String bankAccountNo;
-	@Column(name = "bank_ifsc", length = 10)
+	@Column(name = "bank_ifsc", length = 30)
     private String bankIfsc;
 	@Column(name = "upi_id", length = 50)
     private String upiId;
