@@ -254,7 +254,7 @@ const Properties = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-800">{viewCategory.name}</h3>
-                  <p className="text-xs text-gray-500">{getCategoryProducts().length} items found</p>
+                  <p className="text-xs text-gray-500">{getCategoryProducts().length} products found</p>
                 </div>
               </div>
               <button onClick={() => setViewCategory(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>

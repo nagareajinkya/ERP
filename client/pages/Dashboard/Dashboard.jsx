@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  TrendingUp, ShoppingBag, AlertCircle, 
+import {
+  TrendingUp, ShoppingBag, AlertCircle,
   ArrowRight, Package, DollarSign, Zap, ArrowUpRight, ArrowDownRight, Plus
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -11,7 +11,7 @@ import StatCard from '../../components/common/StatCard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  
+
   // --- STATE FOR CHART FILTER & DATA ---
   const [chartPeriod, setChartPeriod] = useState('today');
   const [dashboardData, setDashboardData] = useState({
@@ -45,7 +45,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
-      
+
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -66,13 +66,13 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <StatCard label="Today's Sales" value={stats.todaysSales} icon={DollarSign} iconColor="bg-green-50 text-green-600" borderColor="border-gray-100" />
         <StatCard label="Total Bills" value={stats.totalBills} icon={ShoppingBag} iconColor="bg-blue-50 text-blue-600" borderColor="border-gray-100" />
-        <StatCard label="Low Stock Items" value={stats.lowStockItems} icon={AlertCircle} iconColor="bg-red-50 text-red-600" borderColor="border-gray-100" />
+        <StatCard label="Low Stock Products" value={stats.lowStockItems} icon={AlertCircle} iconColor="bg-red-50 text-red-600" borderColor="border-gray-100" />
         <StatCard label="Active Offers" value={stats.activeOffers} icon={Zap} iconColor="bg-amber-50 text-amber-600" borderColor="border-gray-100" />
       </div>
 
       {/* MAIN CONTENT GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* LEFT/MIDDLE: Sales Trend Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
           <div className="flex justify-between items-center mb-6">
@@ -81,9 +81,9 @@ const Dashboard = () => {
               <p className="text-xs font-medium text-gray-400">Track your store's sales performance</p>
             </div>
             {/* DYNAMIC FILTER */}
-            <select 
-              value={chartPeriod} 
-              onChange={(e) => setChartPeriod(e.target.value)} 
+            <select
+              value={chartPeriod}
+              onChange={(e) => setChartPeriod(e.target.value)}
               className="bg-gray-50 border border-gray-200 text-sm font-bold text-gray-600 rounded-lg px-3 py-1.5 outline-none focus:border-green-500 cursor-pointer"
             >
               <option value="today">Today (Hourly)</option>
@@ -93,21 +93,21 @@ const Dashboard = () => {
               <option value="this_month">This Month</option>
             </select>
           </div>
-          
+
           <div className="flex-1 min-h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={CHART_DATA[chartPeriod]}>
                 <defs>
                   {/* Single Clean Gradient for Sales */}
                   <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12, fontWeight: 600}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12, fontWeight: 600}} tickFormatter={(value) => `₹${value/1000}k`} dx={-10} />
-                <Tooltip 
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12, fontWeight: 600 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12, fontWeight: 600 }} tickFormatter={(value) => `₹${value / 1000}k`} dx={-10} />
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1f2937', borderRadius: '12px', border: 'none', color: '#fff', fontWeight: 'bold' }}
                   itemStyle={{ fontSize: 14, color: '#4ade80' }}
                   formatter={(value) => [`₹${value.toLocaleString()}`, 'Total Sales']}
@@ -179,7 +179,7 @@ const Dashboard = () => {
                   <td className="py-4 font-medium text-gray-600">{trx.customer}</td>
                   <td className="py-4">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${trx.type === 'Sale' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                      {trx.type === 'Sale' ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
+                      {trx.type === 'Sale' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                       {trx.type}
                     </span>
                   </td>

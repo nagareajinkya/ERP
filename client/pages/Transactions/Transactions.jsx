@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, Filter, Calendar, ArrowUpRight, ArrowDownRight, 
-  RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer 
+import {
+  Search, Filter, Calendar, ArrowUpRight, ArrowDownRight,
+  RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer
 } from 'lucide-react';
 import api from '../../src/api';
 import SearchBar from '../../components/common/SearchBar';
@@ -14,7 +14,7 @@ const Transactions = () => {
   const [filterType, setFilterType] = useState('All');
   const [dateFilter, setDateFilter] = useState('This Month');
   const [loading, setLoading] = useState(false);
-  
+
   // Modal State
   const [selectedBill, setSelectedBill] = useState(null);
 
@@ -47,9 +47,9 @@ const Transactions = () => {
   // --- HELPER: Status Badge ---
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'Paid': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-green-50 text-green-700"><CheckCircle2 size={12}/> Paid</span>;
-      case 'Unpaid': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-red-50 text-red-700"><Clock size={12}/> Unpaid</span>;
-      case 'Partial': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700"><Clock size={12}/> Partial</span>;
+      case 'Paid': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-green-50 text-green-700"><CheckCircle2 size={12} /> Paid</span>;
+      case 'Unpaid': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-red-50 text-red-700"><Clock size={12} /> Unpaid</span>;
+      case 'Partial': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700"><Clock size={12} /> Partial</span>;
       case 'Loss': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">Loss</span>;
       default: return null;
     }
@@ -57,14 +57,14 @@ const Transactions = () => {
 
   // --- HELPER: Type Icon ---
   const getTypeIcon = (type) => {
-    if (type === 'Sale') return <div className="p-2 bg-green-50 text-green-600 rounded-lg"><ArrowUpRight size={18}/></div>;
-    if (type === 'Purchase') return <div className="p-2 bg-red-50 text-red-600 rounded-lg"><ArrowDownRight size={18}/></div>;
-    return <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><RefreshCw size={18}/></div>;
+    if (type === 'Sale') return <div className="p-2 bg-green-50 text-green-600 rounded-lg"><ArrowUpRight size={18} /></div>;
+    if (type === 'Purchase') return <div className="p-2 bg-red-50 text-red-600 rounded-lg"><ArrowDownRight size={18} /></div>;
+    return <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><RefreshCw size={18} /></div>;
   };
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
-      
+
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -80,7 +80,7 @@ const Transactions = () => {
 
       {/* FILTERS & TOOLBAR */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-        
+
         {/* TABS */}
         <TabsBar tabs={['All', 'Sale', 'Purchase', 'Adjustment']} activeTab={filterType} onTabChange={setFilterType} variant="default" className="flex p-1 bg-gray-50 rounded-xl w-full md:w-auto" />
 
@@ -89,7 +89,7 @@ const Transactions = () => {
           <SearchBar placeholder="Search Invoice or Party..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="flex-1 md:w-64" />
           <div className="relative">
             <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            <select 
+            <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
               className="pl-10 pr-8 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none cursor-pointer appearance-none"
@@ -133,7 +133,7 @@ const Transactions = () => {
                   </td>
                   <td className="py-4 px-6">
                     <p className="font-bold text-gray-800">{trx.party}</p>
-                    <p className="text-xs text-gray-400 font-medium">{trx.items} Items • {trx.paymentMode}</p>
+                    <p className="text-xs text-gray-400 font-medium">{trx.products} Products • {trx.paymentMode}</p>
                   </td>
                   <td className="py-4 px-6">
                     <p className="font-medium text-gray-700">{trx.date}</p>
@@ -167,14 +167,14 @@ const Transactions = () => {
       {selectedBill && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-            
+
             {/* Modal Header */}
             <div className="flex justify-between items-start p-6 border-b border-gray-100 bg-gray-50/50">
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Transaction Details</h3>
                 <p className="text-sm text-gray-500">{selectedBill.id} • {selectedBill.date}</p>
               </div>
-              <button onClick={() => setSelectedBill(null)} className="p-1 hover:bg-gray-200 rounded-full transition-colors text-gray-500"><X size={20}/></button>
+              <button onClick={() => setSelectedBill(null)} className="p-1 hover:bg-gray-200 rounded-full transition-colors text-gray-500"><X size={20} /></button>
             </div>
 
             {/* Modal Body */}
@@ -192,12 +192,12 @@ const Transactions = () => {
               </div>
 
               {/* Items List */}
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Items Purchased</h4>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Products Purchased</h4>
               <div className="border rounded-xl overflow-hidden border-gray-100 mb-6">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-gray-500 font-bold text-xs uppercase">
                     <tr>
-                      <th className="px-4 py-2">Item</th>
+                      <th className="px-4 py-2">Product</th>
                       <th className="px-4 py-2 text-center">Qty</th>
                       <th className="px-4 py-2 text-right">Total</th>
                     </tr>
@@ -217,10 +217,10 @@ const Transactions = () => {
               {/* Footer Actions */}
               <div className="flex gap-3">
                 <button className="flex-1 flex items-center justify-center gap-2 py-3 border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all">
-                  <Download size={18}/> PDF
+                  <Download size={18} /> PDF
                 </button>
                 <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-600/20 transition-all">
-                  <Printer size={18}/> Print Bill
+                  <Printer size={18} /> Print Bill
                 </button>
               </div>
 
