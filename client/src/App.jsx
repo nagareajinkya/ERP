@@ -33,13 +33,17 @@ function App() {
     <Routes>
       {/* 2. Public Route (No Sidebar) */}
       <Route 
+        path="/" 
+        element={<Login />} 
+      />
+      <Route 
         path="/login" 
         element={<Login />} 
       />
 
       {/* 3. Protected/Main Routes (With Sidebar) */}
       <Route element={<MainLayout />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/parties" element={<Parties />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/new-sale" element={<NewTransaction type="sale" />} />
