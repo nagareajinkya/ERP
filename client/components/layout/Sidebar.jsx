@@ -4,15 +4,10 @@ import {
     BarChart3, User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
     History // <--- Imported History Icon
 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import api from '../../src/api';
 
 function Sidebar() {
-    const location = useLocation();
-
-    // Logic: Hide stats on Dashboard and Parties pages
-    const hideStatsOnPaths = ['/Dashboard', '/parties'];
-    const shouldShowStats = !hideStatsOnPaths.includes(location.pathname);
 
     const menuItems = [
         { id: 1, icon: LayoutDashboard, label: 'Dashboard', path: '/Dashboard' },
@@ -146,15 +141,7 @@ function Sidebar() {
             </div>
 
             {/* ANIMATED CURTAIN SECTION */}
-            <div
-                className={`
-                    px-6 flex flex-col gap-3 overflow-hidden transition-all duration-500 ease-in-out border-gray-100
-                    ${shouldShowStats
-                        ? 'max-h-49 py-4 opacity-100 border-b-2'  // Curtain Down (Visible)
-                        : 'max-h-0 py-0 opacity-0 border-b-0'     // Curtain Up (Hidden)
-                    }
-                `}
-            >
+            <div className="px-6 flex flex-col gap-3 overflow-hidden border-gray-100 max-h-49 py-4 opacity-100 border-b-2">
                 {moneyStats.map((stat) => (
                     <div key={stat.id} className={`${stat.bg} ${stat.border} p-3 rounded-lg border min-w-0`}>
                         <p className={`text-xs font-medium mb-1 ${stat.textColor} truncate`}>
