@@ -160,10 +160,11 @@ const Login = () => {
     try {
       setLoading(true);
       setError('');
-      const res = await api.post('/auth/login', { email, password });
-      const token = res.data?.token;
+      const res = await api.post('/auth/login', { identifier: email, password });
+      const { token, ...user } = res.data;
       if (token) {
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         navigate('/Dashboard');
       } else {
         setError('Login failed: no token returned');
@@ -206,9 +207,10 @@ const Login = () => {
       setLoading(true);
       setError('');
       const res = await api.post('/auth/verify-otp', { phone: `+91${phone}`, code: otp.join('') });
-      const token = res.data?.token;
+      const { token, ...user } = res.data;
       if (token) {
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         navigate('/Dashboard');
       } else if (mode === 'signup') {
         setStep(3);
@@ -240,10 +242,11 @@ const Login = () => {
       };
 
       const res = await api.post('/auth/register', payload);
-      const token = res.data?.token;
+      const { token, ...user } = res.data;
 
       if (token) {
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         navigate('/Dashboard');
       } else {
         setError('Registration successful but no token received. Please login.');
