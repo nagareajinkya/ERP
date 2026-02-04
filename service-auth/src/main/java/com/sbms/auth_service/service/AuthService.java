@@ -12,5 +12,6 @@ public interface AuthService {
 	
 	void sendOtp(OtpRequest request);
 	AuthResponse verifyOtp(OtpVerifyRequest request);
+	AuthResponse getCurrentUser(String identifier);
 
 }

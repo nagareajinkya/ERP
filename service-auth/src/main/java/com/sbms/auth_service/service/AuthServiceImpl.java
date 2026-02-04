@@ -99,6 +99,17 @@ public class AuthServiceImpl implements AuthService {
 		response.setBusinessName(user.getBusiness().getBusinessName());
 		return response;
 	}
-	
+
+	@Override
+	public AuthResponse getCurrentUser(String identifier) {
+		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		
+		AuthResponse response = modelMapper.map(user, AuthResponse.class);
+		response.setBusinessName(user.getBusiness().getBusinessName());
+		response.setBusinessId(user.getBusiness().getId());
+		response.setUserId(user.getId());
+		return response;
+	}
 
 }

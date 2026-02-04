@@ -1,5 +1,7 @@
 package com.sbms.auth_service.controller;
 
+import java.security.Principal;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,5 +43,10 @@ public class AuthController {
     @PostMapping("/verify-otp")
     public ResponseEntity<AuthResponse> verifyOtp(@RequestBody OtpVerifyRequest request) {
         return ResponseEntity.ok(authService.verifyOtp(request));
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/me")
+    public ResponseEntity<AuthResponse> getCurrentUser(Principal principal) {
+        return ResponseEntity.ok(authService.getCurrentUser(principal.getName()));
     }
 }
