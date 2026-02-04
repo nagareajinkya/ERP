@@ -16,4 +16,7 @@ public class Unit extends BaseEntity {
 
     @Column(name = "unit", nullable = false)
     private String name; // e.g. "kg", "pcs"
+
+    @Column(name = "symbol")
+    private String symbol; // e.g. "kg"
 }

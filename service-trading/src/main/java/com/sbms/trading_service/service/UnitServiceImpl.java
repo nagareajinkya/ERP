@@ -23,11 +23,12 @@ public class UnitServiceImpl implements UnitService {
     private final ModelMapper modelMapper;
 
     @Override
-    public UnitDto createUnit(String name, UUID businessId) {
+    public UnitDto createUnit(String name, String symbol, UUID businessId) {
         Unit unit = unitRepository.findByNameAndBusinessId(name, businessId)
                 .orElseGet(() -> {
                     Unit newUnit = new Unit();
                     newUnit.setName(name);
+                    newUnit.setSymbol(symbol);
                     newUnit.setBusinessId(businessId);
                     return unitRepository.save(newUnit);
                 });

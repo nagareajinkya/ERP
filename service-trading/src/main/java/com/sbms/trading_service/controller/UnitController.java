@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +19,7 @@ import com.sbms.trading_service.service.UnitService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/units")
+@RequestMapping("/api/trading/units")
 @RequiredArgsConstructor
 public class UnitController {
 
@@ -27,10 +28,10 @@ public class UnitController {
     @PostMapping
     public ResponseEntity<UnitDto> createUnit(
             @RequestAttribute("businessId") UUID businessId, 
-            @RequestParam String name) {
+            @RequestBody UnitDto request) {
         
         return new ResponseEntity<>(
-                unitService.createUnit(name, businessId), 
+                unitService.createUnit(request.getName(), request.getSymbol(), businessId), 
                 HttpStatus.CREATED
         );
     }

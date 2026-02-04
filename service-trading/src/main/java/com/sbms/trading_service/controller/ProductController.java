@@ -22,7 +22,7 @@ import com.sbms.trading_service.service.ProductService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/api/trading/products")
 @RequiredArgsConstructor
 public class ProductController {
 

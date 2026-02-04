@@ -22,12 +22,13 @@ public class CategoryServiceImpl implements CategoryService {
     private final ModelMapper modelMapper;
 
     @Override
-    public CategoryDto createCategory(String name, UUID businessId) {
+    public CategoryDto createCategory(String name, Integer styleId, UUID businessId) {
         // Check if exists logic
         Category category = categoryRepository.findByNameAndBusinessId(name, businessId)
                 .orElseGet(() -> {
                     Category newCat = new Category();
                     newCat.setName(name);
+                    newCat.setStyleId(styleId != null ? styleId : 0);
                     newCat.setBusinessId(businessId);
                     return categoryRepository.save(newCat);
                 });

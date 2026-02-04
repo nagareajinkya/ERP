@@ -16,4 +16,7 @@ public class Category extends BaseEntity {
 
     @Column(name = "category_name", nullable = false)
     private String name;
+
+    @Column(name = "style_id")
+    private Integer styleId = 0; // Default to 0
 }

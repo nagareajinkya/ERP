@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +19,7 @@ import com.sbms.trading_service.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/categories")
+@RequestMapping("/api/trading/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 
@@ -27,10 +28,10 @@ public class CategoryController {
     @PostMapping
     public ResponseEntity<CategoryDto> createCategory(
             @RequestAttribute("businessId") UUID businessId, 
-            @RequestParam String name) {
+            @RequestBody CategoryDto request) {
         
         return new ResponseEntity<>(
-                categoryService.createCategory(name, businessId), 
+                categoryService.createCategory(request.getName(), request.getStyleId(), businessId), 
                 HttpStatus.CREATED
         );
     }
