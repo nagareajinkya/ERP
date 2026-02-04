@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    LayoutDashboard, Users, ShoppingCart, ShoppingBag, Package, 
+import {
+    LayoutDashboard, Users, ShoppingCart, ShoppingBag, Package,
     BarChart3, User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
     History // <--- Imported History Icon
 } from 'lucide-react';
@@ -11,19 +11,19 @@ function Sidebar() {
     const location = useLocation();
 
     // Logic: Hide stats on Dashboard and Parties pages
-    const hideStatsOnPaths = ['/', '/parties'];
+    const hideStatsOnPaths = ['/Dashboard', '/parties'];
     const shouldShowStats = !hideStatsOnPaths.includes(location.pathname);
 
     const menuItems = [
-        {id: 1, icon: LayoutDashboard, label: 'Dashboard', path:'/'},
-        {id: 2, icon: Users, label: 'Parties', path:'/parties'},
-        {id: 3, icon: ShoppingCart, label: 'New Sale', path:'/new-sale'},
-        {id: 4, icon: ShoppingBag, label: 'New Purchase', path:'/new-purchase'}, 
-        {id: 5, icon: Package, label: 'Inventory', path:'/inventory'},
-        {id: 6, icon: History, label: 'Transactions', path:'/transactions'},
-        {id: 7, icon: BarChart3, label: 'Reports', path:'/reports'},
+        { id: 1, icon: LayoutDashboard, label: 'Dashboard', path: '/Dashboard' },
+        { id: 2, icon: Users, label: 'Parties', path: '/parties' },
+        { id: 3, icon: ShoppingCart, label: 'New Sale', path: '/new-sale' },
+        { id: 4, icon: ShoppingBag, label: 'New Purchase', path: '/new-purchase' },
+        { id: 5, icon: Package, label: 'Inventory', path: '/inventory' },
+        { id: 6, icon: History, label: 'Transactions', path: '/transactions' },
+        { id: 7, icon: BarChart3, label: 'Reports', path: '/reports' },
     ];
-    
+
     const settingsItems = [
         { id: 8, icon: User, label: 'Profile', path: '/profile' },
         { id: 9, icon: SwatchBook, label: 'Categories & Units', path: '/properties' },
@@ -39,7 +39,7 @@ function Sidebar() {
         try {
             const base64Url = token.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
             return JSON.parse(jsonPayload);
@@ -100,13 +100,13 @@ function Sidebar() {
     const businessName = userData?.businessName ?? userData?.business ?? userData?.storeName ?? userData?.shopName ?? userData?.name;
     const ownerName = userData?.fullName ?? userData?.ownerName ?? userData?.name ?? null;
 
-    const SidebarLink = ({item}) => (
+    const SidebarLink = ({ item }) => (
         <li>
             <NavLink
                 to={item.path}
-                className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
             >
-                <item.icon size={20}/>
+                <item.icon size={20} />
                 <span>{item.label}</span>
             </NavLink>
         </li>
@@ -114,7 +114,7 @@ function Sidebar() {
 
     return (
         <div className='w-64 h-screen bg-white border-r border-gray-100 fixed left-0 top-0 flex flex-col'>
-            
+
             {/* Header */}
             <div className='p-6 border-b-2 border-gray-100 z-10 bg-white'>
                 <h2 className='text-lg font-bold text-gray-800'>{businessName}</h2>
@@ -122,10 +122,10 @@ function Sidebar() {
             </div>
 
             {/* ANIMATED CURTAIN SECTION */}
-            <div 
+            <div
                 className={`
                     px-6 flex flex-col gap-3 overflow-hidden transition-all duration-500 ease-in-out border-gray-100
-                    ${shouldShowStats 
+                    ${shouldShowStats
                         ? 'max-h-49 py-4 opacity-100 border-b-2'  // Curtain Down (Visible)
                         : 'max-h-0 py-0 opacity-0 border-b-0'     // Curtain Up (Hidden)
                     }
@@ -158,7 +158,7 @@ function Sidebar() {
                     <p className='px-4 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider'>Settings</p>
                     <ul className='space-y-1'>
                         {settingsItems.map((item) => (
-                            <SidebarLink key={item.id} item={item}/>
+                            <SidebarLink key={item.id} item={item} />
                         ))}
                     </ul>
                 </div>
@@ -171,7 +171,7 @@ function Sidebar() {
                     <span>Logout</span>
                 </button>
             </div>
-            
+
         </div>
     );
 }
