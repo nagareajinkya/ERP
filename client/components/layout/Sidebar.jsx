@@ -33,6 +33,7 @@ function Sidebar() {
     ];
 
     const [userData, setUserData] = useState(null);
+    const [stats, setStats] = useState({ toReceive: 0, toPay: 0 });
 
     // helper: decode JWT payload safely (handles base64url)
     const decodeJwtPayload = (token) => {
@@ -74,7 +75,24 @@ function Sidebar() {
                 }
             }
 
-            if (mounted && profile) setUserData(profile);
+            if (mounted && profile) {
+                setUserData(profile);
+
+                // Fetch stats from service-trading (VIA GATEWAY)
+                if (profile.businessId) {
+                    try {
+                        const statsRes = await api.get('/trading/stats');
+                        if (statsRes.data && mounted) {
+                            setStats({
+                                toReceive: statsRes.data.toReceive ?? 0,
+                                toPay: statsRes.data.toPay ?? 0
+                            });
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch sidebar stats:", err);
+                    }
+                }
+            }
         })();
 
         return () => { mounted = false };
@@ -88,12 +106,12 @@ function Sidebar() {
     };
 
     const moneyStats = (() => {
-        const toReceive = userData?.stats?.toReceive ?? userData?.toReceive ?? userData?.totals?.toReceive;
-        const toPay = userData?.stats?.toPay ?? userData?.toPay ?? userData?.totals?.toPay;
+        const toReceive = stats.toReceive;
+        const toPay = stats.toPay;
 
         return [
-            { id: 1, label: 'To Receive', amount: fmtMoney(toReceive) || '₹45,240', bg: 'bg-green-50', border: 'border-green-100', textColor: 'text-green-600' },
-            { id: 2, label: 'To Pay', amount: fmtMoney(toPay) || '₹12,800', bg: 'bg-red-50', border: 'border-red-100', textColor: 'text-red-600' }
+            { id: 1, label: 'To Receive', amount: fmtMoney(toReceive), bg: 'bg-green-50', border: 'border-green-100', textColor: 'text-green-600' },
+            { id: 2, label: 'To Pay', amount: fmtMoney(toPay), bg: 'bg-red-50', border: 'border-red-100', textColor: 'text-red-600' }
         ];
     })();
 
@@ -111,6 +129,12 @@ function Sidebar() {
             </NavLink>
         </li>
     );
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+    };
 
     return (
         <div className='w-64 h-screen bg-white border-r border-gray-100 fixed left-0 top-0 flex flex-col'>
@@ -166,7 +190,10 @@ function Sidebar() {
 
             {/* Logout Button */}
             <div className='p-4 border-t-2 border-gray-100 bg-white z-10'>
-                <button className='flex items-center gap-3 px-4 py-3 w-full text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors'>
+                <button
+                    onClick={handleLogout}
+                    className='flex items-center gap-3 px-4 py-3 w-full text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors'
+                >
                     <LogOut size={20} />
                     <span>Logout</span>
                 </button>
