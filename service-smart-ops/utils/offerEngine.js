@@ -1,97 +1,146 @@
 
 /**
  * Core Offer Engine
- * Applies active offers to the current cart (products)
- * @param {Array} products - List of {id, name, qty, price, amount, ...}
+ * Applies active offers to the current cart (products) based on strict Schema rules.
+ * @param {Array} products - List of {id, productId, name, qty, price, amount, ...}
  * @param {Array} activeOffers - List of Offer documents from DB
+ * @param {String} customerId - ID of selected customer (optional)
  * @returns {Object} { appliedOffers, subTotal, discount, grandTotal, products }
  */
-const calculateOffers = (products, activeOffers) => {
+const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = []) => {
     let appliedOffers = [];
     let subTotal = 0;
 
-    // 1. Calculate Initial Subtotal & Reset Free Items
-    // Filter out previously auto-added free items if we are recalculating from scratch
-    // But usually frontend sends what's visible. If frontend sends "Free" items, we should re-evaluate them.
-    // Strategy: We recalculate everything. We might need to identify manual vs auto items.
-    // For now, assume 'products' contains only what user manually added OR we clear auto-added ones first?
-    // Simpler: The input 'products' should clean out any 'isFree: true' items before sending, OR we clean them here.
-
-    let workingProducts = products.filter(p => !p.isFree).map(p => ({
-        ...p,
-        amount: (p.qty || 0) * (p.price || 0),
-        finalPrice: p.price
-    }));
+    // 1. Clean & Calculate Initial Subtotal
+    // Remove previously auto-added free items to recalculate from fresh state
+    let workingProducts = products
+        .filter(p => !p.isFree)
+        .map(p => ({
+            ...p,
+            amount: (Number(p.qty) || 0) * (Number(p.price) || 0),
+            finalPrice: Number(p.price) || 0,
+            originalPrice: Number(p.price) || 0
+        }));
 
     subTotal = workingProducts.reduce((acc, p) => acc + p.amount, 0);
 
     let discountTotal = 0;
     const newFreeItems = [];
 
-    // 2. Apply Offers
-    activeOffers.forEach(offer => {
+    // 2. Filter Active Offers (Targeting & Exclusion Check)
+    // We only process offers relevant to this customer AND not manually excluded.
+    console.log(`[OfferEngine] Input: ${activeOffers.length} offers, Customer: ${customerId}, Excluded: ${excludedOfferIds}`);
+
+    const relevantOffers = activeOffers.filter(offer => {
+        // Exclusion Check
+        if (excludedOfferIds && excludedOfferIds.includes(offer._id.toString())) {
+            return false;
+        }
+
+        // Targeting Check
+        if (offer.targetType === 'specific') {
+            const match = offer.selectedCustomers && offer.selectedCustomers.includes(customerId);
+            console.log(`[OfferEngine] Checking Specific Offer ${offer.name} (${offer._id}) for ${customerId}: ${match}`);
+            return match;
+        }
+        return true;
+    });
+
+    console.log(`[OfferEngine] Relevant Offers: ${relevantOffers.length}`);
+
+    // 3. Iterate Relevant Offers
+    relevantOffers.forEach(offer => {
         let applied = false;
 
-        // --- TRIGGER TYPE: PRODUCT_BUY ---
-        if (offer.triggerType === 'product_buy') {
+        // --- RULE: BOGO (Buy X Get Y) ---
+        if (offer.ruleType === 'bogo') {
+            // Find trigger product
             const triggerItem = workingProducts.find(p =>
-                p.name && offer.triggerProduct && p.name.toLowerCase().includes(offer.triggerProduct.toLowerCase())
+                (p.productId && offer.buyProductId && p.productId === offer.buyProductId) || // ID Match (Strong)
+                (p.name && offer.buyProductName && p.name.toLowerCase().includes(offer.buyProductName.toLowerCase())) // Name Match (Fallback)
             );
 
-            if (triggerItem && triggerItem.qty >= (offer.minQty || 1)) {
+            if (triggerItem && triggerItem.qty >= (offer.buyQty || 1)) {
+                // Calculate Sets
+                const sets = Math.floor(triggerItem.qty / (offer.buyQty || 1));
+                const freeQty = sets * (offer.getQty || 1);
 
-                // ACTION: AUTO_ADD (Buy X Get Y)
-                if (offer.action === 'auto_add') {
-                    // Calculate how many sets of free items
-                    // e.g. Buy 1 Rice get 1 Maggi. Bought 2 Rice -> Get 2 Maggi.
-                    const sets = Math.floor(triggerItem.qty / (offer.minQty || 1));
-                    const freeQty = sets * (offer.rewardQty || 1);
-
-                    if (freeQty > 0) {
-                        newFreeItems.push({
-                            id: Date.now() + Math.random(), // Temporary ID
-                            name: offer.rewardProduct,
-                            qty: freeQty,
-                            price: 0,
-                            amount: 0,
-                            isFree: true,
-                            offerId: offer.id
-                        });
-                        applied = true;
-                    }
-                }
-
-                // ACTION: ITEM_DISCOUNT (Discount on the trigger item itself)
-                else if (offer.action === 'item_discount') {
-                    // e.g. Buy 5kg Sugar, get 20Rs off
-                    const discountAmount = offer.value; // Fixed amount off? OR percentage?
-                    discountTotal += discountAmount;
+                if (freeQty > 0) {
+                    newFreeItems.push({
+                        id: Date.now() + Math.random(),
+                        productId: offer.getProductId || null, // Robust ID if available
+                        name: offer.getProductName,
+                        qty: freeQty,
+                        price: 0.01, // DB Requirement: Non-zero price
+                        amount: 0, // Visual amount is 0 (or we can make it 0.01 * qty)
+                        isFree: true,
+                        offerId: offer._id,
+                        manual: false
+                    });
                     applied = true;
                 }
             }
         }
 
-        // --- TRIGGER TYPE: ALL (Storewide) ---
-        else if (offer.triggerType === 'all') {
-            if (offer.action === 'cart_discount') {
-                const disc = (subTotal * offer.value) / 100; // Assuming value is Percentage
-                discountTotal += disc;
+        // --- RULE: PRODUCT DISCOUNT ---
+        else if (offer.ruleType === 'product_disc') {
+            const targetItem = workingProducts.find(p =>
+                (p.productId && offer.buyProductId && p.productId === offer.buyProductId) ||
+                (p.name && offer.buyProductName && p.name.toLowerCase().includes(offer.buyProductName.toLowerCase()))
+            );
+
+            if (targetItem && targetItem.qty >= 1) {
+                let itemDisc = 0;
+                if (offer.discountType === 'percentage') {
+                    itemDisc = (targetItem.amount * (offer.discountValue || 0)) / 100;
+                } else {
+                    itemDisc = (offer.discountValue || 0) * targetItem.qty;
+                }
+
+                if (itemDisc > targetItem.amount) itemDisc = targetItem.amount;
+
+                discountTotal += itemDisc;
+                applied = true;
+            }
+        }
+
+        // --- RULE: CART VALUE ---
+        else if (offer.ruleType === 'cart_value') {
+            if (subTotal >= (offer.minPurchase || 0)) {
+                let cartDisc = 0;
+                if (offer.discountType === 'percentage') {
+                    cartDisc = (subTotal * (offer.discountValue || 0)) / 100;
+                } else {
+                    cartDisc = (offer.discountValue || 0);
+                }
+
+                discountTotal += cartDisc;
                 applied = true;
             }
         }
 
         if (applied) {
             appliedOffers.push({
-                id: offer.id,
-                desc: offer.desc,
-                value: offer.value
+                id: offer._id,
+                desc: offer.description || offer.name,
+                value: offer.discountValue
             });
         }
     });
 
-    // Merge Free Items into Products
+    // 4. Finalize
+    if (discountTotal > subTotal) discountTotal = subTotal;
+    const grandTotal = subTotal - discountTotal;
+
     const finalProducts = [...workingProducts, ...newFreeItems];
-    const grandTotal = Math.max(0, subTotal - discountTotal);
+
+    // Determine Available Offers
+    const availableOffers = relevantOffers
+        .filter(o => !appliedOffers.find(ao => ao.id.toString() === o._id.toString()))
+        .map(o => ({
+            id: o._id,
+            desc: o.description || o.name
+        }));
 
     return {
         products: finalProducts,
@@ -101,7 +150,7 @@ const calculateOffers = (products, activeOffers) => {
             total: grandTotal
         },
         appliedOffers,
-        availableOffers: activeOffers.filter(o => !appliedOffers.find(ao => ao.id === o.id)) // Simplified 'available' logic
+        availableOffers
     };
 };
 
