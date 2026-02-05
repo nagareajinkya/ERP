@@ -4,13 +4,20 @@ import {
   Check, X, Search, Filter, Play, Pause, AlertCircle,
   Square, Clock, ArrowDownUp, AlertTriangle, ChevronRight,
   Repeat, Receipt, Copy, ChevronDown, Package, Percent, ShoppingBag, Zap, CheckCircle2,
-  StopCircle, PlayCircle
+  StopCircle, PlayCircle, IndianRupee
 } from 'lucide-react';
 import api from '../../src/api';
 import SearchBar from '../../components/common/SearchBar';
 import TabsBar from '../../components/common/TabsBar';
 import StatCard from '../../components/common/StatCard';
 import FormLabel from '../../components/common/FormLabel';
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Ongoing';
+  const date = new Date(dateString);
+  if (isNaN(date)) return 'Invalid Date';
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+};
 
 const ProductSearch = ({ label, placeholder, value, onSelect, unit, onUnitChange, disabled = false, availableProducts = [], availableUnits = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -188,7 +195,9 @@ const Offers = () => {
     e.stopPropagation();
     setEditingOfferId(null);
     setErrors({});
-    setFormData({
+
+    // Sanitize Data similar to handleEdit
+    const safeForm = {
       ...initialForm,
       ...offer,
       id: '',
@@ -196,8 +205,25 @@ const Offers = () => {
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
       status: 'paused',
-      usage: 0
-    });
+      usage: 0,
+      // Ensure Defaults for optional fields
+      buyProductName: offer.buyProductName || '',
+      buyProductUnit: offer.buyProductUnit || '',
+      buyQty: offer.buyQty || '1',
+      getProductName: offer.getProductName || '',
+      getProductUnit: offer.getProductUnit || '',
+      getQty: offer.getQty || '1',
+      minPurchase: offer.minPurchase || '',
+      discountValue: offer.discountValue || '',
+      usageLimitCount: offer.usageLimitCount || '1',
+      topSpenderCount: offer.topSpenderCount || '5',
+      topSpenderDuration: offer.topSpenderDuration || '1',
+      minVisits: offer.minVisits || '5',
+      frequentDuration: offer.frequentDuration || '30',
+      selectedCustomers: offer.selectedCustomers || []
+    };
+
+    setFormData(safeForm);
     setIsModalOpen(true);
   };
 
@@ -205,7 +231,32 @@ const Offers = () => {
     e.stopPropagation();
     setEditingOfferId(offer.id);
     setErrors({});
-    setFormData({ ...initialForm, ...offer });
+
+    // Sanitize and Format Data
+    const safeForm = {
+      ...initialForm,
+      ...offer,
+      // Fix Dates (ISO to yyyy-MM-dd)
+      startDate: offer.startDate ? offer.startDate.split('T')[0] : '',
+      endDate: offer.endDate ? offer.endDate.split('T')[0] : '',
+      // Ensure Defaults for optional fields
+      buyProductName: offer.buyProductName || '',
+      buyProductUnit: offer.buyProductUnit || '',
+      buyQty: offer.buyQty || '1',
+      getProductName: offer.getProductName || '',
+      getProductUnit: offer.getProductUnit || '',
+      getQty: offer.getQty || '1',
+      minPurchase: offer.minPurchase || '',
+      discountValue: offer.discountValue || '',
+      usageLimitCount: offer.usageLimitCount || '1',
+      topSpenderCount: offer.topSpenderCount || '5',
+      topSpenderDuration: offer.topSpenderDuration || '1',
+      minVisits: offer.minVisits || '5',
+      frequentDuration: offer.frequentDuration || '30',
+      selectedCustomers: offer.selectedCustomers || []
+    };
+
+    setFormData(safeForm);
     setIsModalOpen(true);
   };
 
@@ -214,9 +265,24 @@ const Offers = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Offer Name is required";
     if (!formData.startDate) newErrors.startDate = "Start Date is required";
+
+    // Rule Specific Validation
+    if (formData.ruleType === 'cart_value') {
+      if (!formData.minPurchase) newErrors.minPurchase = "Min Bill Amount is required";
+      if (!formData.discountValue) newErrors.discountValue = "Discount value is required";
+    } else if (formData.ruleType === 'product_disc') {
+      if (!formData.buyProductName) newErrors.buyProductName = "Product is required";
+      if (!formData.discountValue) newErrors.discountValue = "Discount is required";
+    } else if (formData.ruleType === 'bogo') {
+      if (!formData.buyProductName) newErrors.buyProductName = "Buy product is required";
+      if (!formData.getProductName) newErrors.getProductName = "Get product is required";
+    }
+
     setErrors(newErrors);
 
-    if (newErrors.name && nameInputRef.current) { nameInputRef.current.focus(); return; }
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     try {
       if (editingOfferId) {
@@ -302,12 +368,14 @@ const Offers = () => {
             <div className="p-5">
               <div className="flex justify-between items-start mb-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${offer.colorTheme || 'bg-gray-100 text-gray-600'}`}>
-                  {offer.ruleType === 'bogo' ? <Gift size={20} /> : offer.ruleType === 'cart_value' ? <Percent size={20} /> : <Tag size={20} />}
+                  {offer.ruleType === 'bogo' ? <Gift size={20} /> :
+                    offer.discountType === 'flat' ? <IndianRupee size={20} /> :
+                      offer.discountType === 'percentage' ? <Percent size={20} /> : <Tag size={20} />}
                 </div>
                 {['active', 'paused'].includes(offer.status) && (
                   <button
                     title={offer.status === 'active' ? "Pause Offer" : "Activate Offer"}
-                    onClick={(e) => handlePauseToggle(offer._id, offer.status, e)}
+                    onClick={(e) => handlePauseToggle(offer.id, offer.status, e)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${offer.status === 'active' ? 'bg-green-600' : 'bg-gray-300'}`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${offer.status === 'active' ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -369,17 +437,50 @@ const Offers = () => {
                     <input ref={dateInputRef} type="date" value={formData.startDate} onChange={(e) => { setFormData({ ...formData, startDate: e.target.value }); setErrors({ ...errors, startDate: null }); }} className={`w-full px-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:bg-white focus:ring-4 transition-all ${errors.startDate ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`} />
                   </div>
                   <div>
-                    <FormLabel text="End Date" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5" />
-                    <input type="date" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl font-bold outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 transition-all" />
+                    <div className="flex justify-between items-center mb-1.5 ">
+                      <FormLabel text="End Date" className="block text-xs font-bold text-gray-400 uppercase tracking-wider" />
+                      {!formData.endDate ? (
+                        <button type="button" onClick={() => setFormData({ ...formData, endDate: new Date().toISOString().split('T')[0] })} className="text-[10px] font-bold text-green-600 hover:underline">+ Set Date</button>
+                      ) : (
+                        <button type="button" onClick={() => setFormData({ ...formData, endDate: '' })} className="text-[10px] font-bold text-red-500 hover:underline flex items-center gap-1"><X size={10} /> Clear Date</button>
+                      )}
+                    </div>
+                    {formData.endDate ? (
+                      <input type="date" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl font-bold outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 transition-all" />
+                    ) : (
+                      <div className="w-full px-4 py-3 bg-gray-50 border border-dashed border-gray-300 rounded-xl font-medium text-gray-400 text-sm flex items-center justify-center">No End Date (Ongoing)</div>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <FormLabel text="Rule Type" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4" />
+                  <p className="text-[10px] text-gray-400 font-medium mb-2 flex items-center gap-1"><AlertCircle size={10} /> Note: You can only apply one rule type per offer.</p>
                   <div className="grid grid-cols-3 gap-2">
-                    <button type="button" onClick={() => setFormData({ ...formData, ruleType: 'cart_value' })} className={`p-3 rounded-xl border text-sm font-bold transition-all ${formData.ruleType === 'cart_value' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>Bill Amount</button>
-                    <button type="button" onClick={() => setFormData({ ...formData, ruleType: 'product_disc' })} className={`p-3 rounded-xl border text-sm font-bold transition-all ${formData.ruleType === 'product_disc' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>Product Disc.</button>
-                    <button type="button" onClick={() => setFormData({ ...formData, ruleType: 'bogo' })} className={`p-3 rounded-xl border text-sm font-bold transition-all ${formData.ruleType === 'bogo' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>Buy X Get Y</button>
+                    {['cart_value', 'product_disc', 'bogo'].map(type => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          // Clear rule-specific fields on switch
+                          setFormData({
+                            ...formData,
+                            ruleType: type,
+                            // Reset all rule fields
+                            minPurchase: '',
+                            discountValue: '',
+                            discountType: 'percentage',
+                            buyProductName: '', buyProductUnit: '', buyQty: '1',
+                            getProductName: '', getProductUnit: '', getQty: '1'
+                          });
+                          // Clear validations
+                          setErrors({});
+                        }}
+                        className={`p-3 rounded-xl border text-sm font-bold transition-all ${formData.ruleType === type ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                      >
+                        {type === 'cart_value' ? 'Bill Amount' : type === 'product_disc' ? 'Product Disc.' : 'Buy X Get Y'}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -388,29 +489,56 @@ const Offers = () => {
               <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
                 {formData.ruleType === 'cart_value' && (
                   <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
-                    <div><FormLabel text="Min Bill Amount (₹)" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" placeholder="e.g. 500" value={formData.minPurchase} onChange={(e) => setFormData({ ...formData, minPurchase: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-green-500 font-bold" /></div>
-                    <div><FormLabel text="Discount" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><div className="flex"><input type="number" value={formData.discountValue} onChange={e => setFormData({ ...formData, discountValue: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-l-xl outline-none focus:border-green-500 font-bold" /><select value={formData.discountType} onChange={e => setFormData({ ...formData, discountType: e.target.value })} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select></div></div>
+                    <div>
+                      <FormLabel text="Min Bill Amount (₹)" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" />
+                      <input type="number" min="0" placeholder="e.g. 500" value={formData.minPurchase} onChange={(e) => { if (e.target.value >= 0) { setFormData({ ...formData, minPurchase: e.target.value }); setErrors({ ...errors, minPurchase: null }) } }} className={`w-full px-4 py-3 bg-white border rounded-xl outline-none focus:border-green-500 font-bold ${errors.minPurchase ? 'border-red-500' : 'border-gray-200'}`} />
+                      {errors.minPurchase && <p className="text-red-500 text-xs mt-1 font-bold">{errors.minPurchase}</p>}
+                    </div>
+                    <div>
+                      <FormLabel text="Discount" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" />
+                      <div className="flex">
+                        <input type="number" min="0" value={formData.discountValue} onChange={e => { if (e.target.value >= 0) { setFormData({ ...formData, discountValue: e.target.value }); setErrors({ ...errors, discountValue: null }) } }} className={`w-full px-4 py-3 bg-white border rounded-l-xl outline-none focus:border-green-500 font-bold ${errors.discountValue ? 'border-red-500' : 'border-gray-200'}`} />
+                        <select value={formData.discountType} onChange={e => setFormData({ ...formData, discountType: e.target.value })} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select>
+                      </div>
+                      {errors.discountValue && <p className="text-red-500 text-xs mt-1 font-bold">{errors.discountValue}</p>}
+                    </div>
                   </div>
                 )}
                 {formData.ruleType === 'product_disc' && (
                   <div className="space-y-4 animate-in slide-in-from-top-2">
                     <div className="flex gap-4 items-end">
-                      <ProductSearch label="If Customer Buys" placeholder="e.g. Sugar" value={formData.buyProductName} unit={formData.buyProductUnit} onSelect={(p) => { const u = allUnits.find(unit => unit.id === p.unitId); setFormData({ ...formData, buyProductName: p.name, buyProductUnit: u ? (u.symbol || u.name) : (p.unitSymbol || p.unitName || '') }); }} onUnitChange={(u) => setFormData({ ...formData, buyProductUnit: u })} availableProducts={allProducts} availableUnits={allUnits} />
-                      <div className="w-24"><FormLabel text="Min Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => setFormData({ ...formData, buyQty: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
+                      <div className="flex-1">
+                        <ProductSearch label="If Customer Buys" placeholder="e.g. Sugar" value={formData.buyProductName} unit={formData.buyProductUnit} onSelect={(p) => { const u = allUnits.find(unit => unit.id === p.unitId); setFormData({ ...formData, buyProductName: p.name, buyProductUnit: u ? (u.symbol || u.name) : (p.unitSymbol || p.unitName || '') }); setErrors({ ...errors, buyProductName: null }); }} onUnitChange={(u) => setFormData({ ...formData, buyProductUnit: u })} availableProducts={allProducts} availableUnits={allUnits} />
+                        {errors.buyProductName && <p className="text-red-500 text-xs mt-1 font-bold">{errors.buyProductName}</p>}
+                      </div>
+                      <div className="w-24"><FormLabel text="Min Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, buyQty: e.target.value }) }} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
                     </div>
-                    <div><FormLabel text="Give Discount" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><div className="flex w-1/2"><input type="number" value={formData.discountValue} onChange={e => setFormData({ ...formData, discountValue: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-l-xl outline-none focus:border-green-500 font-bold" /><select value={formData.discountType} onChange={e => setFormData({ ...formData, discountType: e.target.value })} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select></div></div>
+                    <div>
+                      <FormLabel text="Give Discount" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" />
+                      <div className="flex w-1/2">
+                        <input type="number" min="0" value={formData.discountValue} onChange={e => { if (e.target.value >= 0) { setFormData({ ...formData, discountValue: e.target.value }); setErrors({ ...errors, discountValue: null }) } }} className={`w-full px-4 py-3 bg-white border rounded-l-xl outline-none focus:border-green-500 font-bold ${errors.discountValue ? 'border-red-500' : 'border-gray-200'}`} />
+                        <select value={formData.discountType} onChange={e => setFormData({ ...formData, discountType: e.target.value })} className="bg-gray-200 rounded-r-xl px-3 font-bold text-gray-700 outline-none"><option value="percentage">%</option><option value="flat">₹</option></select>
+                      </div>
+                      {errors.discountValue && <p className="text-red-500 text-xs mt-1 font-bold">{errors.discountValue}</p>}
+                    </div>
                   </div>
                 )}
                 {formData.ruleType === 'bogo' && (
                   <div className="space-y-4 animate-in slide-in-from-top-2">
                     <div className="flex gap-4 items-end">
-                      <ProductSearch label="Buy" placeholder="e.g. Biscuits" value={formData.buyProductName} unit={formData.buyProductUnit} onSelect={(p) => { const u = allUnits.find(unit => unit.id === p.unitId); setFormData({ ...formData, buyProductName: p.name, buyProductUnit: u ? (u.symbol || u.name) : (p.unitSymbol || p.unitName || '') }); }} onUnitChange={(u) => setFormData({ ...formData, buyProductUnit: u })} availableProducts={allProducts} availableUnits={allUnits} />
-                      <div className="w-24"><FormLabel text="Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => setFormData({ ...formData, buyQty: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
+                      <div className="flex-1">
+                        <ProductSearch label="Buy" placeholder="e.g. Biscuits" value={formData.buyProductName} unit={formData.buyProductUnit} onSelect={(p) => { const u = allUnits.find(unit => unit.id === p.unitId); setFormData({ ...formData, buyProductName: p.name, buyProductUnit: u ? (u.symbol || u.name) : (p.unitSymbol || p.unitName || '') }); setErrors({ ...errors, buyProductName: null }); }} onUnitChange={(u) => setFormData({ ...formData, buyProductUnit: u })} availableProducts={allProducts} availableUnits={allUnits} />
+                        {errors.buyProductName && <p className="text-red-500 text-xs mt-1 font-bold">{errors.buyProductName}</p>}
+                      </div>
+                      <div className="w-24"><FormLabel text="Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.buyQty} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, buyQty: e.target.value }) }} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
                     </div>
                     <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase my-1"><ArrowDownIcon /> Then Get Free</div>
                     <div className="flex gap-4 items-end">
-                      <ProductSearch label="Get Free" placeholder="e.g. Maggi" value={formData.getProductName} unit={formData.getProductUnit} onSelect={(p) => { const u = allUnits.find(unit => unit.id === p.unitId); setFormData({ ...formData, getProductName: p.name, getProductUnit: u ? (u.symbol || u.name) : (p.unitSymbol || p.unitName || '') }); }} onUnitChange={(u) => setFormData({ ...formData, getProductUnit: u })} availableProducts={allProducts} availableUnits={allUnits} />
-                      <div className="w-24"><FormLabel text="Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.getQty} onChange={(e) => setFormData({ ...formData, getQty: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
+                      <div className="flex-1">
+                        <ProductSearch label="Get Free" placeholder="e.g. Maggi" value={formData.getProductName} unit={formData.getProductUnit} onSelect={(p) => { const u = allUnits.find(unit => unit.id === p.unitId); setFormData({ ...formData, getProductName: p.name, getProductUnit: u ? (u.symbol || u.name) : (p.unitSymbol || p.unitName || '') }); setErrors({ ...errors, getProductName: null }); }} onUnitChange={(u) => setFormData({ ...formData, getProductUnit: u })} availableProducts={allProducts} availableUnits={allUnits} />
+                        {errors.getProductName && <p className="text-red-500 text-xs mt-1 font-bold">{errors.getProductName}</p>}
+                      </div>
+                      <div className="w-24"><FormLabel text="Qty" className="block text-xs font-bold text-gray-500 uppercase mb-1.5" /><input type="number" min="1" placeholder="1" value={formData.getQty} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, getQty: e.target.value }) }} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none font-bold" /></div>
                     </div>
                   </div>
                 )}
@@ -420,7 +548,7 @@ const Offers = () => {
               <div className="bg-yellow-50/50 p-5 rounded-2xl border border-yellow-100 space-y-3">
                 <h3 className="text-sm font-bold text-yellow-800 uppercase tracking-wider flex items-center gap-2"><Repeat size={16} /> Usage Limit per Customer</h3>
                 <div className="flex gap-4">{['single', 'unlimited', 'limited'].map(type => (<label key={type} className="flex items-center gap-2 cursor-pointer capitalize"><input type="radio" checked={formData.usageType === type} onChange={() => setFormData({ ...formData, usageType: type })} className="text-green-600 focus:ring-green-500 w-4 h-4" /><span className="text-sm font-bold text-gray-700">{type === 'single' ? '1 Time' : type === 'limited' ? 'Custom' : 'Unlimited'}</span></label>))}</div>
-                {formData.usageType === 'limited' && (<div className="flex items-center gap-2 animate-in slide-in-from-top-2"><input type="number" min="1" value={formData.usageLimitCount} onChange={(e) => setFormData({ ...formData, usageLimitCount: e.target.value })} className="w-20 px-3 py-2 font-bold bg-white border border-yellow-200 rounded-lg outline-none focus:border-green-500" /><span className="text-sm font-bold text-gray-500">times per customer</span></div>)}
+                {formData.usageType === 'limited' && (<div className="flex items-center gap-2 animate-in slide-in-from-top-2"><input type="number" min="1" value={formData.usageLimitCount} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, usageLimitCount: e.target.value }) }} className="w-20 px-3 py-2 font-bold bg-white border border-yellow-200 rounded-lg outline-none focus:border-green-500" /><span className="text-sm font-bold text-gray-500">times per customer</span></div>)}
               </div>
 
               {/* Section 4: Target Audience */}
@@ -429,11 +557,11 @@ const Offers = () => {
                 <select value={formData.targetType} onChange={(e) => setFormData({ ...formData, targetType: e.target.value, selectedCustomers: [] })} className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl font-bold outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50"><option value="all">All Customers</option><option value="top_spenders">Top Spenders</option><option value="frequent">Frequent Visitors</option><option value="specific">Specific Customers</option></select>
 
                 {formData.targetType === 'top_spenders' && (
-                  <div className="flex flex-wrap items-center gap-3 bg-purple-50 p-4 rounded-xl border border-purple-100"><span className="text-sm font-bold text-purple-800">Top</span><input type="number" min="1" value={formData.topSpenderCount} onChange={(e) => setFormData({ ...formData, topSpenderCount: e.target.value })} className="w-20 px-3 py-1.5 bg-white border border-purple-200 font-bold rounded-lg text-center" /><span className="text-sm font-bold text-purple-800">Customers in last</span><input type="number" min="1" value={formData.topSpenderDuration} onChange={(e) => setFormData({ ...formData, topSpenderDuration: e.target.value })} className="w-20 px-3 py-1.5 bg-white border border-purple-200 font-bold rounded-lg text-center" /><select value={formData.topSpenderUnit} onChange={(e) => setFormData({ ...formData, topSpenderUnit: e.target.value })} className="px-3 py-1.5 bg-white border border-purple-200 rounded-lg font-bold text-sm"><option>Years</option><option>Months</option><option>Weeks</option><option>Days</option></select></div>
+                  <div className="flex flex-wrap items-center gap-3 bg-purple-50 p-4 rounded-xl border border-purple-100"><span className="text-sm font-bold text-purple-800">Top</span><input type="number" min="1" value={formData.topSpenderCount} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, topSpenderCount: e.target.value }) }} className="w-20 px-3 py-1.5 bg-white border border-purple-200 font-bold rounded-lg text-center" /><span className="text-sm font-bold text-purple-800">Customers in last</span><input type="number" min="1" value={formData.topSpenderDuration} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, topSpenderDuration: e.target.value }) }} className="w-20 px-3 py-1.5 bg-white border border-purple-200 font-bold rounded-lg text-center" /><select value={formData.topSpenderUnit} onChange={(e) => setFormData({ ...formData, topSpenderUnit: e.target.value })} className="px-3 py-1.5 bg-white border border-purple-200 rounded-lg font-bold text-sm"><option>Years</option><option>Months</option><option>Weeks</option><option>Days</option></select></div>
                 )}
 
                 {formData.targetType === 'frequent' && (
-                  <div className="flex flex-wrap items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100"><span className="text-sm font-bold text-blue-800">More than</span><input type="number" min="1" value={formData.minVisits} onChange={(e) => setFormData({ ...formData, minVisits: e.target.value })} className="w-20 px-3 py-1.5 bg-white border border-blue-200 font-bold rounded-lg text-center" /><span className="text-sm font-bold text-blue-800">visits in last</span><input type="number" min="1" value={formData.frequentDuration} onChange={(e) => setFormData({ ...formData, frequentDuration: e.target.value })} className="w-20 px-3 py-1.5 bg-white border border-blue-200 font-bold rounded-lg text-center" /><span className="text-sm font-bold text-blue-800">days.</span></div>
+                  <div className="flex flex-wrap items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100"><span className="text-sm font-bold text-blue-800">More than</span><input type="number" min="1" value={formData.minVisits} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, minVisits: e.target.value }) }} className="w-20 px-3 py-1.5 bg-white border border-blue-200 font-bold rounded-lg text-center" /><span className="text-sm font-bold text-blue-800">visits in last</span><input type="number" min="1" value={formData.frequentDuration} onChange={(e) => { if (e.target.value >= 0) setFormData({ ...formData, frequentDuration: e.target.value }) }} className="w-20 px-3 py-1.5 bg-white border border-blue-200 font-bold rounded-lg text-center" /><span className="text-sm font-bold text-blue-800">days.</span></div>
                 )}
 
                 {['specific', 'top_spenders', 'frequent'].includes(formData.targetType) && (
@@ -491,7 +619,7 @@ const Offers = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in duration-200 overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <div><h2 className="text-xl font-bold text-gray-800">{viewOffer.name}</h2><p className="text-sm font-medium text-gray-500 mt-1 flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${viewOffer.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></span>{viewOffer.status.toUpperCase()} • {viewOffer.startDate?.split('T')[0]} to {viewOffer.endDate || 'Ongoing'}</p></div>
+              <div><h2 className="text-xl font-bold text-gray-800">{viewOffer.name}</h2><p className="text-sm font-medium text-gray-500 mt-1 flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${viewOffer.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></span>{viewOffer.status.toUpperCase()} • {formatDate(viewOffer.startDate)} to {formatDate(viewOffer.endDate)}</p></div>
               <button onClick={() => setViewOffer(null)} className="p-2 bg-white rounded-full text-gray-500 hover:text-gray-800 shadow-sm border border-gray-200"><X size={20} /></button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
