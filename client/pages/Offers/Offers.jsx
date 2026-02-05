@@ -12,6 +12,15 @@ import TabsBar from '../../components/common/TabsBar';
 import StatCard from '../../components/common/StatCard';
 import FormLabel from '../../components/common/FormLabel';
 
+const THEME_COLORS = [
+  { id: 'blue', classes: 'bg-blue-100 text-blue-600', border: 'border-blue-100' },
+  { id: 'purple', classes: 'bg-purple-100 text-purple-600', border: 'border-purple-100' },
+  { id: 'green', classes: 'bg-green-100 text-green-600', border: 'border-green-100' },
+  { id: 'orange', classes: 'bg-orange-100 text-orange-600', border: 'border-orange-100' },
+  { id: 'pink', classes: 'bg-pink-100 text-pink-600', border: 'border-pink-100' },
+  { id: 'indigo', classes: 'bg-indigo-100 text-indigo-600', border: 'border-indigo-100' },
+];
+
 const formatDate = (dateString) => {
   if (!dateString) return 'Ongoing';
   const date = new Date(dateString);
@@ -106,8 +115,10 @@ const Offers = () => {
     usageType: 'unlimited', usageLimitCount: '1',
     targetType: 'all', minVisits: '5', frequentDuration: '30',
     topSpenderCount: '5', topSpenderDuration: '1', topSpenderUnit: 'Years',
+    topSpenderCount: '5', topSpenderDuration: '1', topSpenderUnit: 'Years',
     startDate: new Date().toISOString().split('T')[0], endDate: '',
-    selectedCustomers: []
+    selectedCustomers: [],
+    colorTheme: THEME_COLORS[0].classes
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -427,7 +438,14 @@ const Offers = () => {
               <div className="space-y-4">
                 <div>
                   <FormLabel text="Offer Name" required={true} className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5" />
-                  <input ref={nameInputRef} type="text" value={formData.name} onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setErrors({ ...errors, name: null }); }} placeholder="e.g. Diwali Dhamaka Sale" className={`w-full px-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:bg-white focus:ring-4 transition-all ${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`} />
+                  <div className="flex gap-2">
+                    <input ref={nameInputRef} type="text" value={formData.name} onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setErrors({ ...errors, name: null }); }} placeholder="e.g. Diwali Dhamaka Sale" className={`flex-1 px-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:bg-white focus:ring-4 transition-all ${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-50' : 'border-transparent focus:border-green-500 focus:ring-green-50'}`} />
+                    <div className="flex bg-gray-50 p-1.5 rounded-xl border border-gray-200 gap-1">
+                      {THEME_COLORS.map(theme => (
+                        <button key={theme.id} type="button" onClick={() => setFormData({ ...formData, colorTheme: theme.classes })} className={`w-8 h-full rounded-lg transition-all ${theme.classes} ${formData.colorTheme === theme.classes ? 'ring-2 ring-offset-2 ring-gray-400 scale-105' : 'opacity-60 hover:opacity-100'}`}></button>
+                      ))}
+                    </div>
+                  </div>
                   {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-bold"><AlertCircle size={12} /> {errors.name}</p>}
                 </div>
 
