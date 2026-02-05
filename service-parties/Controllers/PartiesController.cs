@@ -44,17 +44,25 @@ namespace SBMS.Parties.Controllers
         }
 
         // API ENDPOINTS
-
         // GET: api/Parties
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Party>>> GetParties()
+        public async Task<ActionResult<IEnumerable<Party>>> GetParties([FromQuery] string? search)
         {
             var businessId = GetBusinessId();
             if (businessId == Guid.Empty) return Unauthorized();
 
-            //  Only fetch parties for THIS business
-            return await _context.Parties
-                .Where(p => p.BusinessId == businessId)
+            var query = _context.Parties.Where(p => p.BusinessId == businessId);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                search = search.ToLower();
+                // Default collation behavior depends on DB configuration, but ToLower() ensures consistency
+
+                query = query.Where(p => p.Name.ToLower().Contains(search) || p.PhoneNumber.Contains(search));
+
+            }
+
+            return await query
                 .OrderBy(p => p.Name)
                 .ToListAsync();
         }
