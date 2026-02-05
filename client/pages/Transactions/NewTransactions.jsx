@@ -73,6 +73,7 @@ const NewTransaction = ({ type = 'sale' }) => {
 
   // Data State
   const [customerList, setCustomerList] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [searchProducts, setSearchProducts] = useState([]);
 
   // Refs
@@ -102,6 +103,21 @@ const NewTransaction = ({ type = 'sale' }) => {
     return () => clearTimeout(timer);
   }, [custSearch]);
 
+  // Fetch All Products on Mount
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const { data } = await api.get('/trading/products');
+        // Sort A-Z
+        const sorted = data.sort((a, b) => a.name.localeCompare(b.name));
+        setAllProducts(sorted);
+      } catch (err) {
+        console.error("Failed to fetch products", err);
+      }
+    };
+    fetchResources();
+  }, []);
+
   useEffect(() => {
     if (!isSale) {
       const sub = products.reduce((acc, i) => acc + (Number(i.price || 0) * Number(i.qty || 0)), 0);
@@ -126,9 +142,16 @@ const NewTransaction = ({ type = 'sale' }) => {
         // For now, full replace is safer for logic but risky for UI.
 
         // Merge: keep 'manual' flags
-        const mergedProducts = data.products || products; // simplified
+        // Merge logic: Update calculated fields for existing named products, keep empty/manual rows
+        const calculatedMap = new Map(data.products.map(p => [p.id, p]));
 
-        setProducts(mergedProducts);
+        setProducts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const updatedExisting = prev.map(p => calculatedMap.has(p.id) ? { ...p, ...calculatedMap.get(p.id) } : p);
+          const newItems = data.products.filter(p => !existingIds.has(p.id));
+          return [...updatedExisting, ...newItems];
+        });
+
         setTotals(data.totals);
         setAppliedOffers(data.appliedOffers);
         setAvailableOffers(data.availableOffers);
@@ -183,14 +206,12 @@ const NewTransaction = ({ type = 'sale' }) => {
       return product;
     }));
 
-    // Product Search
-    if (field === 'name' && value.length > 1) {
-      try {
-        const { data } = await api.get(`/trading/products?search=${value}`);
-        setSearchProducts(data);
-      } catch (err) {
-        console.error(err);
-      }
+    // Product Search (Local Filtering)
+    if (field === 'name') {
+      const filtered = value.length > 0
+        ? allProducts.filter(p => p.name.toLowerCase().includes(value.toLowerCase()))
+        : allProducts;
+      setSearchProducts(filtered);
     }
   };
 
@@ -218,7 +239,10 @@ const NewTransaction = ({ type = 'sale' }) => {
     if (c.id === 'walk-in') setShowWalkInModal(true);
   };
 
-  const filteredCustomers = customerList;
+  const filteredCustomers = [
+    { id: 'walk-in', name: 'Walk-in Customer', phone: '', type: 'Regular' },
+    ...customerList
+  ].filter(c => c.name.toLowerCase().includes(custSearch.toLowerCase()) || (c.phone && c.phone.includes(custSearch)));
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
@@ -312,8 +336,8 @@ const NewTransaction = ({ type = 'sale' }) => {
                       type="text"
                       placeholder="Product name"
                       value={product.name}
-                      onFocus={() => !product.isFree && setFocusedRowId(product.id)}
-                      onClick={() => !product.isFree && setFocusedRowId(product.id)}
+                      onFocus={() => { if (!product.isFree) { setFocusedRowId(product.id); setSearchProducts(product.name ? allProducts.filter(p => p.name.toLowerCase().includes(product.name.toLowerCase())) : allProducts); } }}
+                      onClick={() => { if (!product.isFree) { setFocusedRowId(product.id); setSearchProducts(product.name ? allProducts.filter(p => p.name.toLowerCase().includes(product.name.toLowerCase())) : allProducts); } }}
                       onChange={(e) => handleUpdateProduct(product.id, 'name', e.target.value)}
                       disabled={product.isFree}
                       className={`w-full p-2.5 bg-gray-50 rounded-lg text-sm border-2 border-transparent focus:bg-white focus:border-gray-200 outline-none transition-all ${product.isFree ? 'bg-transparent font-bold text-amber-900' : ''}`}
@@ -386,6 +410,10 @@ const NewTransaction = ({ type = 'sale' }) => {
                 <button className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition-colors"><Share2 size={18} /> Share</button>
                 <button
                   onClick={async () => {
+                    const validProducts = products.filter(p => p.name && p.price);
+                    if (validProducts.length === 0) { alert("Please add at least one valid product."); return; }
+                    if (!selectedCustomer) { alert("Please select a party."); return; }
+
                     try {
                       const payload = {
                         partyId: (selectedCustomer?.id && selectedCustomer.id !== 'walk-in') ? selectedCustomer.id : null,
