@@ -1,0 +1,20 @@
+package com.sbms.trading_service.repository;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import com.sbms.trading_service.entity.Transaction;
+
+@Repository
+public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+
+    @Query("SELECT t.partyId, SUM(t.totalAmount) FROM Transaction t WHERE t.businessId = :businessId GROUP BY t.partyId ORDER BY SUM(t.totalAmount) DESC")
+    List<Object[]> findTopSpenders(UUID businessId);
+
+    @Query("SELECT t.partyId, COUNT(t) FROM Transaction t WHERE t.businessId = :businessId GROUP BY t.partyId ORDER BY COUNT(t) DESC")
+    List<Object[]> findFrequentVisitors(UUID businessId);
+}
