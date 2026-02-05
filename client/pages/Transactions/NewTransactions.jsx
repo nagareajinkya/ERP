@@ -71,6 +71,10 @@ const NewTransaction = ({ type = 'sale' }) => {
   const [isCustDropdownOpen, setIsCustDropdownOpen] = useState(false);
   const [focusedRowId, setFocusedRowId] = useState(null);
 
+  // Data State
+  const [customerList, setCustomerList] = useState([]);
+  const [searchProducts, setSearchProducts] = useState([]);
+
   // Refs
   const custInputRef = useRef(null);
   const productRefs = useRef({});
@@ -85,6 +89,19 @@ const NewTransaction = ({ type = 'sale' }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Customer Search Debounce
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await api.get(`/parties?search=${custSearch}`);
+        setCustomerList(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [custSearch]);
+
   useEffect(() => {
     if (!isSale) {
       const sub = products.reduce((acc, i) => acc + (Number(i.price || 0) * Number(i.qty || 0)), 0);
@@ -94,27 +111,35 @@ const NewTransaction = ({ type = 'sale' }) => {
 
     const calculateTotals = async () => {
       try {
-        const { data } = await api.post('/transactions/calculate-totals', {
-          items: products.filter(i => i.name),
+        const { data } = await api.post('/smart-ops/calculate', {
+          products: products.filter(i => i.name),
           selectedCustomer,
-          transactionType: 'sale',
           date,
-          removedOfferIds
         });
 
-        setProducts(data.items);
+        // Backend returns { products, totals, appliedOffers, availableOffers }
+        // We merge/replace products. Careful not to lose focus or cursor, 
+        // but since this likely runs on blur or periodic, it might be ok. 
+        // Ideally we only update amounts/totals unless structure changes (free items).
+
+        // Strategy: Only update free items and totals to avoid typing interruption?
+        // For now, full replace is safer for logic but risky for UI.
+
+        // Merge: keep 'manual' flags
+        const mergedProducts = data.products || products; // simplified
+
+        setProducts(mergedProducts);
         setTotals(data.totals);
         setAppliedOffers(data.appliedOffers);
         setAvailableOffers(data.availableOffers);
       } catch (error) {
         console.error('Error calculating totals:', error);
-        const sub = products.reduce((acc, i) => acc + (Number(i.price || 0) * Number(i.qty || 0)), 0);
-        setTotals({ sub, disc: 0, total: sub });
       }
     };
 
-    calculateTotals();
-  }, [products, selectedCustomer, removedOfferIds, isSale, date]);
+    const timer = setTimeout(calculateTotals, 500); // Debounce calc
+    return () => clearTimeout(timer);
+  }, [products.map(p => p.name + p.qty + p.price).join('|'), selectedCustomer, isSale, date]); // Deep dependency check simplified
 
 
   // --- HANDLERS ---
@@ -146,17 +171,27 @@ const NewTransaction = ({ type = 'sale' }) => {
     }
   };
 
-  const handleUpdateProduct = (id, field, value) => {
+  const handleUpdateProduct = async (id, field, value) => {
     setProducts(prev => prev.map(product => {
       if (product.id === id) {
         if (field === 'qty' && value < 1) return product;
         const updatedProduct = { ...product, [field]: value };
-        if (product.isFree) updatedProduct.manual = true; // Mark as manually edited
+        if (product.isFree) updatedProduct.manual = true;
         updatedProduct.amount = (Number(updatedProduct.qty) || 0) * (Number(updatedProduct.price) || 0);
         return updatedProduct;
       }
       return product;
     }));
+
+    // Product Search
+    if (field === 'name' && value.length > 1) {
+      try {
+        const { data } = await api.get(`/trading/products?search=${value}`);
+        setSearchProducts(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
   const handleProductSelect = (rowId, product) => {
@@ -183,9 +218,7 @@ const NewTransaction = ({ type = 'sale' }) => {
     if (c.id === 'walk-in') setShowWalkInModal(true);
   };
 
-  const filteredCustomers = CUSTOMERS.filter(c =>
-    c.name.toLowerCase().includes(custSearch.toLowerCase()) || c.phone.includes(custSearch)
-  );
+  const filteredCustomers = customerList;
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
@@ -289,7 +322,7 @@ const NewTransaction = ({ type = 'sale' }) => {
 
                     {focusedRowId === product.id && !product.isFree && (
                       <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50">
-                        {PRODUCTS.filter(p => p.name.toLowerCase().includes(product.name.toLowerCase())).map(p => (
+                        {searchProducts.map(p => (
                           <div key={p.id} onMouseDown={() => handleProductSelect(product.id, p)} className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 flex justify-between"><span>{p.name}</span><span className="text-gray-400 text-xs">₹{p.price}</span></div>
                         ))}
                       </div>
@@ -351,7 +384,37 @@ const NewTransaction = ({ type = 'sale' }) => {
               <hr className="border-gray-100 my-4" />
               <div className="grid grid-cols-2 gap-3">
                 <button className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition-colors"><Share2 size={18} /> Share</button>
-                <button className={`flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl font-medium shadow-lg shadow-gray-200 transition-all ${theme.primary} ${theme.primaryHover}`}><Save size={18} /> Save Bill</button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const payload = {
+                        partyId: (selectedCustomer?.id && selectedCustomer.id !== 'walk-in') ? selectedCustomer.id : null,
+                        date,
+                        type: isSale ? 'SALE' : 'PURCHASE',
+                        products: products.map(p => ({
+                          productId: p.id, // Assuming selected product has ID
+                          qty: p.qty,
+                          price: p.price,
+                          amount: p.amount,
+                          isFree: p.isFree
+                        })),
+                        subTotal: totals.sub,
+                        discount: totals.disc,
+                        totalAmount: totals.total,
+                        paidAmount: Number(paidAmount) || 0
+                      };
+                      const { data } = await api.post('/trading/transactions', payload);
+                      alert('Transaction Saved! ID: ' + data);
+                      navigate('/transactions');
+                    } catch (err) {
+                      console.error(err);
+                      alert('Failed to save');
+                    }
+                  }}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl font-medium shadow-lg shadow-gray-200 transition-all ${theme.primary} ${theme.primaryHover}`}
+                >
+                  <Save size={18} /> Save Bill
+                </button>
               </div>
             </div>
           </div>
