@@ -169,6 +169,29 @@ exports.updateOffer = async (req, res) => {
         offer.description = derived.description;
         offer.displayValue = derived.displayValue;
 
+        // Auto-update status based on new dates
+        const now = new Date();
+        const start = new Date(offer.startDate);
+        const end = offer.endDate ? new Date(offer.endDate) : null;
+
+        // Logic:
+        // 1. Future Start -> Scheduled
+        // 2. Past End -> Expired
+        // 3. Current Range -> Active (only if it was Scheduled or Expired. If Paused, keep Paused unless explicitly changed?)
+        if (start > now) {
+            offer.status = 'scheduled';
+        } else if (end && end < now) {
+            offer.status = 'expired';
+        } else {
+            // Currently valid range
+            // If it was scheduled or expired, make it active
+            if (offer.status === 'scheduled' || offer.status === 'expired') {
+                offer.status = 'active';
+            }
+            // If it was 'paused', leave it 'paused' unless user manually changed status in this same request (which acts as override)
+
+        }
+
         await offer.save();
         res.json(offer);
     } catch (err) {
@@ -209,6 +232,14 @@ exports.toggleStatus = async (req, res) => {
         }
 
         offer.status = status;
+
+        // If stopping the offer, set endDate to now
+        if (status === 'expired') {
+            offer.endDate = new Date();
+        }
+        // If activating and expired, maybe clear endDate or check? 
+        // For now, just handling the Stop case as requested.
+
         await offer.save();
         res.json(offer);
     } catch (err) {
