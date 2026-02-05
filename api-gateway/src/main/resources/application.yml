@@ -17,6 +17,7 @@ spring:
               - PUT
               - DELETE
               - OPTIONS
+              - PATCH
             allowedHeaders: "*"
             allowCredentials: true
 
