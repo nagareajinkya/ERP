@@ -54,19 +54,29 @@ public class ProductServiceImpl implements ProductService {
         response.setUnitId(savedProduct.getUnit().getId());
         response.setCategoryName(savedProduct.getCategory().getName());
         response.setUnitName(savedProduct.getUnit().getName());
+        response.setUnitSymbol(savedProduct.getUnit().getSymbol());
         
         return response;
     }
 
     @Override
-    public List<ProductResponse> getMyProducts(UUID businessId) {
-        return productRepository.findAllByBusinessId(businessId).stream()
+    public List<ProductResponse> getMyProducts(UUID businessId, String search) {
+        List<Product> products;
+        
+        if (search != null && !search.trim().isEmpty()) {
+            products = productRepository.findByBusinessIdAndNameContainingIgnoreCase(businessId, search);
+        } else {
+            products = productRepository.findAllByBusinessId(businessId);
+        }
+
+        return products.stream()
                 .map(product -> {
                     ProductResponse response = modelMapper.map(product, ProductResponse.class);
                     response.setCategoryId(product.getCategory().getId());
                     response.setUnitId(product.getUnit().getId());
                     response.setCategoryName(product.getCategory().getName());
                     response.setUnitName(product.getUnit().getName());
+                    response.setUnitSymbol(product.getUnit().getSymbol());
                     return response;
                 })
                 .collect(Collectors.toList());
@@ -109,6 +119,7 @@ public class ProductServiceImpl implements ProductService {
         response.setCategoryName(savedProduct.getCategory().getName());
         response.setCategoryId(savedProduct.getCategory().getId());
         response.setUnitName(savedProduct.getUnit().getName());
+        response.setUnitSymbol(savedProduct.getUnit().getSymbol());
         response.setUnitId(savedProduct.getUnit().getId());
         
         return response;
