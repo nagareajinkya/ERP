@@ -29,7 +29,6 @@ const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = 
 
     // 2. Filter Active Offers (Targeting & Exclusion Check)
     // We only process offers relevant to this customer AND not manually excluded.
-    console.log(`[OfferEngine] Input: ${activeOffers.length} offers, Customer: ${customerId}, Excluded: ${excludedOfferIds}`);
 
     const relevantOffers = activeOffers.filter(offer => {
         // Exclusion Check
@@ -40,7 +39,6 @@ const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = 
         // Targeting Check
         if (offer.targetType === 'specific') {
             const match = offer.selectedCustomers && offer.selectedCustomers.includes(customerId);
-            console.log(`[OfferEngine] Checking Specific Offer ${offer.name} (${offer._id}) for ${customerId}: ${match}`);
             return match;
         }
         return true;
