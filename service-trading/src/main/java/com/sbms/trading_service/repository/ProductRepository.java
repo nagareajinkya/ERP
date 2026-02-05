@@ -10,6 +10,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Get all products for the dashboard list
     List<Product> findAllByBusinessId(UUID businessId);
 
-    // Search bar logic (Find by Name OR SKU)
-    // will implement the complex search later
+    // Search bar logic (Find by Name)
+    List<Product> findByBusinessIdAndNameContainingIgnoreCase(UUID businessId, String name);
 }
