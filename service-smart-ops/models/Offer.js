@@ -57,6 +57,7 @@ const OfferSchema = new mongoose.Schema({
     // Metadata
     startDate: { type: Date, required: true },
     endDate: { type: Date },
+    colorTheme: { type: String }, // Stores tailwind classes e.g. "bg-blue-100 text-blue-600"
     status: {
         type: String,
         enum: ['active', 'paused', 'expired', 'scheduled'],
@@ -71,7 +72,7 @@ const OfferSchema = new mongoose.Schema({
     // Stats
     usageCount: { type: Number, default: 0 }
 
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 // Index for efficient querying by business and status
 OfferSchema.index({ businessId: 1, status: 1 });
