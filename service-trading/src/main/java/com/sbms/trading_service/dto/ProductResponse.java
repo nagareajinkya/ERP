@@ -15,6 +15,7 @@ public class ProductResponse {
     
     private Long unitId;
     private String unitName;
+    private String unitSymbol;
 
     private String name;
     private String sku;
