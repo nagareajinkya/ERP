@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Save, Share2, Plus, Trash2, Calendar,
-  Search, Zap, CheckCircle2, X, Gift, History
+  Search, Zap, CheckCircle2, X, Gift, History, Ticket, PartyPopper
 } from 'lucide-react';
 import FormLabel from '../../components/common/FormLabel';
 import api from '../../src/api';
@@ -124,6 +124,9 @@ const NewTransaction = ({ type = 'sale' }) => {
     fetchResources();
   }, []);
 
+  const [removedOffers, setRemovedOffers] = useState([]); // Offer IDs manually removed
+
+  // --- EFFECT: Calculate Totals & Offers via Backend ---
   useEffect(() => {
     if (!isSale) {
       const sub = products.reduce((acc, i) => acc + (Number(i.price || 0) * Number(i.qty || 0)), 0);
@@ -131,44 +134,63 @@ const NewTransaction = ({ type = 'sale' }) => {
       return;
     }
 
-    const calculateTotals = async () => {
+    const calculateTransaction = async () => {
       try {
-        const { data } = await api.post('/smart-ops/calculate', {
-          products: products.filter(i => i.name),
-          selectedCustomer,
-          date,
-        });
+        const payload = {
+          products: products.map(p => ({
+            id: p.id,
+            name: p.name,
+            qty: p.qty,
+            price: p.price,
+            productId: p.productId,
+            isFree: p.isFree
+          })),
+          customerId: selectedCustomer?.id === 'walk-in' ? null : selectedCustomer?.id,
+          date: date,
+          excludedOffers: removedOffers // Pass manual exclusions
+        };
 
-        // Backend returns { products, totals, appliedOffers, availableOffers }
-        // We merge/replace products. Careful not to lose focus or cursor, 
-        // but since this likely runs on blur or periodic, it might be ok. 
-        // Ideally we only update amounts/totals unless structure changes (free items).
+        const { data } = await api.post('/smart-ops/calculate', payload);
 
-        // Strategy: Only update free items and totals to avoid typing interruption?
-        // For now, full replace is safer for logic but risky for UI.
+        // data = { products, totals, appliedOffers, availableOffers }
 
-        // Merge: keep 'manual' flags
-        // Merge logic: Update calculated fields for existing named products, keep empty/manual rows
-        const calculatedMap = new Map(data.products.map(p => [p.id, p]));
-
-        setProducts(prev => {
-          const existingIds = new Set(prev.map(p => p.id));
-          const updatedExisting = prev.map(p => calculatedMap.has(p.id) ? { ...p, ...calculatedMap.get(p.id) } : p);
-          const newItems = data.products.filter(p => !existingIds.has(p.id));
-          return [...updatedExisting, ...newItems];
-        });
-
+        // 1. Update Totals
         setTotals(data.totals);
         setAppliedOffers(data.appliedOffers);
         setAvailableOffers(data.availableOffers);
-      } catch (error) {
-        console.error('Error calculating totals:', error);
+
+        // 2. Update Products List (Merge Strategy)
+        // We must preserve UI state (focus key) if possible, but data.products includes new amounts/free items.
+        // The backend returns the full list including seeded free items.
+        // We should replace our local 'products' with 'data.products' BUT match existing keys (row IDs).
+        // My offerEngine returns the exact same objects + new free ones.
+        // So we can largely just replace, provided the user isn't typing mid-request (debounce helps).
+
+        // To avoid cursor jumping, we only replace if things actually changed?
+        // For now, let's just setProducts.
+        // Note: We might get new IDs for free items.
+
+        // Optimization: Check if deep equal?
+        // Let's just set it.
+        setProducts(data.products);
+
+      } catch (err) {
+        console.error("Calculation error", err);
       }
     };
 
-    const timer = setTimeout(calculateTotals, 500); // Debounce calc
+    // Debounce to prevent flashing while typing
+    const timer = setTimeout(() => {
+
+      calculateTransaction();
+    }, 300); // 300ms delay (faster response)
+
     return () => clearTimeout(timer);
-  }, [products.map(p => p.name + p.qty + p.price).join('|'), selectedCustomer, isSale, date]); // Deep dependency check simplified
+
+  }, [products.map(p => p.productId + p.qty + p.price).join(','), selectedCustomer?.id, date, isSale, removedOffers]);
+  // Dependency array note: 
+  // We strictly track content changes. Tracking 'products' object directly causes loop if we setProducts inside.
+  // So we serialize key fields.
 
 
   // --- HANDLERS ---
@@ -395,7 +417,7 @@ const NewTransaction = ({ type = 'sale' }) => {
                   {availableOffers.length > 0 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 border-dashed">
                       <p className="text-[10px] font-bold text-blue-700 uppercase mb-2">Available Deals</p>
-                      <div className="space-y-1">{availableOffers.map((o) => (<div key={o.id} className="flex justify-between items-center text-xs text-blue-600"><span>{o.desc}</span>{removedOfferIds.includes(o.id) && <button onClick={() => setRemovedOfferIds(prev => prev.filter(id => id !== o.id))} className="text-[10px] font-bold underline hover:text-blue-800">Apply</button>}</div>))}</div>
+                      <div className="space-y-1">{availableOffers.map((o) => (<div key={o.id} className="flex justify-between items-center text-xs text-blue-600"><span>{o.desc}</span>{removedOffers.includes(o.id) && <button onClick={() => setRemovedOffers(prev => prev.filter(id => id !== o.id))} className="text-[10px] font-bold underline hover:text-blue-800">Apply</button>}</div>))}</div>
                     </div>
                   )}
                   {appliedOffers.length > 0 && (
@@ -437,7 +459,7 @@ const NewTransaction = ({ type = 'sale' }) => {
 
                     // 3. Validate Each Product
                     for (const p of filledProducts) {
-                      if (!p.productId) {
+                      if (!p.productId && !p.isFree) {
                         showNotify('error', `Product '${p.name}' not recognized. Please select it from the list.`);
                         return;
                       }
@@ -462,13 +484,21 @@ const NewTransaction = ({ type = 'sale' }) => {
                         partyId: (selectedCustomer?.id && selectedCustomer.id !== 'walk-in') ? selectedCustomer.id : null,
                         date,
                         type: isSale ? 'SALE' : 'PURCHASE',
-                        products: filledProducts.map(p => ({
-                          productId: p.productId, // Use real DB ID
-                          qty: p.qty,
-                          price: p.price,
-                          amount: p.amount,
-                          isFree: p.isFree
-                        })),
+                        products: filledProducts.map(p => {
+                          // Resolve Product ID for system-added free items that might only have name
+                          let resolvedProductId = p.productId;
+                          if (!resolvedProductId && p.name) {
+                            const match = allProducts.find(prod => prod.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+                            if (match) resolvedProductId = match.id;
+                          }
+                          return {
+                            productId: resolvedProductId, // Use real DB ID or resolved match
+                            qty: p.qty,
+                            price: p.price,
+                            amount: p.amount,
+                            isFree: p.isFree
+                          };
+                        }),
                         subTotal: totals.sub,
                         discount: totals.disc,
                         totalAmount: totals.total,
@@ -491,7 +521,86 @@ const NewTransaction = ({ type = 'sale' }) => {
           </div>
         </div>
       </div>
-    </div>
+
+      {/* RIGHT COLUMN: Offers & Summary */}
+      <div className="space-y-6">
+
+        {/* APPLIED OFFERS */}
+        {appliedOffers.length > 0 && (
+          <div className={`p-5 rounded-2xl border ${theme.border} bg-white shadow-sm`}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className={`p-2 rounded-lg ${isSale ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                <PartyPopper size={20} />
+              </div>
+              <h3 className="font-bold text-gray-800">Applied Offers</h3>
+            </div>
+            <div className="space-y-3">
+              {appliedOffers.map((offer, idx) => (
+                <div key={offer.id || idx} className="p-3 bg-green-50 border border-green-100 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 size={16} className="text-green-600 mt-1 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">{offer.desc || offer.name}</p>
+                      <p className="text-xs text-green-600 font-medium">Successfully Applied</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setRemovedOffers(prev => [...prev, offer.id])}
+                    className="p-1 hover:bg-white rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                    title="Remove Offer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* AVAILABLE OFFERS */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-800">Available Offers</h3>
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">{availableOffers.length} Active</span>
+          </div>
+
+          {availableOffers.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <Ticket size={32} className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No offers available</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+              {availableOffers.map((offer) => (
+                <div key={offer.id} className="group p-3 hover:bg-gray-50 border border-dashed border-gray-200 hover:border-gray-300 rounded-xl transition-all cursor-default">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:scale-110 transition-transform">
+                      <Ticket size={16} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-700">{offer.desc || offer.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{offer.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* TOTALS SUMMARY CARD */}
+        <div className={`p-6 rounded-2xl text-white shadow-xl ${theme.primary}`}>
+          <h3 className="text-lg font-medium opacity-90 mb-6">Payment Summary</h3>
+          <div className="space-y-4 mb-6">
+            <div className="flex justify-between text-sm opacity-80"><span>Subtotal</span><span>₹{totals.sub.toLocaleString()}</span></div>
+            <div className="flex justify-between text-sm opacity-80"><span>Discount</span><span>- ₹{totals.disc.toLocaleString()}</span></div>
+            <div className="h-px bg-white/20"></div>
+            <div className="flex justify-between text-2xl font-bold"><span>Total</span><span>₹{totals.total.toLocaleString()}</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div >
   );
 };
 
