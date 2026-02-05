@@ -27,15 +27,10 @@ const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = 
     let discountTotal = 0;
     const newFreeItems = [];
 
-    // 2. Filter Active Offers (Targeting & Exclusion Check)
-    // We only process offers relevant to this customer AND not manually excluded.
-
+    // 2. Filter Active Offers (Targeting Check)
+    // We only process offers relevant to this customer.
+    // NOTE: We do NOT exclude manual removals here because we want them to show up in "Available Offers"
     const relevantOffers = activeOffers.filter(offer => {
-        // Exclusion Check
-        if (excludedOfferIds && excludedOfferIds.includes(offer._id.toString())) {
-            return false;
-        }
-
         // Targeting Check
         if (offer.targetType === 'specific') {
             const match = offer.selectedCustomers && offer.selectedCustomers.includes(customerId);
@@ -48,6 +43,12 @@ const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = 
 
     // 3. Iterate Relevant Offers
     relevantOffers.forEach(offer => {
+        // Excluded Check: If manually excluded, skip APPLICATION but it remains in 'relevantOffers'
+        // so it will fall through to 'availableOffers' below.
+        if (excludedOfferIds && excludedOfferIds.includes(offer._id.toString())) {
+            return;
+        }
+
         let applied = false;
 
         // --- RULE: BOGO (Buy X Get Y) ---
@@ -119,7 +120,7 @@ const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = 
 
         if (applied) {
             appliedOffers.push({
-                id: offer._id,
+                id: offer._id.toString(),
                 desc: offer.description || offer.name,
                 value: offer.discountValue
             });
@@ -136,7 +137,7 @@ const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = 
     const availableOffers = relevantOffers
         .filter(o => !appliedOffers.find(ao => ao.id.toString() === o._id.toString()))
         .map(o => ({
-            id: o._id,
+            id: o._id.toString(),
             desc: o.description || o.name
         }));
 
