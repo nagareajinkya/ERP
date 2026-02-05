@@ -23,10 +23,12 @@ const OfferSchema = new mongoose.Schema({
     discountValue: { type: Number },
 
     buyProductName: { type: String },
+    buyProductId: { type: String }, // Robust ID for matching
     buyProductUnit: { type: String },
     buyQty: { type: Number },
 
     getProductName: { type: String },
+    getProductId: { type: String }, // ID to return to frontend for validation
     getProductUnit: { type: String },
     getQty: { type: Number },
 
