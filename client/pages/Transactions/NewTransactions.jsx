@@ -59,6 +59,12 @@ const NewTransaction = ({ type = 'sale' }) => {
 
   const [products, setProducts] = useState([{ id: Date.now(), name: '', qty: 1, price: '', amount: 0, isFree: false, manual: false }]);
   const [paidAmount, setPaidAmount] = useState('');
+  const [notification, setNotification] = useState({ type: '', message: '' });
+
+  const showNotify = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification({ type: '', message: '' }), 4000);
+  };
 
   // Calculated State
   const [appliedOffers, setAppliedOffers] = useState([]);
@@ -208,6 +214,9 @@ const NewTransaction = ({ type = 'sale' }) => {
 
     // Product Search (Local Filtering)
     if (field === 'name') {
+      // Clear productId if name changes (so we don't submit mismatched ID)
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, productId: null, name: value } : p));
+
       const filtered = value.length > 0
         ? allProducts.filter(p => p.name.toLowerCase().includes(value.toLowerCase()))
         : allProducts;
@@ -218,7 +227,8 @@ const NewTransaction = ({ type = 'sale' }) => {
   const handleProductSelect = (rowId, product) => {
     setProducts(prev => prev.map(item => {
       if (item.id === rowId) {
-        return { ...item, name: product.name, price: product.price, amount: (Number(item.qty) || 1) * product.price };
+        // Keep item.id (rowId) for React Key, store product.id as productId for DB
+        return { ...item, productId: product.id, name: product.name, price: product.price, amount: (Number(item.qty) || 1) * (Number(product.price) || 0) };
       }
       return item;
     }));
@@ -247,6 +257,14 @@ const NewTransaction = ({ type = 'sale' }) => {
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
       <WalkInModal isOpen={showWalkInModal} onClose={() => setShowWalkInModal(false)} onSave={handleWalkInSave} />
+
+      {/* Notification Toast */}
+      {notification.message && (
+        <div className={`fixed top-6 right-6 z-[100] px-6 py-4 rounded-xl border shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 ${notification.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-600 border-green-200'}`}>
+          {notification.type === 'error' ? <X size={20} /> : <CheckCircle2 size={20} />}
+          <span className="font-bold">{notification.message}</span>
+        </div>
+      )}
 
       {/* HEADER */}
       <div className="mb-8 flex justify-between items-start">
@@ -335,7 +353,7 @@ const NewTransaction = ({ type = 'sale' }) => {
                       ref={(el) => (productRefs.current[`name-${product.id}`] = el)}
                       type="text"
                       placeholder="Product name"
-                      value={product.name}
+                      value={product.name || ''}
                       onFocus={() => { if (!product.isFree) { setFocusedRowId(product.id); setSearchProducts(product.name ? allProducts.filter(p => p.name.toLowerCase().includes(product.name.toLowerCase())) : allProducts); } }}
                       onClick={() => { if (!product.isFree) { setFocusedRowId(product.id); setSearchProducts(product.name ? allProducts.filter(p => p.name.toLowerCase().includes(product.name.toLowerCase())) : allProducts); } }}
                       onChange={(e) => handleUpdateProduct(product.id, 'name', e.target.value)}
@@ -352,9 +370,9 @@ const NewTransaction = ({ type = 'sale' }) => {
                       </div>
                     )}
                   </div>
-                  <div className="col-span-2"><input ref={(el) => (productRefs.current[`qty-${product.id}`] = el)} type="number" value={product.qty} onChange={(e) => handleUpdateProduct(product.id, 'qty', parseFloat(e.target.value))} className={`w-full p-2.5 bg-gray-50 rounded-lg text-sm text-right border-2 border-transparent focus:bg-white focus:border-gray-200 outline-none ${product.isFree ? 'bg-white border-amber-200' : ''}`} /></div>
-                  <div className="col-span-2"><input ref={(el) => (productRefs.current[`price-${product.id}`] = el)} type="number" value={product.price} onChange={(e) => handleUpdateProduct(product.id, 'price', parseFloat(e.target.value))} disabled={product.isFree} className={`w-full p-2.5 bg-gray-50 rounded-lg text-sm text-right border-2 border-transparent focus:bg-white focus:border-gray-200 outline-none ${product.isFree ? 'bg-white border-amber-200' : ''}`} /></div>
-                  <div className="col-span-2 text-right font-bold text-gray-700">₹{product.amount.toLocaleString()}</div>
+                  <div className="col-span-2"><input ref={(el) => (productRefs.current[`qty-${product.id}`] = el)} type="number" value={product.qty ?? ''} onChange={(e) => handleUpdateProduct(product.id, 'qty', e.target.value === '' ? '' : parseFloat(e.target.value))} className={`w-full p-2.5 bg-gray-50 rounded-lg text-sm text-right border-2 border-transparent focus:bg-white focus:border-gray-200 outline-none ${product.isFree ? 'bg-white border-amber-200' : ''}`} /></div>
+                  <div className="col-span-2"><input ref={(el) => (productRefs.current[`price-${product.id}`] = el)} type="number" value={product.price ?? ''} onChange={(e) => handleUpdateProduct(product.id, 'price', e.target.value === '' ? '' : parseFloat(e.target.value))} disabled={product.isFree} className={`w-full p-2.5 bg-gray-50 rounded-lg text-sm text-right border-2 border-transparent focus:bg-white focus:border-gray-200 outline-none ${product.isFree ? 'bg-white border-amber-200' : ''}`} /></div>
+                  <div className="col-span-2 text-right font-bold text-gray-700">₹{(product.amount || 0).toLocaleString()}</div>
                   <div className="col-span-1 text-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => handleRemoveProduct(product.id, product.isFree)} tabIndex={-1} className={`${product.isFree ? 'text-amber-400 hover:text-red-500' : 'text-gray-300 hover:text-red-500'} p-2 rounded-full hover:bg-red-50 transition-colors`}><Trash2 size={16} /></button>
                   </div>
@@ -396,7 +414,7 @@ const NewTransaction = ({ type = 'sale' }) => {
 
               <div>
                 <FormLabel text={isSale ? 'Amount Received' : 'Amount Paid'} className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide" />
-                <div className="relative"><span className="absolute left-4 top-3 text-gray-400 font-medium">₹</span><input type="number" placeholder="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-gray-50 border-none rounded-xl text-gray-800 font-bold focus:ring-2 ${theme.border} outline-none transition-all`} /></div>
+                <div className="relative"><span className="absolute left-4 top-3 text-gray-400 font-medium">₹</span><input type="number" placeholder="0" value={paidAmount || ''} onChange={(e) => setPaidAmount(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-gray-50 border-none rounded-xl text-gray-800 font-bold focus:ring-2 ${theme.border} outline-none transition-all`} /></div>
               </div>
 
               <div className="flex justify-between items-center py-2 px-1">
@@ -410,17 +428,42 @@ const NewTransaction = ({ type = 'sale' }) => {
                 <button className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition-colors"><Share2 size={18} /> Share</button>
                 <button
                   onClick={async () => {
-                    const validProducts = products.filter(p => p.name && p.price);
-                    if (validProducts.length === 0) { alert("Please add at least one valid product."); return; }
-                    if (!selectedCustomer) { alert("Please select a party."); return; }
+                    // 1. Validate Party
+                    if (!selectedCustomer) { showNotify('error', "Please select a party."); return; }
+
+                    // 2. Filter Empty Rows
+                    const filledProducts = products.filter(p => p.name && p.name.trim() !== '');
+                    if (filledProducts.length === 0) { showNotify('error', "Please add at least one product."); return; }
+
+                    // 3. Validate Each Product
+                    for (const p of filledProducts) {
+                      if (!p.productId) {
+                        showNotify('error', `Product '${p.name}' not recognized. Please select it from the list.`);
+                        return;
+                      }
+                      if (!p.qty || Number(p.qty) <= 0) {
+                        showNotify('error', `Invalid quantity for '${p.name}'.`);
+                        return;
+                      }
+                      // Allow 0 price only if it's marked as free (though isFree usually sets price to 0)
+                      // If not free, price must be > 0.
+                      if (!p.isFree && (!p.price || Number(p.price) < 0)) {
+                        // Note: We allow 0 if user explicitly intends it, but usually standard sale has price. 
+                        // But for now, let's just check it's a valid number.
+                        // Actually user complained about "sell price not entered". 
+                        // So let's enforce non-empty.
+                        showNotify('error', `Please enter a price for '${p.name}'.`);
+                        return;
+                      }
+                    }
 
                     try {
                       const payload = {
                         partyId: (selectedCustomer?.id && selectedCustomer.id !== 'walk-in') ? selectedCustomer.id : null,
                         date,
                         type: isSale ? 'SALE' : 'PURCHASE',
-                        products: products.map(p => ({
-                          productId: p.id, // Assuming selected product has ID
+                        products: filledProducts.map(p => ({
+                          productId: p.productId, // Use real DB ID
                           qty: p.qty,
                           price: p.price,
                           amount: p.amount,
@@ -432,11 +475,11 @@ const NewTransaction = ({ type = 'sale' }) => {
                         paidAmount: Number(paidAmount) || 0
                       };
                       const { data } = await api.post('/trading/transactions', payload);
-                      alert('Transaction Saved! ID: ' + data);
-                      navigate('/transactions');
+                      showNotify('success', `Transaction Saved!`);
+                      setTimeout(() => navigate('/transactions'), 1000);
                     } catch (err) {
                       console.error(err);
-                      alert('Failed to save');
+                      showNotify('error', err.response?.data?.error || 'Failed to save transaction');
                     }
                   }}
                   className={`flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl font-medium shadow-lg shadow-gray-200 transition-all ${theme.primary} ${theme.primaryHover}`}
