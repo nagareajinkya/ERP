@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search, Filter, Calendar, ArrowUpRight, ArrowDownRight,
-  RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer, Edit
+  RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer, Edit, Trash2
 } from 'lucide-react';
 import api from '../../src/api';
 import SearchBar from '../../components/common/SearchBar';
@@ -194,6 +194,22 @@ const Transactions = () => {
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Are you sure you want to delete transaction #${trx.id}? This will revert stock and party balance.`)) {
+                          try {
+                            await api.delete(`/trading/transactions/${trx.id}`);
+                            setTransactions(prev => prev.filter(t => t.id !== trx.id));
+                          } catch (err) {
+                            console.error("Failed to delete", err);
+                            alert("Failed to delete transaction");
+                          }
+                        }
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={18} />
                     </button>
                   </td>
                 </tr>
