@@ -119,11 +119,39 @@ public class TransactionServiceImpl implements TransactionService {
 
             transaction.addProduct(tp);
             
-            // TODO: Update Inventory (Current Stock)
+            // Update Inventory (Current Stock)
+            adjustStock(product, item.getQty(), request.getType(), false);
         }
 
         Transaction saved = transactionRepository.save(transaction);
         return saved.getId();
+    }
+
+    // Helper to adjust stock
+    private void adjustStock(Product product, BigDecimal qty, String type, boolean isReversal) {
+        if (qty == null || qty.compareTo(BigDecimal.ZERO) == 0) return;
+
+        BigDecimal adjustment = qty;
+        
+        // Logic:
+        // Sale: -Qty
+        // Purchase: +Qty
+        // Reversal: Flip sign
+        
+        if ("SALE".equalsIgnoreCase(type)) {
+            adjustment = adjustment.negate();
+        } else if ("PURCHASE".equalsIgnoreCase(type)) {
+            // Keep positive
+        }
+        
+        if (isReversal) {
+            adjustment = adjustment.negate();
+        }
+
+        // Apply
+        BigDecimal newStock = product.getCurrentStock().add(adjustment);
+        product.setCurrentStock(newStock);
+        productRepository.save(product);
     }
 
     @Override
@@ -181,6 +209,7 @@ public class TransactionServiceImpl implements TransactionService {
 
             return TransactionResponse.builder()
                     .id(t.getId())
+                    .partyId(t.getPartyId())
                     .party(t.getPartyName() != null ? t.getPartyName() : "Unknown") 
                     .date(t.getDate())
                     .type(t.getType())
@@ -190,12 +219,119 @@ public class TransactionServiceImpl implements TransactionService {
                     .paymentMode("Cash") 
                     .products(t.getProducts().size())
                     .details(t.getProducts().stream().map(p -> TransactionResponse.DetailDto.builder()
+                            .productId(p.getProduct().getId())
                             .name(p.getProduct().getName())
+                            .isFree(p.isFree())
                             .qty(p.getQty())
                             .rate(p.getPrice())
                             .total(p.getAmount())
                             .build()).toList())
                     .build();
         }).toList();
+    }
+
+    @Override
+    @Transactional
+    public Long updateTransaction(Long id, TransactionRequest request, UUID businessId) {
+        Transaction existing = transactionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+
+        if (!existing.getBusinessId().equals(businessId)) {
+            throw new RuntimeException("Unauthorized access to transaction");
+        }
+
+        // 1. Revert Old Balance Impact
+        if (existing.getPartyId() != null) {
+            BigDecimal oldRemaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
+            BigDecimal oldAdjustment = BigDecimal.ZERO;
+            if ("SALE".equalsIgnoreCase(existing.getType())) {
+                oldAdjustment = oldRemaining; 
+            } else if ("PURCHASE".equalsIgnoreCase(existing.getType())) {
+                oldAdjustment = oldRemaining.negate();
+            }
+            // Reverse it (negate)
+            updatePartyBalance(existing.getPartyId(), oldAdjustment.negate());
+        }
+
+        // 2. Update Fields
+        existing.setPartyId(request.getPartyId());
+        existing.setPartyName(request.getPartyName());
+        existing.setDate(request.getDate());
+        existing.setType(request.getType());
+        existing.setSubTotal(request.getSubTotal());
+        existing.setDiscount(request.getDiscount());
+        existing.setTotalAmount(request.getTotalAmount());
+        existing.setPaidAmount(request.getPaidAmount());
+
+        // 3. Clear and Re-add Products
+        // A. Rever Old Stock
+        for (TransactionProduct oldItem : existing.getProducts()) {
+            adjustStock(oldItem.getProduct(), oldItem.getQty(), existing.getType(), true); // Reversal = true
+        }
+
+        existing.getProducts().clear();
+        for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
+            
+            TransactionProduct tp = new TransactionProduct();
+            tp.setBusinessId(businessId);
+            tp.setTransaction(existing); // Important linkage
+            tp.setProduct(product);
+            tp.setQty(item.getQty());
+            tp.setPrice(item.getPrice());
+            tp.setAmount(item.getAmount());
+            tp.setFree(item.isFree());
+            existing.getProducts().add(tp);
+
+            // B. Apply New Stock
+            adjustStock(product, item.getQty(), request.getType(), false); // Reversal = false
+        }
+
+        // 4. Apply New Balance Impact
+        if (request.getPartyId() != null) {
+            BigDecimal newRemaining = request.getTotalAmount().subtract(request.getPaidAmount());
+            BigDecimal newAdjustment = BigDecimal.ZERO;
+            if ("SALE".equalsIgnoreCase(request.getType())) {
+                newAdjustment = newRemaining;
+            } else if ("PURCHASE".equalsIgnoreCase(request.getType())) {
+                newAdjustment = newRemaining.negate();
+            }
+            updatePartyBalance(request.getPartyId(), newAdjustment);
+        }
+
+        transactionRepository.save(existing);
+        return existing.getId();
+    }
+
+    private void updatePartyBalance(Long partyId, BigDecimal adjustment) {
+        if (adjustment.compareTo(BigDecimal.ZERO) == 0) return;
+
+        try {
+            String url = "http://localhost:5000/api/Parties/" + partyId + "/balance";
+            Map<String, BigDecimal> body = Collections.singletonMap("amount", adjustment);
+
+            // Get Token
+            String token = null;
+            ServletRequestAttributes attributes = 
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            
+            if (attributes != null) {
+                String authHeader = attributes.getRequest().getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7);
+                }
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            if (token != null) headers.setBearerAuth(token);
+            
+            HttpEntity<Map<String, BigDecimal>> entity = new HttpEntity<>(body, headers);
+            restTemplate.postForEntity(url, entity, Void.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update party balance: " + e.getMessage());
+        }
     }
 }
