@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
     LayoutDashboard, Users, ShoppingCart, ShoppingBag, Package,
     BarChart3, User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
-    History // <--- Imported History Icon
+    ChevronLeft, History
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import api from '../../src/api';
 
-function Sidebar() {
+function Sidebar({ isOpen = true, toggle, userData, stats }) {
 
     const menuItems = [
         { id: 1, icon: LayoutDashboard, label: 'Dashboard', path: '/Dashboard' },
@@ -27,72 +26,6 @@ function Sidebar() {
         { id: 12, icon: Printer, label: 'Printer & Invoice', path: '/printer' },
     ];
 
-    const [userData, setUserData] = useState(null);
-    const [stats, setStats] = useState({ toReceive: 0, toPay: 0 });
-
-    // helper: decode JWT payload safely (handles base64url)
-    const decodeJwtPayload = (token) => {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            return null;
-        }
-    };
-
-    useEffect(() => {
-        let mounted = true;
-        (async () => {
-            let profile = null;
-            // try fetching profile from API (if backend provides /auth/me)
-            try {
-                const res = await api.get('/auth/me');
-                if (res?.data) profile = res.data;
-            } catch (e) {
-                // ignore, fallbacks below
-            }
-
-            if (!profile) {
-                const stored = localStorage.getItem('user');
-                if (stored) {
-                    try { profile = JSON.parse(stored); } catch (e) { profile = null; }
-                }
-            }
-
-            if (!profile) {
-                const token = localStorage.getItem('token');
-                if (token && token.split('.').length === 3) {
-                    profile = decodeJwtPayload(token);
-                }
-            }
-
-            if (mounted && profile) {
-                setUserData(profile);
-
-                // Fetch stats from service-trading (VIA GATEWAY)
-                if (profile.businessId) {
-                    try {
-                        const statsRes = await api.get('/trading/stats');
-                        if (statsRes.data && mounted) {
-                            setStats({
-                                toReceive: statsRes.data.toReceive ?? 0,
-                                toPay: statsRes.data.toPay ?? 0
-                            });
-                        }
-                    } catch (err) {
-                        console.error("Failed to fetch sidebar stats:", err);
-                    }
-                }
-            }
-        })();
-
-        return () => { mounted = false };
-    }, []);
-
     const fmtMoney = (val) => {
         if (val === undefined || val === null) return null;
         const num = Number(val);
@@ -101,8 +34,8 @@ function Sidebar() {
     };
 
     const moneyStats = (() => {
-        const toReceive = stats.toReceive;
-        const toPay = stats.toPay;
+        const toReceive = stats?.toReceive ?? 0;
+        const toPay = stats?.toPay ?? 0;
 
         return [
             { id: 1, label: 'To Receive', amount: fmtMoney(toReceive), bg: 'bg-green-50', border: 'border-green-100', textColor: 'text-green-600' },
@@ -117,10 +50,13 @@ function Sidebar() {
         <li>
             <NavLink
                 to={item.path}
-                className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                className={({ isActive }) => `group flex items-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${ isActive ? 'bg-blue-50 text-blue-600 translate-x-1 active' : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600' }`}
             >
-                <item.icon size={20} />
-                <span>{item.label}</span>
+                <div className="relative flex items-center gap-3 w-full">
+                    <item.icon size={18} className="shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                    <span>{item.label}</span>
+                    <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-blue-600 opacity-0 group-[.active]:opacity-100" />
+                </div>
             </NavLink>
         </li>
     );
@@ -132,16 +68,25 @@ function Sidebar() {
     };
 
     return (
-        <div className='w-64 h-screen bg-white border-r border-gray-100 fixed left-0 top-0 flex flex-col'>
+        <div className="w-64 h-screen bg-white border-r border-gray-100 fixed left-0 top-0 flex flex-col z-40 transition-none">
 
             {/* Header */}
-            <div className='p-6 border-b-2 border-gray-100 z-10 bg-white'>
-                <h2 className='text-lg font-bold text-gray-800'>{businessName}</h2>
-                <p className='text-xs text-gray-400 mt-1'>{ownerName ? ownerName : 'Digital Ledger'}</p>
+            <div className='p-6 border-b-2 border-gray-100 z-10 bg-white flex justify-between items-center'>
+                <div>
+                    <h2 className='text-lg font-bold text-gray-800'>{businessName}</h2>
+                    <p className='text-xs text-gray-400 mt-1'>{ownerName ? ownerName : 'Digital Ledger'}</p>
+                </div>
+                <button
+                    onClick={toggle}
+                    className="p-2 rounded-lg bg-slate-50 text-slate-500 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all duration-200 group"
+                    title="Collapse"
+                >
+                    <ChevronLeft size={20} className="transition-transform group-hover:-translate-x-0.5" />
+                </button>
             </div>
 
             {/* ANIMATED CURTAIN SECTION */}
-            <div className="px-6 flex flex-col gap-3 overflow-hidden border-gray-100 max-h-49 py-4 opacity-100 border-b-2">
+            <div className="px-6 flex flex-col gap-2 border-gray-100 py-4 border-b-2">
                 {moneyStats.map((stat) => (
                     <div key={stat.id} className={`${stat.bg} ${stat.border} p-3 rounded-lg border min-w-0`}>
                         <p className={`text-xs font-medium mb-1 ${stat.textColor} truncate`}>
@@ -155,7 +100,7 @@ function Sidebar() {
             </div>
 
             {/* Menu Links */}
-            <div className='flex-1 px-4 py-4 space-y-6 overflow-y-auto min-h-0 scrollbar-hover'>
+            <div className='flex-1 px-4 py-4 space-y-3 overflow-y-auto min-h-0 scrollbar-hover'>
                 <div>
                     <p className='px-4 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider'>Main Menu</p>
                     <ul className='space-y-1'>
@@ -166,6 +111,7 @@ function Sidebar() {
                 </div>
 
                 <div>
+                    <div className="mx-4 mb-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
                     <p className='px-4 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider'>Settings</p>
                     <ul className='space-y-1'>
                         {settingsItems.map((item) => (
@@ -179,7 +125,7 @@ function Sidebar() {
             <div className='p-4 border-t-2 border-gray-100 bg-white z-10'>
                 <button
                     onClick={handleLogout}
-                    className='flex items-center gap-3 px-4 py-3 w-full text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors'
+                    className='group flex items-center gap-3 px-4 py-2.5 w-full text-red-600 hover:bg-red-50 rounded-md text-sm font-medium transition-all duration-200 active:scale-[0.97]'
                 >
                     <LogOut size={20} />
                     <span>Logout</span>
