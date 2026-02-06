@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import com.sbms.trading_service.dto.TransactionRequest;
 import com.sbms.trading_service.service.TransactionService;
@@ -49,6 +50,14 @@ public class TransactionController {
             @RequestBody TransactionRequest request) {
         Long updatedId = transactionService.updateTransaction(id, request, businessId);
         return ResponseEntity.ok(ApiResponse.success(updatedId));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteTransaction(
+            @PathVariable Long id,
+            @RequestAttribute("businessId") UUID businessId) {
+        transactionService.deleteTransaction(id, businessId);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/search")
