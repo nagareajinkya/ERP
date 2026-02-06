@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Save, Share2, Plus, Trash2, Calendar,
   Search, Zap, CheckCircle2, X, Gift, History, Ticket, PartyPopper
@@ -40,7 +40,11 @@ const WalkInModal = ({ isOpen, onClose, onSave }) => {
 
 const NewTransaction = ({ type = 'sale' }) => {
   const navigate = useNavigate();
+  const { state } = useLocation();
   const isSale = type === 'sale';
+
+  const [editMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Theme
   const theme = {
@@ -95,6 +99,48 @@ const NewTransaction = ({ type = 'sale' }) => {
   const productRefs = useRef({});
 
   // --- EFFECTS ---
+  // Handle Edit Mode Pre-fill
+  useEffect(() => {
+    if (state && state.mode === 'edit' && state.transaction) {
+      const t = state.transaction;
+      setEditMode(true);
+      setEditingId(t.id);
+
+      // Parse Date (Ensure YYYY-MM-DD)
+      setDate(t.date);
+
+      // Set Customer
+      // Assuming 't' has partyId and party (name)
+      if (t.partyId) {
+        setSelectedCustomer({ id: t.partyId, name: t.party });
+      } else {
+        // Handle walk-in logic if needed, or fallback
+        setSelectedCustomer({ id: 'walk-in', name: t.party });
+      }
+
+      // Map Details to Products
+      const mappedProducts = t.details.map((d, i) => ({
+        id: Date.now() + i,
+        name: d.name,
+        qty: parseFloat(d.qty),
+        price: parseFloat(d.rate),
+        amount: parseFloat(d.total),
+        productId: d.productId,
+        isFree: d.isFree || false,
+        manual: false
+      }));
+
+      setProducts(mappedProducts);
+      setPaidAmount(t.paidAmount);
+
+      // Note: We don't pre-fill offers state explicitly as the 'useEffect' calculation
+      // logic below should ideally re-calculate them based on the products.
+      // However, if the transaction was saved with specific offers, re-calculating might
+      // change things if offers expired. 
+      // For now, we allow re-calculation to ensure consistency with current rules.
+    }
+  }, [state]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (custInputRef.current && !custInputRef.current.contains(event.target)) setIsCustDropdownOpen(false);
@@ -494,14 +540,13 @@ const NewTransaction = ({ type = 'sale' }) => {
                         date,
                         type: isSale ? 'SALE' : 'PURCHASE',
                         products: filledProducts.map(p => {
-                          // Resolve Product ID for system-added free items that might only have name
                           let resolvedProductId = p.productId;
                           if (!resolvedProductId && p.name) {
                             const match = allProducts.find(prod => prod.name.trim().toLowerCase() === p.name.trim().toLowerCase());
                             if (match) resolvedProductId = match.id;
                           }
                           return {
-                            productId: resolvedProductId, // Use real DB ID or resolved match
+                            productId: resolvedProductId,
                             qty: p.qty,
                             price: p.price,
                             amount: p.amount,
@@ -513,8 +558,14 @@ const NewTransaction = ({ type = 'sale' }) => {
                         totalAmount: totals.total,
                         paidAmount: Number(paidAmount) || 0
                       };
-                      const { data } = await api.post('/trading/transactions', payload);
-                      showNotify('success', `Transaction Saved!`);
+
+                      if (editMode) {
+                        const { data } = await api.put(`/trading/transactions/${editingId}`, payload);
+                        showNotify('success', `Transaction Updated!`);
+                      } else {
+                        const { data } = await api.post('/trading/transactions', payload);
+                        showNotify('success', `Transaction Saved!`);
+                      }
                       setTimeout(() => navigate('/transactions'), 1000);
                     } catch (err) {
                       console.error(err);
@@ -523,7 +574,7 @@ const NewTransaction = ({ type = 'sale' }) => {
                   }}
                   className={`flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl font-medium shadow-lg shadow-gray-200 transition-all ${theme.primary} ${theme.primaryHover}`}
                 >
-                  <Save size={18} /> Save Bill
+                  <Save size={18} /> {editMode ? 'Update Bill' : 'Save Bill'}
                 </button>
               </div>
             </div>

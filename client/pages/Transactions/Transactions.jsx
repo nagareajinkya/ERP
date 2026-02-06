@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search, Filter, Calendar, ArrowUpRight, ArrowDownRight,
-  RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer
+  RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer, Edit
 } from 'lucide-react';
 import api from '../../src/api';
 import SearchBar from '../../components/common/SearchBar';
 import TabsBar from '../../components/common/TabsBar';
+import { useNavigate } from 'react-router-dom';
 
 const Transactions = () => {
+  const navigate = useNavigate();
   // --- STATE ---
   const [transactions, setTransactions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,6 +185,15 @@ const Transactions = () => {
                   <td className="py-4 px-6 text-center">
                     <button onClick={() => setSelectedBill(trx)} className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
                       <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const path = trx.type.toUpperCase() === 'SALE' ? '/new-sale' : '/new-purchase';
+                        navigate(path, { state: { mode: 'edit', transaction: trx } });
+                      }}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <Edit size={18} />
                     </button>
                   </td>
                 </tr>
