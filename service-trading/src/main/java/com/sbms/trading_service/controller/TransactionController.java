@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.sbms.trading_service.dto.ApiResponse;
 import com.sbms.trading_service.dto.TransactionResponse;
@@ -32,12 +34,21 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping
-    public ResponseEntity<Long> createTransaction(
+    public ResponseEntity<ApiResponse<Long>> createTransaction(
             @RequestAttribute("businessId") UUID businessId,
             @RequestBody TransactionRequest request) {
         
         Long id = transactionService.createTransaction(request, businessId);
-        return new ResponseEntity<>(id, HttpStatus.CREATED);
+        return ResponseEntity.ok(ApiResponse.success(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Long>> updateTransaction(
+            @PathVariable Long id,
+            @RequestAttribute("businessId") UUID businessId,
+            @RequestBody TransactionRequest request) {
+        Long updatedId = transactionService.updateTransaction(id, request, businessId);
+        return ResponseEntity.ok(ApiResponse.success(updatedId));
     }
 
     @GetMapping("/search")
@@ -49,7 +60,7 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
             
-        java.util.List<TransactionResponse> results = transactionService.searchTransactions(businessId, query, type, dateRange, startDate, endDate);
+        List<TransactionResponse> results = transactionService.searchTransactions(businessId, query, type, dateRange, startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success(results));
     }
 }
