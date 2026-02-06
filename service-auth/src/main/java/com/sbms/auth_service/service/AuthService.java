@@ -2,6 +2,7 @@ package com.sbms.auth_service.service;
 
 import com.sbms.auth_service.dto.AuthResponse;
 import com.sbms.auth_service.dto.ChangePasswordRequest;
+import com.sbms.auth_service.dto.CollapsedSidebarDetailDto;
 import com.sbms.auth_service.dto.OtpRequest;
 import com.sbms.auth_service.dto.OtpVerifyRequest;
 import com.sbms.auth_service.dto.ProfileDto;
@@ -16,6 +17,7 @@ public interface AuthService {
 	void sendOtp(OtpRequest request);
 	AuthResponse verifyOtp(OtpVerifyRequest request);
 	SidebarDto getCurrentUser(String identifier);
+	CollapsedSidebarDetailDto getCollapsedSidebarDetail(String identifier);
 	
 	// Profile Methods
 	ProfileDto getProfile(String identifier);

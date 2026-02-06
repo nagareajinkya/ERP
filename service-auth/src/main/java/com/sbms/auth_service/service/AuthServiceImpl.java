@@ -13,6 +13,7 @@ import com.sbms.auth_service.custom_exceptions.UserAlreadyExistsException;
 import com.sbms.auth_service.custom_exceptions.UserNotFoundException;
 import com.sbms.auth_service.dto.AuthResponse;
 import com.sbms.auth_service.dto.ChangePasswordRequest;
+import com.sbms.auth_service.dto.CollapsedSidebarDetailDto;
 import com.sbms.auth_service.dto.OtpRequest;
 import com.sbms.auth_service.dto.OtpVerifyRequest;
 import com.sbms.auth_service.dto.ProfileDto;
@@ -120,6 +121,18 @@ public class AuthServiceImpl implements AuthService {
 		response.setUserId(user.getId());
 		
 		return response;
+	}
+
+	@Override
+	public CollapsedSidebarDetailDto getCollapsedSidebarDetail(String identifier) {
+		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		
+		CollapsedSidebarDetailDto dto = new CollapsedSidebarDetailDto();
+		dto.setName(user.getFullName());
+		dto.setProfilePicUrl(user.getProfilePicUrl());
+		
+		return dto;
 	}
 
 	@Override
