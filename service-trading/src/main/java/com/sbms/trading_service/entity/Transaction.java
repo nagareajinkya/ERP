@@ -18,7 +18,10 @@ import lombok.*;
 public class Transaction extends BaseEntity {
 
     @Column(name = "party_id")
-    private Long partyId; // We store ID, or we could map to Party entity if it exists in this context
+    private Long partyId; 
+
+    @Column(name = "party_name")
+    private String partyName;
 
     @Column(name = "transaction_date", nullable = false)
     private LocalDate date;
