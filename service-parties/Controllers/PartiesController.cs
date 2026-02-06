@@ -169,6 +169,45 @@ namespace SBMS.Parties.Controllers
             return NoContent();
         }
 
+        // POST: api/Parties/5/balance
+        // Updates the party balance (add or subtract)
+        [HttpPost("{id}/balance")]
+        public async Task<IActionResult> UpdateBalance(long id, [FromBody] BalanceUpdateDto dto)
+        {
+            var businessId = GetBusinessId();
+            if (businessId == Guid.Empty) return Unauthorized();
+
+            var party = await _context.Parties.FirstOrDefaultAsync(p => p.Id == id && p.BusinessId == businessId);
+
+            if (party == null)
+            {
+                return NotFound();
+            }
+
+            // Update Balance
+            // Logic: Positive Amount adds to balance, Negative subtracts
+            party.CurrentBalance += dto.Amount;
+
+            // UpdatedAt
+            party.UpdatedAt = DateTime.UtcNow;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                throw;
+            }
+
+            return Ok(new { newBalance = party.CurrentBalance });
+        }
+
+        public class BalanceUpdateDto
+        {
+            public decimal Amount { get; set; }
+        }
+
         private bool PartyExists(long id, Guid businessId)
         {
             return _context.Parties.Any(e => e.Id == id && e.BusinessId == businessId);
