@@ -115,7 +115,6 @@ const Offers = () => {
     usageType: 'unlimited', usageLimitCount: '1',
     targetType: 'all', minVisits: '5', frequentDuration: '30',
     topSpenderCount: '5', topSpenderDuration: '1', topSpenderUnit: 'Years',
-    topSpenderCount: '5', topSpenderDuration: '1', topSpenderUnit: 'Years',
     startDate: new Date().toISOString().split('T')[0], endDate: '',
     selectedCustomers: [],
     colorTheme: THEME_COLORS[0].classes
