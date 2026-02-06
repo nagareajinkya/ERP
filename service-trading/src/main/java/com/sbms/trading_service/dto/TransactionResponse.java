@@ -11,6 +11,7 @@ import lombok.Data;
 @Builder
 public class TransactionResponse {
     private Long id;
+    private Long partyId;
     private String party;
     private LocalDate date;
     private String type;
@@ -26,7 +27,9 @@ public class TransactionResponse {
     @Data
     @Builder
     public static class DetailDto {
+        private Long productId;
         private String name;
+        private boolean isFree;
         private BigDecimal rate;
         private BigDecimal qty;
         private BigDecimal total;
