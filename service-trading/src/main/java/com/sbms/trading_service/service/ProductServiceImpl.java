@@ -1,21 +1,29 @@
 package com.sbms.trading_service.service;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import com.sbms.trading_service.entity.TransactionProduct;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sbms.trading_service.customexceptions.ResourceNotFoundException;
+import com.sbms.trading_service.dto.ProductHistoryResponse;
+import com.sbms.trading_service.dto.ProductHistoryResponse.TransactionHistoryDto;
 import com.sbms.trading_service.dto.ProductRequest;
 import com.sbms.trading_service.dto.ProductResponse;
 import com.sbms.trading_service.entity.Category;
 import com.sbms.trading_service.entity.Product;
+import com.sbms.trading_service.entity.Transaction;
 import com.sbms.trading_service.entity.Unit;
 import com.sbms.trading_service.repository.CategoryRepository;
 import com.sbms.trading_service.repository.ProductRepository;
+import com.sbms.trading_service.repository.TransactionRepository;
 import com.sbms.trading_service.repository.UnitRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -28,6 +36,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final UnitRepository unitRepository;
+    private final TransactionRepository transactionRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -93,7 +102,6 @@ public class ProductServiceImpl implements ProductService {
             throw new ResourceNotFoundException("Unauthorized: You do not own this product");
         }
 
-        
         modelMapper.map(request, product);
 
         
@@ -137,5 +145,117 @@ public class ProductServiceImpl implements ProductService {
 
         productRepository.delete(product);
         return "Product deleted successfully";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductHistoryResponse getProductTransactionHistory(Long productId, UUID businessId) {
+        // Verify the product exists and belongs to this business
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        if (!product.getBusinessId().equals(businessId)) {
+            throw new ResourceNotFoundException("Unauthorized: You do not own this product");
+        }
+
+        // Fetch sales transactions
+        List<Transaction> salesTransactions = transactionRepository
+                .findTransactionsByProductAndType(productId, "SALE", businessId);
+
+        // Fetch purchase transactions
+        List<Transaction> purchaseTransactions = transactionRepository
+                .findTransactionsByProductAndType(productId, "PURCHASE", businessId);
+
+        // Convert to DTOs and limit to last 5
+        // Build sales history by iterating transactions and their products,
+        // collecting up to 5 product-level entries that have valid prices
+        // (non-null and not ₹0.01). This stops early to avoid scanning all transactions.
+        List<TransactionHistoryDto> sales = new ArrayList<>();
+        salesLoop:
+        for (Transaction transaction : salesTransactions) {
+            for (TransactionProduct tp : transaction.getProducts()) {
+                if (tp.getProduct().getId().equals(productId)
+                        && tp.getPrice() != null
+                        && tp.getPrice().compareTo(new BigDecimal("0.01")) != 0) {
+                    sales.add(TransactionHistoryDto.builder()
+                            .transactionId(transaction.getId())
+                            .party(transaction.getPartyName())
+                            .date(transaction.getDate())
+                            .qty(tp.getQty())
+                            .rate(tp.getPrice())
+                            .total(tp.getAmount())
+                            .build());
+                    if (sales.size() >= 5) break salesLoop;
+                }
+            }
+        }
+
+        List<TransactionHistoryDto> purchases = new ArrayList<>();
+        purchasesLoop:
+        for (Transaction transaction : purchaseTransactions) {
+            for (TransactionProduct tp : transaction.getProducts()) {
+                if (tp.getProduct().getId().equals(productId)
+                        && tp.getPrice() != null
+                        && tp.getPrice().compareTo(new BigDecimal("0.01")) != 0) {
+                    purchases.add(TransactionHistoryDto.builder()
+                            .transactionId(transaction.getId())
+                            .party(transaction.getPartyName())
+                            .date(transaction.getDate())
+                            .qty(tp.getQty())
+                            .rate(tp.getPrice())
+                            .total(tp.getAmount())
+                            .build());
+                    if (purchases.size() >= 5) break purchasesLoop;
+                }
+            }
+        }
+
+        // Compute recommended price: mode of last 5 sales' rates (most frequent). If none, fallback to product.sellPrice
+        BigDecimal recommendedPrice = null;
+        try {
+            List<BigDecimal> recentPrices = new ArrayList<>();
+            recentLoop:
+            for (Transaction t : salesTransactions) {
+                for (TransactionProduct tp : t.getProducts()) {
+                    if (tp.getProduct().getId().equals(productId)
+                            && tp.getPrice() != null
+                            && tp.getPrice().compareTo(new BigDecimal("0.01")) != 0) {
+                        recentPrices.add(tp.getPrice());
+                        if (recentPrices.size() >= 5) break recentLoop;
+                    }
+                }
+            }
+
+            if (!recentPrices.isEmpty()) {
+            // frequency map
+            java.util.Map<BigDecimal, Long> freq = new HashMap<>();
+            for (BigDecimal p : recentPrices) {
+                freq.merge(p, 1L, Long::sum);
+            }
+            long maxCount = freq.values().stream().mapToLong(Long::longValue).max().orElse(0L);
+            // pick the most recent price among those with maxCount
+            BigDecimal chosen = null;
+            for (BigDecimal p : recentPrices) {
+                if (freq.getOrDefault(p, 0L) == maxCount) {
+                chosen = p;
+                break;
+                }
+            }
+            recommendedPrice = chosen;
+            }
+        } catch (Exception ex) {
+            // swallow and fallback
+            recommendedPrice = null;
+        }
+
+        if (recommendedPrice == null) {
+            recommendedPrice = product.getSellPrice();
+        }
+
+        return ProductHistoryResponse.builder()
+            .sales(sales)
+            .purchases(purchases)
+            .recommendedPrice(recommendedPrice)
+            .build();
     }
 }

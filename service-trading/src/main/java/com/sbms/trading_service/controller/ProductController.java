@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sbms.trading_service.dto.ProductHistoryResponse;
 import com.sbms.trading_service.dto.ProductRequest;
 import com.sbms.trading_service.dto.ProductResponse;
 import com.sbms.trading_service.service.ProductService;
@@ -66,5 +67,13 @@ public class ProductController {
         
         productService.deleteProduct(id, businessId);
         return ResponseEntity.noContent().build(); // Returns 204 No Content
+    }
+
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<ProductHistoryResponse> getProductTransactionHistory(
+            @RequestAttribute("businessId") UUID businessId,
+            @PathVariable Long id) {
+        
+        return ResponseEntity.ok(productService.getProductTransactionHistory(id, businessId));
     }
 }
