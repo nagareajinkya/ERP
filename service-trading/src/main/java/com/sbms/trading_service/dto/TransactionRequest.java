@@ -9,6 +9,7 @@ import lombok.Data;
 @Data
 public class TransactionRequest {
     private Long partyId;
+    private String partyName; // Store name for history/search
     private LocalDate date;
     private String type; // SALE, PURCHASE
     private BigDecimal subTotal;
