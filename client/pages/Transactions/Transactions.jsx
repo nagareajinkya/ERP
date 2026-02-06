@@ -12,7 +12,8 @@ const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('All');
-  const [dateFilter, setDateFilter] = useState('This Month');
+  const [dateFilter, setDateFilter] = useState('Today');
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
 
   // Modal State
@@ -23,8 +24,15 @@ const Transactions = () => {
     const fetchTransactions = async () => {
       setLoading(true);
       try {
-        const { data } = await api.get('/transactions/search', {
-          params: { query: searchQuery, type: filterType, dateRange: dateFilter }
+        const { data } = await api.get('/trading/transactions/search', {
+          params: {
+            query: searchQuery,
+            type: filterType === 'All' ? 'All' : filterType.toUpperCase(),
+            type: filterType === 'All' ? 'All' : filterType.toUpperCase(),
+            dateRange: dateFilter,
+            startDate: dateFilter === 'Custom Range' ? customDateRange.start : null,
+            endDate: dateFilter === 'Custom Range' ? customDateRange.end : null
+          }
         });
         setTransactions(data.data || []);
       } catch (error) {
@@ -40,7 +48,8 @@ const Transactions = () => {
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, filterType, dateFilter]);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, filterType, dateFilter, customDateRange]);
 
   const filteredData = transactions;
 
@@ -87,18 +96,41 @@ const Transactions = () => {
         {/* SEARCH & DATE */}
         <div className="flex gap-3 w-full md:w-auto">
           <SearchBar placeholder="Search Invoice or Party..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="flex-1 md:w-64" />
-          <div className="relative">
-            <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="pl-10 pr-8 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none cursor-pointer appearance-none"
-            >
-              <option>Today</option>
-              <option>Yesterday</option>
-              <option>This Week</option>
-              <option>This Month</option>
-            </select>
+          <div className="flex gap-2 items-center">
+            {/* Custom Date Inputs */}
+            {dateFilter === 'Custom Range' && (
+              <div className="flex gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                <input
+                  type="date"
+                  value={customDateRange.start}
+                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  className="px-3 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 outline-none focus:bg-white focus:border-green-500 transition-all shadow-sm"
+                />
+                <span className="text-gray-400 font-bold self-center">-</span>
+                <input
+                  type="date"
+                  value={customDateRange.end}
+                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  className="px-3 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 outline-none focus:bg-white focus:border-green-500 transition-all shadow-sm"
+                />
+              </div>
+            )}
+
+            <div className="relative">
+              <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="pl-10 pr-8 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none cursor-pointer appearance-none"
+              >
+                <option>Today</option>
+                <option>Yesterday</option>
+                <option>This Week</option>
+                <option>This Month</option>
+                <option>All Time</option>
+                <option>Custom Range</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
