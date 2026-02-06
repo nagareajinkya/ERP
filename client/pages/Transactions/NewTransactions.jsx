@@ -55,7 +55,15 @@ const NewTransaction = ({ type = 'sale' }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [walkInDetails, setWalkInDetails] = useState(null);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Initialize with Local Date (not UTC) to avoid timezone issues
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
 
   const [products, setProducts] = useState([{ id: Date.now(), name: '', qty: 1, price: '', amount: 0, isFree: false, manual: false }]);
   const [paidAmount, setPaidAmount] = useState('');
@@ -482,6 +490,7 @@ const NewTransaction = ({ type = 'sale' }) => {
                     try {
                       const payload = {
                         partyId: (selectedCustomer?.id && selectedCustomer.id !== 'walk-in') ? selectedCustomer.id : null,
+                        partyName: selectedCustomer ? selectedCustomer.name : 'Walk-in Customer',
                         date,
                         type: isSale ? 'SALE' : 'PURCHASE',
                         products: filledProducts.map(p => {
