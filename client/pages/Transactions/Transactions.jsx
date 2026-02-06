@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search, Filter, Calendar, ArrowUpRight, ArrowDownRight,
-  RefreshCw, Eye, Download, CheckCircle2, Clock, X, Printer, Edit, Trash2
+  Sliders, Eye, Download, CheckCircle2, Clock, X, Printer, Edit, Trash2
 } from 'lucide-react';
 import api from '../../src/api';
 import SearchBar from '../../components/common/SearchBar';
@@ -17,9 +17,27 @@ const Transactions = () => {
   const [dateFilter, setDateFilter] = useState('Today');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Modal State
   const [selectedBill, setSelectedBill] = useState(null);
+
+  // Refs
+  const dropdownRef = useRef(null);
+
+  // --- CLICK OUTSIDE HANDLER ---
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // --- FETCH TRANSACTIONS FROM API ---
   useEffect(() => {
@@ -29,7 +47,6 @@ const Transactions = () => {
         const { data } = await api.get('/trading/transactions/search', {
           params: {
             query: searchQuery,
-            type: filterType === 'All' ? 'All' : filterType.toUpperCase(),
             type: filterType === 'All' ? 'All' : filterType.toUpperCase(),
             dateRange: dateFilter,
             startDate: dateFilter === 'Custom Range' ? customDateRange.start : null,
@@ -68,9 +85,10 @@ const Transactions = () => {
 
   // --- HELPER: Type Icon ---
   const getTypeIcon = (type) => {
-    if (type === 'Sale') return <div className="p-2 bg-green-50 text-green-600 rounded-lg"><ArrowUpRight size={18} /></div>;
-    if (type === 'Purchase') return <div className="p-2 bg-red-50 text-red-600 rounded-lg"><ArrowDownRight size={18} /></div>;
-    return <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><RefreshCw size={18} /></div>;
+    const typeUpper = type?.toUpperCase();
+    if (typeUpper === 'SALE') return <div className="p-2 bg-green-50 text-green-600 rounded-lg"><ArrowUpRight size={18} /></div>;
+    if (typeUpper === 'PURCHASE') return <div className="p-2 bg-red-50 text-red-600 rounded-lg"><ArrowDownRight size={18} /></div>;
+    return <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><Sliders size={18} /></div>;
   };
 
   return (
@@ -96,8 +114,10 @@ const Transactions = () => {
         <TabsBar tabs={['All', 'Sale', 'Purchase', 'Adjustment']} activeTab={filterType} onTabChange={setFilterType} variant="default" className="flex p-1 bg-gray-50 rounded-xl w-full md:w-auto" />
 
         {/* SEARCH & DATE */}
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex gap-3 w-full md:w-auto flex-wrap items-center">
           <SearchBar placeholder="Search Invoice or Party..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="flex-1 md:w-64" />
+
+          {/* Date Filter Pills */}
           <div className="flex gap-2 items-center">
             {/* Custom Date Inputs */}
             {dateFilter === 'Custom Range' && (
@@ -106,32 +126,72 @@ const Transactions = () => {
                   type="date"
                   value={customDateRange.start}
                   onChange={(e) => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="px-3 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 outline-none focus:bg-white focus:border-green-500 transition-all shadow-sm"
+                  className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all shadow-sm"
                 />
-                <span className="text-gray-400 font-bold self-center">-</span>
+                <span className="text-gray-400 font-bold self-center text-xs">to</span>
                 <input
                   type="date"
                   value={customDateRange.end}
                   onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="px-3 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 outline-none focus:bg-white focus:border-green-500 transition-all shadow-sm"
+                  className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all shadow-sm"
                 />
               </div>
             )}
 
-            <div className="relative">
-              <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="pl-10 pr-8 py-2 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-700 focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none cursor-pointer appearance-none"
-              >
-                <option>Today</option>
-                <option>Yesterday</option>
-                <option>This Week</option>
-                <option>This Month</option>
-                <option>All Time</option>
-                <option>Custom Range</option>
-              </select>
+            {/* Modern Pill-Style Date Filter */}
+            <div className="flex gap-1.5 p-1 bg-gray-100 rounded-xl border border-gray-200">
+              {['Today', 'Yesterday', 'This Week', 'This Month'].map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setDateFilter(filter)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${dateFilter === filter
+                    ? 'bg-white text-green-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                >
+                  {filter}
+                </button>
+              ))}
+
+              {/* Dropdown for More Options */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 flex items-center gap-1 ${dateFilter === 'All Time' || dateFilter === 'Custom Range'
+                    ? 'bg-white text-green-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                >
+                  <Calendar size={14} />
+                  {dateFilter === 'All Time' || dateFilter === 'Custom Range' ? dateFilter : 'More'}
+                </button>
+
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <button
+                      onClick={() => {
+                        setDateFilter('All Time');
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors flex items-center gap-2"
+                    >
+                      <Calendar size={14} />
+                      All Time
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter('Custom Range');
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors flex items-center gap-2"
+                    >
+                      <Calendar size={14} />
+                      Custom Range
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -159,7 +219,7 @@ const Transactions = () => {
                       {getTypeIcon(trx.type)}
                       <div>
                         <p className="font-bold text-gray-800">{trx.id}</p>
-                        <p className={`text-xs font-bold ${trx.type === 'Sale' ? 'text-green-600' : trx.type === 'Purchase' ? 'text-red-500' : 'text-orange-500'}`}>
+                        <p className={`text-xs font-bold ${trx.type?.toUpperCase() === 'SALE' ? 'text-green-600' : trx.type?.toUpperCase() === 'PURCHASE' ? 'text-red-600' : 'text-orange-600'}`}>
                           {trx.type}
                         </p>
                       </div>
