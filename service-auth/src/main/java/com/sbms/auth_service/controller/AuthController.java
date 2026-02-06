@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sbms.auth_service.dto.AuthResponse;
 import com.sbms.auth_service.dto.ChangePasswordRequest;
+import com.sbms.auth_service.dto.CollapsedSidebarDetailDto;
 import com.sbms.auth_service.dto.OtpRequest;
 import com.sbms.auth_service.dto.OtpVerifyRequest;
 import com.sbms.auth_service.dto.ProfileDto;
@@ -53,6 +54,11 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<SidebarDto> getCurrentUser(Principal principal) {
         return ResponseEntity.ok(authService.getCurrentUser(principal.getName()));
+    }
+
+    @GetMapping("/me/collapsed-sidebar")
+    public ResponseEntity<CollapsedSidebarDetailDto> getCollapsedSidebarDetail(Principal principal) {
+        return ResponseEntity.ok(authService.getCollapsedSidebarDetail(principal.getName()));
     }
 
     @GetMapping("/profile")
