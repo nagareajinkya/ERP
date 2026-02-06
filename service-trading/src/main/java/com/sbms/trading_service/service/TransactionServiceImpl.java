@@ -304,6 +304,38 @@ public class TransactionServiceImpl implements TransactionService {
         return existing.getId();
     }
 
+    @Override
+    @Transactional
+    public void deleteTransaction(Long id, UUID businessId) {
+        Transaction existing = transactionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+
+        if (!existing.getBusinessId().equals(businessId)) {
+            throw new RuntimeException("Unauthorized access to transaction");
+        }
+
+        // 1. Revert Stock
+        for (TransactionProduct item : existing.getProducts()) {
+            adjustStock(item.getProduct(), item.getQty(), existing.getType(), true); // Reversal = true
+        }
+
+        // 2. Revert Balance Impact
+        if (existing.getPartyId() != null) {
+            BigDecimal remaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
+            BigDecimal adjustment = BigDecimal.ZERO;
+            if ("SALE".equalsIgnoreCase(existing.getType())) {
+                adjustment = remaining; 
+            } else if ("PURCHASE".equalsIgnoreCase(existing.getType())) {
+                adjustment = remaining.negate();
+            }
+            // Reverse it
+            updatePartyBalance(existing.getPartyId(), adjustment.negate());
+        }
+
+        // 3. Delete
+        transactionRepository.delete(existing);
+    }
+
     private void updatePartyBalance(Long partyId, BigDecimal adjustment) {
         if (adjustment.compareTo(BigDecimal.ZERO) == 0) return;
 
