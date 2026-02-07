@@ -2,7 +2,7 @@ import React from 'react';
 import {
     LayoutDashboard, Users, ShoppingCart, ShoppingBag, Package,
     BarChart3, User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
-    ChevronLeft, History
+    ChevronLeft, History, ArrowDownLeft, ArrowUpRight
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -13,17 +13,19 @@ function Sidebar({ isOpen = true, toggle, userData, stats }) {
         { id: 2, icon: Users, label: 'Parties', path: '/parties' },
         { id: 3, icon: ShoppingCart, label: 'New Sale', path: '/new-sale' },
         { id: 4, icon: ShoppingBag, label: 'New Purchase', path: '/new-purchase' },
-        { id: 5, icon: Package, label: 'Inventory', path: '/inventory' },
-        { id: 6, icon: History, label: 'Transactions', path: '/transactions' },
-        { id: 7, icon: BarChart3, label: 'Reports', path: '/reports' },
+        { id: 5, icon: History, label: 'Transactions', path: '/transactions' },
+        { id: 6, icon: ArrowDownLeft, label: 'New Receipt', path: '/new-receipt' },
+        { id: 7, icon: ArrowUpRight, label: 'New Payment', path: '/new-payment' },
+        { id: 8, icon: Package, label: 'Inventory', path: '/inventory' },
+        { id: 9, icon: BarChart3, label: 'Reports', path: '/reports' },
     ];
 
     const settingsItems = [
-        { id: 8, icon: User, label: 'Profile', path: '/profile' },
-        { id: 9, icon: SwatchBook, label: 'Categories & Units', path: '/properties' },
-        { id: 10, icon: Tag, label: 'Offers', path: '/offers' },
-        { id: 11, icon: FileText, label: 'Templates', path: '/templates' },
-        { id: 12, icon: Printer, label: 'Printer & Invoice', path: '/printer' },
+        { id: 10, icon: User, label: 'Profile', path: '/profile' },
+        { id: 11, icon: SwatchBook, label: 'Categories & Units', path: '/properties' },
+        { id: 12, icon: Tag, label: 'Offers', path: '/offers' },
+        { id: 13, icon: FileText, label: 'Templates', path: '/templates' },
+        { id: 14, icon: Printer, label: 'Printer & Invoice', path: '/printer' },
     ];
 
     const fmtMoney = (val) => {
@@ -50,7 +52,7 @@ function Sidebar({ isOpen = true, toggle, userData, stats }) {
         <li>
             <NavLink
                 to={item.path}
-                className={({ isActive }) => `group flex items-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${ isActive ? 'bg-blue-50 text-blue-600 translate-x-1 active' : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600' }`}
+                className={({ isActive }) => `group flex items-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${isActive ? 'bg-blue-50 text-blue-600 translate-x-1 active' : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'}`}
             >
                 <div className="relative flex items-center gap-3 w-full">
                     <item.icon size={18} className="shrink-0 transition-transform duration-200 group-hover:scale-110" />

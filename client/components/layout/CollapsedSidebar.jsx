@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Users, ShoppingCart, ShoppingBag, Package,
     BarChart3, User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
-    ChevronRight, History
+    ChevronRight, History, ArrowDownLeft, ArrowUpRight
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import api from '../../src/api';
@@ -28,7 +28,7 @@ const CollapsedSidebar = ({ toggle }) => {
                 setLoading(false);
             }
         };
-        
+
         fetchUserData();
     }, []);
 
@@ -49,17 +49,19 @@ const CollapsedSidebar = ({ toggle }) => {
         { id: 2, icon: Users, label: 'Parties', path: '/parties' },
         { id: 3, icon: ShoppingCart, label: 'New Sale', path: '/new-sale' },
         { id: 4, icon: ShoppingBag, label: 'New Purchase', path: '/new-purchase' },
-        { id: 5, icon: Package, label: 'Inventory', path: '/inventory' },
-        { id: 6, icon: History, label: 'Transactions', path: '/transactions' },
-        { id: 7, icon: BarChart3, label: 'Reports', path: '/reports' },
+        { id: 5, icon: History, label: 'Transactions', path: '/transactions' },
+        { id: 6, icon: ArrowDownLeft, label: 'New Receipt', path: '/new-receipt' },
+        { id: 7, icon: ArrowUpRight, label: 'New Payment', path: '/new-payment' },
+        { id: 8, icon: Package, label: 'Inventory', path: '/inventory' },
+        { id: 9, icon: BarChart3, label: 'Reports', path: '/reports' },
     ];
 
     const settingsItems = [
-        { id: 8, icon: User, label: 'Profile', path: '/profile' },
-        { id: 9, icon: SwatchBook, label: 'Categories', path: '/properties' },
-        { id: 10, icon: Tag, label: 'Offers', path: '/offers' },
-        { id: 11, icon: FileText, label: 'Templates', path: '/templates' },
-        { id: 12, icon: Printer, label: 'Printer', path: '/printer' },
+        { id: 10, icon: User, label: 'Profile', path: '/profile' },
+        { id: 11, icon: SwatchBook, label: 'Categories', path: '/properties' },
+        { id: 12, icon: Tag, label: 'Offers', path: '/offers' },
+        { id: 13, icon: FileText, label: 'Templates', path: '/templates' },
+        { id: 14, icon: Printer, label: 'Printer', path: '/printer' },
     ];
 
     const IconLink = ({ item }) => (
@@ -71,7 +73,7 @@ const CollapsedSidebar = ({ toggle }) => {
             }}
             onMouseLeave={() => setHoveredInfo(null)}
             className={({ isActive }) => `
-                relative flex items-center justify-center w-10 h-10 mb-2 rounded-xl 
+                relative flex items-center justify-center w-9 h-9 mb-1 rounded-xl 
                 transition-all duration-300 ease-out group
                 ${isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 translate-x-1'
@@ -102,10 +104,10 @@ const CollapsedSidebar = ({ toggle }) => {
 
     return (
         <>
-            <aside className="fixed top-0 left-0 h-screen w-[72px] bg-white border-r border-slate-200 flex flex-col items-center py-6 z-50 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] transition-all duration-300">
+            <aside className="fixed top-0 left-0 h-screen w-[72px] bg-white border-r border-slate-200 flex flex-col items-center py-3 z-50 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] transition-all duration-300">
 
                 {/* Expand Toggle */}
-                <div className="shrink-0 mb-6 w-full flex justify-center">
+                <div className="shrink-0 mb-2 w-full flex justify-center">
                     <button
                         onClick={toggle}
                         className="p-2 rounded-lg bg-slate-50 text-slate-500 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all duration-200 group"
@@ -115,7 +117,7 @@ const CollapsedSidebar = ({ toggle }) => {
                 </div>
 
                 {/* Menu */}
-                <div className="flex-1 flex flex-col w-full items-center overflow-y-auto overflow-x-hidden scrollbar-hover px-2 space-y-6">
+                <div className="flex-1 flex flex-col w-full items-center overflow-y-auto overflow-x-hidden scrollbar-hover px-2 space-y-2">
                     <div className="flex flex-col w-full items-center">
                         {menuItems.map(item => <IconLink key={item.id} item={item} />)}
                     </div>
@@ -126,7 +128,7 @@ const CollapsedSidebar = ({ toggle }) => {
                 </div>
 
                 {/* Footer: Avatar & Logout */}
-                <div className="mt-auto pt-4 w-full flex flex-col items-center gap-4">
+                <div className="mt-auto pt-2 w-full flex flex-col items-center gap-2">
 
                     {/* Dynamic Avatar */}
                     <div
