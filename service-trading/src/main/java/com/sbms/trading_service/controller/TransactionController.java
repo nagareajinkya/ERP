@@ -72,4 +72,12 @@ public class TransactionController {
         List<TransactionResponse> results = transactionService.searchTransactions(businessId, query, type, dateRange, startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success(results));
     }
+
+    @GetMapping("/party/{partyId}")
+    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getTransactionsByParty(
+            @RequestAttribute("businessId") UUID businessId,
+            @PathVariable Long partyId) {
+        List<TransactionResponse> results = transactionService.getTransactionsByParty(businessId, partyId);
+        return ResponseEntity.ok(ApiResponse.success(results));
+    }
 }

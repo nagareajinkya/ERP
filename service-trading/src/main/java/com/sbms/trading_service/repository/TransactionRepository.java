@@ -31,6 +31,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
         UUID businessId, String partyName, String type, LocalDate startDate, LocalDate endDate
     );
 
+    // Find by Party ID
+    List<Transaction> findByBusinessIdAndPartyIdOrderByDateDesc(UUID businessId, Long partyId);
+
     // Order by createdAt (date + time) to ensure proper descending chronology
     @Query("SELECT t FROM Transaction t JOIN t.products tp WHERE tp.product.id = :productId AND t.type = :type AND t.businessId = :businessId ORDER BY t.createdAt DESC")
     List<Transaction> findTransactionsByProductAndType(

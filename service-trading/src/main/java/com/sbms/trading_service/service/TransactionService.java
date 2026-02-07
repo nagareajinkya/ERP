@@ -12,4 +12,5 @@ public interface TransactionService {
     Long updateTransaction(Long id, TransactionRequest request, UUID businessId);
     void deleteTransaction(Long id, UUID businessId);
     List<TransactionResponse> searchTransactions(UUID businessId, String query, String type, String dateRange, LocalDate customStart, LocalDate customEnd);
+    List<TransactionResponse> getTransactionsByParty(UUID businessId, Long partyId);
 }

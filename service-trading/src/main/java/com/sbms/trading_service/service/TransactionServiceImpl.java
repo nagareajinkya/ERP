@@ -29,6 +29,7 @@ import java.util.Map;
 
 import com.sbms.trading_service.dto.TransactionResponse;
 import org.springframework.web.client.RestTemplate;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -263,42 +264,50 @@ public class TransactionServiceImpl implements TransactionService {
              );
         }
 
-        return transactions.stream().map(t -> {
-            String status = "Unpaid";
-            if (t.getPaidAmount() != null && t.getTotalAmount() != null) {
-                if (t.getPaidAmount().compareTo(t.getTotalAmount()) >= 0) status = "Paid";
-                else if (t.getPaidAmount().doubleValue() > 0) status = "Partial";
-            }
+        return transactions.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
 
-            // Format time from createdAt timestamp
-            String time = "";
-            if (t.getCreatedAt() != null) {
-                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-                time = t.getCreatedAt().format(timeFormatter);
-            }
+    @Override
+    public List<TransactionResponse> getTransactionsByParty(UUID businessId, Long partyId) {
+        List<Transaction> transactions = transactionRepository.findByBusinessIdAndPartyIdOrderByDateDesc(businessId, partyId);
+        return transactions.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
 
-            return TransactionResponse.builder()
-                    .id(t.getId())
-                    .partyId(t.getPartyId())
-                    .party(t.getPartyName() != null ? t.getPartyName() : "Unknown") 
-                    .date(t.getDate())
-                    .time(time)
-                    .type(t.getType())
-                    .status(status)
-                    .amount(t.getTotalAmount())
-                    .paidAmount(t.getPaidAmount())
-                    .paymentMode("Cash") 
-                    .products(t.getProducts().size())
-                    .details(t.getProducts().stream().map(p -> TransactionResponse.DetailDto.builder()
-                            .productId(p.getProduct().getId())
-                            .name(p.getProduct().getName())
-                            .isFree(p.isFree())
-                            .qty(p.getQty())
-                            .rate(p.getPrice())
-                            .total(p.getAmount())
-                            .build()).toList())
-                    .build();
-        }).toList();
+    private TransactionResponse mapToResponse(Transaction t) {
+        String status = "Unpaid";
+        if (t.getPaidAmount() != null && t.getTotalAmount() != null) {
+            if (t.getPaidAmount().compareTo(t.getTotalAmount()) >= 0) status = "Paid";
+            else if (t.getPaidAmount().doubleValue() > 0) status = "Partial";
+        }
+
+        // Format time from createdAt timestamp
+        String time = "";
+        if (t.getCreatedAt() != null) {
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+            time = t.getCreatedAt().format(timeFormatter);
+        }
+
+        return TransactionResponse.builder()
+                .id(t.getId())
+                .partyId(t.getPartyId())
+                .party(t.getPartyName() != null ? t.getPartyName() : "Unknown") 
+                .date(t.getDate())
+                .time(time)
+                .type(t.getType())
+                .status(status)
+                .amount(t.getTotalAmount())
+                .paidAmount(t.getPaidAmount())
+                .paymentMode("Cash") 
+                .products(t.getProducts().size())
+                .details(t.getProducts().stream().map(p -> TransactionResponse.DetailDto.builder()
+                        .productId(p.getProduct().getId())
+                        .name(p.getProduct().getName())
+                        .isFree(p.isFree())
+                        .qty(p.getQty())
+                        .rate(p.getPrice())
+                        .total(p.getAmount())
+                        .build()).collect(Collectors.toList()))
+                .build();
     }
 
     @Override
