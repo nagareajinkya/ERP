@@ -94,6 +94,7 @@ const Offers = () => {
 
   // --- MODAL STATE ---
   const [viewOffer, setViewOffer] = useState(null);
+  const [redemptions, setRedemptions] = useState([]);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, offerId: null, offerName: '' });
 
   // --- FORM & EDITING STATE ---
@@ -124,6 +125,7 @@ const Offers = () => {
   const [customerSearch, setCustomerSearch] = useState('');
   const [activeCustomerFilter, setActiveCustomerFilter] = useState('All');
   const [offers, setOffers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [allProducts, setAllProducts] = useState([]);
   const [allUnits, setAllUnits] = useState([]);
 
@@ -131,10 +133,13 @@ const Offers = () => {
   // --- FETCH DATA ---
   const fetchOffers = async () => {
     try {
-      const res = await api.get('/smart-ops/offers');
+      setLoading(true);
+      const res = await api.get('/smart-ops/offers'); // Assuming filtering by activeTab and offerSearch happens here or later
       setOffers(res.data);
     } catch (err) {
       console.error("Failed to fetch offers", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -150,6 +155,22 @@ const Offers = () => {
       console.error("Failed to fetch resources", err);
     }
   };
+
+  useEffect(() => {
+    if (viewOffer) {
+      const fetchRedemptions = async () => {
+        try {
+          const res = await api.get(`/smart-ops/offers/${viewOffer._id}/redemptions`);
+          setRedemptions(res.data);
+        } catch (err) {
+          console.error("Failed to load redemptions", err);
+        }
+      };
+      fetchRedemptions();
+    } else {
+      setRedemptions([]);
+    }
+  }, [viewOffer]);
 
   useEffect(() => {
     fetchOffers();
@@ -649,7 +670,26 @@ const Offers = () => {
                 <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs font-bold uppercase"><tr><th className="p-4">Customer</th><th className="p-4">Last Used</th><th className="p-4">Times Used</th><th className="p-4 text-right">Total Saved</th></tr></thead>
-                    <tbody className="divide-y divide-gray-100 font-medium">{viewOffer.usageCount > 0 ? (<tr><td colSpan="4" className="p-8 text-center text-gray-400">Redemption data not connected yet.</td></tr>) : (<tr><td colSpan="4" className="p-8 text-center text-gray-400">No redemptions yet.</td></tr>)}</tbody>
+                    <tbody className="divide-y divide-gray-100 font-medium">
+                      {redemptions.length > 0 ? (
+                        redemptions.map(r => (
+                          <tr key={r._id} className="hover:bg-gray-50 transition-colors">
+                            <td className="p-4">
+                              <p className="font-bold text-gray-800">{r.partyName || 'Walk-in'}</p>
+                              {r.customerId && r.customerId !== 'walk-in' && <p className="text-xs text-gray-400">ID: {r.customerId}</p>}
+                            </td>
+                            <td className="p-4 text-gray-600">
+                              {new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              <p className="text-xs text-gray-400">{new Date(r.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+                            </td>
+                            <td className="p-4"><span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold uppercase">Redeemed</span></td>
+                            <td className="p-4 text-right font-bold text-green-600">₹{r.discountAmount ? r.discountAmount.toFixed(2) : '0.00'}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr><td colSpan="4" className="p-8 text-center text-gray-400">No redemptions yet.</td></tr>
+                      )}
+                    </tbody>
                   </table>
                 </div>
               </div>
