@@ -4,6 +4,7 @@ const initScheduler = require('./utils/scheduler');
 const connectDB = require('./config/db');
 const smartOpsRoutes = require('./routes/smartOpsRoutes');
 const offerRoutes = require('./routes/offerRoutes');
+const templateRoutes = require('./routes/templateRoutes');
 
 
 
@@ -26,6 +27,7 @@ initScheduler();
 
 // Routes
 app.use('/api/smart-ops/offers', offerRoutes);
+app.use('/api/smart-ops/templates', templateRoutes);
 app.use('/api/smart-ops', smartOpsRoutes);
 
 
