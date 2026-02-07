@@ -12,6 +12,7 @@ export const buildTransactionPayload = ({
     filledProducts,
     totals,
     paidAmount,
+    appliedOffers
 }) => {
     return {
         partyId: (selectedCustomer?.id && selectedCustomer.id !== 'walk-in')
@@ -34,5 +35,10 @@ export const buildTransactionPayload = ({
         discount: totals.disc,
         totalAmount: totals.total,
         paidAmount: Number(paidAmount) || 0,
+        appliedOffers: (appliedOffers || []).map(o => ({
+            offerId: o.id,
+            offerName: o.name,
+            discountAmount: o.discountAmount || 0
+        }))
     };
 };
