@@ -14,6 +14,7 @@ public class TransactionResponse {
     private Long partyId;
     private String party;
     private LocalDate date;
+    private String time;  // Time of transaction creation
     private String type;
     private String status; // Paid, Unpaid, Partial
     private int products;
