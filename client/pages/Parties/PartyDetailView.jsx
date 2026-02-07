@@ -5,6 +5,7 @@ import {
     Phone, ArrowDownLeft, Receipt, MessageCircle,
     Edit2, Trash2, MapPin, ArrowUpRight, UserCircle2, Building2, Loader2
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
     const [transactions, setTransactions] = useState([]);
@@ -180,7 +181,7 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                     <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Communication</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => alert('WhatsApp')} className="p-4 bg-green-50 text-green-700 font-bold rounded-xl hover:bg-green-100 transition-colors flex flex-col items-center gap-2">
+                            <button onClick={() => toast.info('WhatsApp')} className="p-4 bg-green-50 text-green-700 font-bold rounded-xl hover:bg-green-100 transition-colors flex flex-col items-center gap-2">
                                 <MessageCircle size={24} /> <span className="text-xs">WhatsApp</span>
                             </button>
                             <button className="p-4 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition-colors flex flex-col items-center gap-2">

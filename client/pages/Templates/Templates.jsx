@@ -7,7 +7,9 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import api from '../../src/api';
+import { toast } from 'react-toastify';
 import FormLabel from '../../components/common/FormLabel';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 // --- CUSTOM WHATSAPP ICON COMPONENT ---
 const WhatsAppIcon = ({ size = 20, className = "" }) => (
@@ -35,6 +37,7 @@ const Templates = () => {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [selectedForBroadcast, setSelectedForBroadcast] = useState(null);
   const [checkedParties, setCheckedParties] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // --- EDITOR STATE ---
   const [tempName, setTempName] = useState('');
@@ -131,23 +134,26 @@ const Templates = () => {
       setRefreshKey(prev => prev + 1); // Refresh list
     } catch (err) {
       console.error("Error saving template:", err);
-      alert("Failed to save template");
+      toast.error("Failed to save template");
     }
   };
 
   const handleDelete = async () => {
     if (!editingTemplate) return;
 
-    if (!window.confirm("Are you sure you want to delete this template?")) return;
+    setShowDeleteConfirm(true);
+  };
 
+  const confirmDelete = async () => {
     try {
       await api.delete(`/smart-ops/templates/${editingTemplate.id}`);
       setIsEditorOpen(false);
       setEditingTemplate(null);
+      setShowDeleteConfirm(false);
       setRefreshKey(prev => prev + 1);
     } catch (err) {
       console.error("Error deleting template:", err);
-      alert("Failed to delete template");
+      toast.error("Failed to delete template");
     }
   };
 

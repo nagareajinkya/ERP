@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { GST_PRESETS, ADJUSTMENT_REASONS } from './../../src/data/inventoryData';
 import api from '../../src/api';
+import { toast } from 'react-toastify';
 import SearchBar from '../../components/common/SearchBar';
 import FilterSelect from '../../components/common/FilterSelect';
 import StatCard from '../../components/common/StatCard';
@@ -204,7 +205,7 @@ const Inventory = () => {
     const unitObj = unitsList.find(u => u.name === formData.unit);
 
     if (!catObj || !unitObj) {
-      alert("Invalid Category or Unit");
+      toast.error("Invalid Category or Unit");
       return;
     }
 
@@ -225,7 +226,7 @@ const Inventory = () => {
       fetchProducts(); // Refresh list
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Failed to save product.");
+      toast.error("Failed to save product");
     }
   };
 
@@ -237,7 +238,7 @@ const Inventory = () => {
       fetchProducts();
     } catch (error) {
       console.error("Error deleting product:", error);
-      alert("Failed to delete product.");
+      toast.error("Failed to delete product");
     }
   };
 
@@ -269,7 +270,7 @@ const Inventory = () => {
     const reduceQty = Number(adjustData.qty);
     if (reduceQty <= 0) return;
     if (reduceQty > formData.qty) {
-      alert("Cannot remove more items than current stock.");
+      toast.error("Cannot remove more items than current stock");
       return;
     }
 
@@ -300,7 +301,7 @@ const Inventory = () => {
       setIsAdjustModalOpen(false);
     } catch (error) {
       console.error("Error adjusting stock:", error);
-      alert("Failed to adjust stock.");
+      toast.error("Failed to adjust stock");
     }
   };
 

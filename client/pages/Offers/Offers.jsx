@@ -7,6 +7,7 @@ import {
   StopCircle, PlayCircle, IndianRupee
 } from 'lucide-react';
 import api from '../../src/api';
+import { toast } from 'react-toastify';
 import SearchBar from '../../components/common/SearchBar';
 import TabsBar from '../../components/common/TabsBar';
 import StatCard from '../../components/common/StatCard';
@@ -325,7 +326,7 @@ const Offers = () => {
       setIsModalOpen(false);
     } catch (err) {
       console.error("Error saving offer", err);
-      alert("Failed to save offer");
+      toast.error("Failed to save offer");
     }
   };
 

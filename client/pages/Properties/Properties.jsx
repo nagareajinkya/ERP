@@ -8,6 +8,7 @@ import TabsBar from '../../components/common/TabsBar';
 import SearchBar from '../../components/common/SearchBar';
 import { CATEGORY_STYLES } from '../../src/data/propertiesData';
 import api from '../../src/api';
+import { toast } from 'react-toastify';
 // Import the new reusable modal
 import AddPropertyModal from '../../components/common/AddPropertyModal';
 
@@ -101,7 +102,7 @@ const Properties = () => {
 
   const saveEdit = async (type) => {
     try {
-      alert("Edit feature coming soon (Backend Update Endpoint Required)");
+      toast.info("Edit feature coming soon (Backend Update Endpoint Required)");
       setEditingId(null);
     } catch (e) {
       console.error(e);

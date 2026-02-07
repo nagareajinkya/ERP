@@ -6,6 +6,7 @@ import { useTransactionTotals } from '../hooks/useTransactionTotals';
 import { useDeleteTransaction } from '../hooks/useDeleteTransaction';
 import { exportTransactionsCSV } from '../utils/exportCSV';
 import { exportTransactionsPDF } from '../utils/exportPDF';
+import { toast } from 'react-toastify';
 
 /**
  * Context for Transactions page
@@ -55,7 +56,7 @@ export const TransactionsProvider = ({ children }) => {
             );
         } catch (error) {
             console.error('Error exporting PDF:', error);
-            alert('Failed to export PDF. Please try again.');
+            toast.error('Failed to export PDF. Please try again.');
         }
     }, [
         transactionsData.transactions,

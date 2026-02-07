@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import api from '../../../src/api';
+import { toast } from 'react-toastify';
 
 /**
  * Custom hook for deleting transactions with optimistic updates
@@ -9,13 +10,6 @@ export const useDeleteTransaction = (onSuccess) => {
     const [deletingId, setDeletingId] = useState(null);
 
     const deleteTransaction = useCallback(async (transaction, onLocalUpdate) => {
-        // Confirmation dialog
-        const confirmed = window.confirm(
-            `Are you sure you want to delete transaction #${transaction.id}? This will revert stock and party balance.`
-        );
-
-        if (!confirmed) return false;
-
         setIsDeleting(true);
         setDeletingId(transaction.id);
 
@@ -36,7 +30,7 @@ export const useDeleteTransaction = (onSuccess) => {
             return true;
         } catch (error) {
             console.error('Failed to delete transaction:', error);
-            alert('Failed to delete transaction. Please try again.');
+            toast.error('Failed to delete transaction. Please try again.');
 
             // Rollback optimistic update on error
             // The parent component should handle re-fetching or restoring the transaction

@@ -7,6 +7,7 @@ import {
   Instagram, MessageCircle, Save, Scissors, Percent, Loader2, Globe
 } from 'lucide-react';
 import FormLabel from '../../components/common/FormLabel';
+import { toast } from 'react-toastify';
 import { billItems } from '../../src/data/printerData'
 import axios from 'axios';
 
@@ -134,10 +135,10 @@ const Printer = () => {
       };
 
       await axios.put('http://localhost:5002/api/smart-ops/printer-settings', payload, config);
-      alert("Settings saved successfully!");
+      toast.success("Settings saved successfully!");
     } catch (err) {
       console.error("Error saving printer settings:", err);
-      alert("Failed to save settings");
+      toast.error("Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -147,7 +148,7 @@ const Printer = () => {
   const handleTestPrint = () => {
     const printWindow = window.open('', '', 'width=600,height=600');
     if (!printWindow) {
-      alert("Please allow popups to use the test print feature.");
+      toast.warning("Please allow popups to use the test print feature.");
       return;
     }
 

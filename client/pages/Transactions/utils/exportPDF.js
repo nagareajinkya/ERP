@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { formatDateRangeText } from './dateHelpers';
 import { calculateDueAmount } from './formatters';
+import { toast } from 'react-toastify';
 
 /**
  * Generate and download PDF report for transactions
@@ -239,7 +240,7 @@ export const exportTransactionsPDF = async (
         return true;
     } catch (error) {
         console.error('Error generating PDF:', error);
-        alert(`Failed to generate PDF: ${error.message}`);
+        toast.error(`Failed to generate PDF: ${error.message}`);
         return false;
     }
 };

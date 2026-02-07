@@ -5,6 +5,7 @@ import {
    CheckCircle2, Plus, Edit2, AlertTriangle, FileText
 } from 'lucide-react';
 import api from '../../src/api';
+import { toast } from 'react-toastify';
 import FormLabel from '../../components/common/FormLabel';
 
 const Profile = () => {
@@ -97,7 +98,7 @@ const Profile = () => {
 
    const handleChangePassword = async () => {
       if (passData.new !== passData.confirm) {
-         alert("New passwords do not match!");
+         toast.error("New passwords do not match!");
          return;
       }
       try {
@@ -107,10 +108,10 @@ const Profile = () => {
          });
          setIsChangePassModalOpen(false);
          setPassData({ current: '', new: '', confirm: '' });
-         alert("Password changed successfully!");
+         toast.success("Password changed successfully!");
       } catch (error) {
          console.error("Failed to change password", error);
-         alert("Failed to change password. Please check your current password.");
+         toast.error("Failed to change password. Please check your current password.");
       }
    };
 
