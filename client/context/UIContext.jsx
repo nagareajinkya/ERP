@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../src/api';
 import { useAuth } from './AuthContext';
 
@@ -23,29 +23,26 @@ export const UIProvider = ({ children }) => {
     }, [isSidebarOpen]);
 
     // Fetch stats when user/business is available
-    useEffect(() => {
-        let mounted = true;
-
-        const fetchStats = async () => {
-            if (user && user.businessId && token) {
-                try {
-                    const statsRes = await api.get('/trading/stats');
-                    if (statsRes.data && mounted) {
-                        setSidebarStats({
-                            toReceive: statsRes.data.toReceive ?? 0,
-                            toPay: statsRes.data.toPay ?? 0,
-                        });
-                    }
-                } catch (err) {
-                    console.error("Failed to fetch sidebar stats:", err);
+    const fetchStats = useCallback(async () => {
+        if (user && user.businessId && token) {
+            try {
+                const statsRes = await api.get('/trading/stats');
+                if (statsRes.data) {
+                    setSidebarStats({
+                        toReceive: statsRes.data.toReceive ?? 0,
+                        toPay: statsRes.data.toPay ?? 0,
+                    });
                 }
+            } catch (err) {
+                console.error("Failed to fetch sidebar stats:", err);
             }
-        };
-
-        fetchStats();
-
-        return () => { mounted = false };
+        }
     }, [user, token]);
+
+    // Fetch stats when user/business is available
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
 
     const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
     const openSidebar = () => setIsSidebarOpen(true);
@@ -57,7 +54,7 @@ export const UIProvider = ({ children }) => {
         openSidebar,
         closeSidebar,
         sidebarStats,
-        refreshStats: () => { /* Logic to re-fetch stats if needed */ }
+        refreshStats: fetchStats
     };
 
     return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
