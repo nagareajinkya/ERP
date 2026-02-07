@@ -10,6 +10,7 @@ import { useCalculationEngine } from '../hooks/useCalculationEngine';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { validateTransaction } from '../utils/validators';
 import { buildTransactionPayload } from '../utils/payloadMapper';
+import { useUI } from '../../../context/UIContext';
 
 /**
  * Context for NewTransaction page
@@ -20,6 +21,7 @@ const NewTransactionContext = createContext(null);
 export const NewTransactionProvider = ({ type = 'sale', children }) => {
     const navigate = useNavigate();
     const { state } = useLocation();
+    const { refreshStats } = useUI();
 
     // Core hooks
     const formData = useTransactionForm(type);
@@ -161,7 +163,7 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
         if (state && state.mode === 'edit' && state.transaction) {
             const t = state.transaction;
             formData.setEditMode(true);
-            formData.setEditingId(t.id);
+            formData.setEditingId(t._id || t.id);
             formData.setDate(t.date);
 
             // Set Customer
@@ -215,6 +217,8 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
                 await api.post('/trading/transactions', payload);
                 formData.showNotify('success', 'Transaction Saved!');
             }
+
+            refreshStats(); // Update Sidebar Stats
 
             setTimeout(() => navigate('/transactions'), 1000);
         } catch (err) {

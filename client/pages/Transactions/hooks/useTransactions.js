@@ -16,11 +16,14 @@ export const useTransactions = () => {
     const [dateFilter, setDateFilter] = useState('Today');
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
     // Fetch transactions from API with debouncing
     useEffect(() => {
         const fetchTransactions = async () => {
             setLoading(true);
             try {
+                // ... (existing fetch logic) ...
                 const { data } = await api.get('/trading/transactions/search', {
                     params: {
                         query: searchQuery,
@@ -39,13 +42,14 @@ export const useTransactions = () => {
             }
         };
 
-        // Debounced API call
+        // Debounced API call only if search query changes
+        // For refresh or filter changes, we want immediate or slightly delayed fetch
         const debounceTimer = setTimeout(() => {
             fetchTransactions();
         }, API_DEBOUNCE_MS);
 
         return () => clearTimeout(debounceTimer);
-    }, [searchQuery, filterType, dateFilter, customDateRange]);
+    }, [searchQuery, filterType, dateFilter, customDateRange, refreshTrigger]);
 
     return {
         transactions,
@@ -58,6 +62,6 @@ export const useTransactions = () => {
         setDateFilter,
         customDateRange,
         setCustomDateRange,
-        refreshTransactions: () => setSearchQuery(prev => prev) // Force refresh
+        refreshTransactions: () => setRefreshTrigger(prev => prev + 1)
     };
 };

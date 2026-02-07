@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, DollarSign, Banknote, CreditCard, Landmark, FileText, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import api from '../../src/api';
+import { useUI } from '../../context/UIContext';
 
 const SettlementModal = ({ isOpen, onClose, party, onSuccess, initialMode = 'receipt' }) => {
     const [mode, setMode] = useState(initialMode);
@@ -11,6 +12,7 @@ const SettlementModal = ({ isOpen, onClose, party, onSuccess, initialMode = 'rec
     const [date, setDate] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const { refreshStats } = useUI();
 
     // Reset and sync state when modal opens
     useEffect(() => {
@@ -133,6 +135,7 @@ const SettlementModal = ({ isOpen, onClose, party, onSuccess, initialMode = 'rec
             });
 
             onSuccess && onSuccess();
+            refreshStats(); // Update Sidebar Stats
             onClose();
         } catch (err) {
             console.error('Settlement error:', err);

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import api from '../../../src/api';
 import { toast } from 'react-toastify';
+import { useUI } from '../../../context/UIContext';
 
 /**
  * Custom hook for deleting transactions with optimistic updates
@@ -8,29 +9,36 @@ import { toast } from 'react-toastify';
 export const useDeleteTransaction = (onSuccess) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [deletingId, setDeletingId] = useState(null);
+    const { refreshStats } = useUI();
 
     const deleteTransaction = useCallback(async (transaction, onLocalUpdate) => {
         setIsDeleting(true);
-        setDeletingId(transaction.id);
+        const idToDelete = transaction._id || transaction.id;
+        setDeletingId(idToDelete);
 
         // Optimistic update - remove from UI immediately
         if (onLocalUpdate) {
-            onLocalUpdate(transaction.id);
+            onLocalUpdate(transaction._id || transaction.id);
         }
+
+        console.log('Deleting transaction with ID:', idToDelete);
 
         try {
             // API call to delete
-            await api.delete(`/trading/transactions/${transaction.id}`);
+            await api.delete(`/trading/transactions/${idToDelete}`);
 
             // Success callback (if provided)
             if (onSuccess) {
                 onSuccess(transaction);
             }
 
+            refreshStats(); // Update Sidebar Stats
+
             return true;
         } catch (error) {
             console.error('Failed to delete transaction:', error);
-            toast.error('Failed to delete transaction. Please try again.');
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to delete transaction';
+            toast.error(errorMessage);
 
             // Rollback optimistic update on error
             // The parent component should handle re-fetching or restoring the transaction
@@ -39,7 +47,7 @@ export const useDeleteTransaction = (onSuccess) => {
             setIsDeleting(false);
             setDeletingId(null);
         }
-    }, [onSuccess]);
+    }, [onSuccess, refreshStats]);
 
     return {
         deleteTransaction,

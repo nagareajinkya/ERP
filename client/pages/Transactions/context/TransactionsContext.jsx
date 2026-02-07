@@ -7,6 +7,7 @@ import { useDeleteTransaction } from '../hooks/useDeleteTransaction';
 import { exportTransactionsCSV } from '../utils/exportCSV';
 import { exportTransactionsPDF } from '../utils/exportPDF';
 import { toast } from 'react-toastify';
+import ConfirmationModal from '../../../components/common/ConfirmationModal';
 
 /**
  * Context for Transactions page
@@ -23,6 +24,8 @@ export const TransactionsProvider = ({ children }) => {
 
     // Modal state
     const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [transactionToDelete, setTransactionToDelete] = useState(null);
 
     // Delete transaction handler
     const { deleteTransaction, isDeleting, deletingId } = useDeleteTransaction(() => {
@@ -84,15 +87,26 @@ export const TransactionsProvider = ({ children }) => {
         navigate(path, { state: { mode: 'edit', transaction } });
     }, [navigate]);
 
-    // Delete transaction handler
-    const handleDelete = useCallback(async (transaction) => {
-        const success = await deleteTransaction(transaction, (deletedId) => {
+    // Delete transaction handler - Opens Modal
+    const handleDelete = useCallback((transaction) => {
+        setTransactionToDelete(transaction);
+        setDeleteModalOpen(true);
+    }, []);
+
+    // Actual Delete Execution
+    const confirmDelete = useCallback(async () => {
+        if (!transactionToDelete) return;
+
+        const success = await deleteTransaction(transactionToDelete, (deletedId) => {
             // Optimistic update: remove from local state immediately
             // This will be rolled back if API call fails
+            // Note: refreshing transactions via refreshTransactions is safer than optimistic update here if pagination is involved,
+            // but for now, rely on onSuccess callback refetch.
         });
 
-        // If successful, refresh is already handled by useDeleteTransaction's onSuccess callback
-    }, [deleteTransaction]);
+        setDeleteModalOpen(false);
+        setTransactionToDelete(null);
+    }, [deleteTransaction, transactionToDelete]);
 
     // Close modal handler
     const handleCloseModal = useCallback(() => {
@@ -127,6 +141,18 @@ export const TransactionsProvider = ({ children }) => {
     return (
         <TransactionsContext.Provider value={value}>
             {children}
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setTransactionToDelete(null);
+                }}
+                onConfirm={confirmDelete}
+                title="Delete Transaction"
+                message="Are you sure you want to delete this transaction? This action cannot be undone."
+                type="delete"
+                confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+            />
         </TransactionsContext.Provider>
     );
 };

@@ -5,6 +5,7 @@ import api from '../../../src/api';
 import { useSettlementForm } from '../hooks/useSettlementForm';
 import { useSettlementParties } from '../hooks/useSettlementParties';
 import { useClickOutside } from '../../NewTransactions/hooks/useClickOutside';
+import { useUI } from '../../../context/UIContext';
 
 const NewSettlementContext = createContext(null);
 
@@ -12,6 +13,7 @@ export const NewSettlementProvider = ({ type = 'receipt', children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const isReceipt = type === 'receipt';
+    const { refreshStats } = useUI();
 
     // Core hooks
     const formData = useSettlementForm(type);
@@ -122,6 +124,8 @@ export const NewSettlementProvider = ({ type = 'receipt', children }) => {
                 await api.post('/trading/transactions', payload);
                 showNotify('success', `${isReceipt ? 'Receipt' : 'Payment'} recorded successfully!`);
             }
+
+            refreshStats(); // Update Sidebar Stats
 
             setTimeout(() => {
                 navigate('/transactions');
