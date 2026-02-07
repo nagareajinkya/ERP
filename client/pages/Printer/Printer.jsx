@@ -8,8 +8,7 @@ import {
 } from 'lucide-react';
 import FormLabel from '../../components/common/FormLabel';
 import { toast } from 'react-toastify';
-import { billItems } from '../../src/data/printerData'
-import axios from 'axios';
+import api from '../../src/api';
 
 // --- 1. CUSTOM INDIAN RUPEE ICON (Defined first to avoid ReferenceError) ---
 const IndianRupee = ({ size = 20, className = "" }) => (
@@ -61,18 +60,10 @@ const Printer = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const config = {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        };
-
         // Parallel Fetch: Settings + User Profile
         const [settingsRes, profileRes] = await Promise.all([
-          axios.get('http://localhost:5002/api/smart-ops/printer-settings', config),
-          axios.get('http://localhost:8080/api/auth/profile', config)
+          api.get('/smart-ops/printer-settings'),
+          api.get('/auth/profile')
         ]);
 
         // Data Handling - Settings
@@ -119,14 +110,6 @@ const Printer = () => {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      };
-
       const payload = {
         printFormat,
         paperSize,
@@ -134,7 +117,7 @@ const Printer = () => {
         layout
       };
 
-      await axios.put('http://localhost:5002/api/smart-ops/printer-settings', payload, config);
+      await api.put('/smart-ops/printer-settings', payload);
       toast.success("Settings saved successfully!");
     } catch (err) {
       console.error("Error saving printer settings:", err);
