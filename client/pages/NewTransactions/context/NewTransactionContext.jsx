@@ -205,6 +205,7 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
                 filledProducts: validation.filledProducts,
                 totals: calculationData.totals,
                 paidAmount: formData.paidAmount,
+                appliedOffers: calculationData.appliedOffers,
             });
 
             if (formData.editMode) {
