@@ -10,31 +10,3 @@ export const CATEGORY_STYLES = [
   { id: 8, bg: 'bg-teal-100', text: 'text-teal-600', icon: 'sun' },
   { id: 9, bg: 'bg-gray-100', text: 'text-gray-600', icon: 'smile' },
 ];
-
-
- export const allProducts = [
-    { id: 101, name: "Basmati Rice", categoryId: 1 },
-    { id: 102, name: "Brown Rice", categoryId: 1 },
-    { id: 103, name: "Sunflower Oil", categoryId: 1 },
-    { id: 201, name: "Tomato", categoryId: 2 },
-    { id: 202, name: "Potato", categoryId: 2 },
-    { id: 301, name: "Milk", categoryId: 3 },
-    { id: 302, name: "Cheese", categoryId: 3 },
-  ];
-
-  export const INITIAL_CATEGORIES = [
-    { id: 1, name: 'Groceries', styleId: 0 },
-    { id: 2, name: 'Vegetables', styleId: 1 },
-    { id: 3, name: 'Dairy Products', styleId: 2 },
-    { id: 4, name: 'Beverages', styleId: 3 },
-    { id: 5, name: 'Snacks', styleId: 4 },
-  ];
-  
-  export const INITIAL_UNITS = [
-    { id: 1, name: 'Kilogram', short: 'kg' },
-    { id: 2, name: 'Liter', short: 'ltr' },
-    { id: 3, name: 'Piece', short: 'pc' },
-    { id: 4, name: 'Dozen', short: 'dz' },
-  ];
-  
-
