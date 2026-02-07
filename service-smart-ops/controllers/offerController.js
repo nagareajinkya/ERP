@@ -247,3 +247,78 @@ exports.toggleStatus = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// @desc    Record offer redemption
+// @route   POST /api/smart-ops/offers/redemption
+// @access  Private (Internal Service Call)
+exports.recordRedemption = async (req, res) => {
+    try {
+        const { offerId, transactionId, customerId, partyName, discountAmount } = req.body;
+
+        // 1. Create Redemption Record
+        const Redemption = require('../models/Redemption');
+        await Redemption.create({
+            businessId: req.businessId,
+            offerId,
+            transactionId,
+            customerId,
+            partyName,
+            discountAmount
+        });
+
+        // 2. Increment Offer Usage Count
+        await Offer.findByIdAndUpdate(offerId, { $inc: { usageCount: 1 } });
+
+        res.status(201).json({ msg: 'Redemption recorded' });
+    } catch (err) {
+        console.error("Error recording redemption:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// @desc    Rollback offer redemption
+// @route   POST /api/smart-ops/offers/redemption/rollback
+// @access  Private (Internal Service Call)
+exports.rollbackRedemption = async (req, res) => {
+    try {
+        const { offerId, transactionId } = req.body;
+
+        // 1. Find and Delete Redemption Record
+        const Redemption = require('../models/Redemption');
+        const redemption = await Redemption.findOneAndDelete({
+            businessId: req.businessId,
+            offerId,
+            transactionId
+        });
+
+        if (redemption) {
+            // 2. Decrement Offer Usage Count
+            await Offer.findByIdAndUpdate(offerId, { $inc: { usageCount: -1 } });
+            res.json({ msg: 'Redemption rolled back' });
+        } else {
+            res.status(404).json({ msg: 'Redemption record not found' });
+        }
+
+    } catch (err) {
+        console.error("Error rolling back redemption:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// @desc    Get redemptions for an offer
+// @route   GET /api/smart-ops/offers/:id/redemptions
+// @access  Private
+exports.getOfferRedemptions = async (req, res) => {
+    try {
+        const Redemption = require('../models/Redemption');
+        const redemptions = await Redemption.find({
+            businessId: req.businessId,
+            offerId: req.params.id
+        }).sort({ date: -1 }).limit(50); // Limit to last 50
+
+        res.json(redemptions);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
