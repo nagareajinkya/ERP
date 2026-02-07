@@ -3,6 +3,7 @@ package com.sbms.trading_service.service;
 import java.util.UUID;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -207,11 +208,19 @@ public class TransactionServiceImpl implements TransactionService {
                 else if (t.getPaidAmount().doubleValue() > 0) status = "Partial";
             }
 
+            // Format time from createdAt timestamp
+            String time = "";
+            if (t.getCreatedAt() != null) {
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+                time = t.getCreatedAt().format(timeFormatter);
+            }
+
             return TransactionResponse.builder()
                     .id(t.getId())
                     .partyId(t.getPartyId())
                     .party(t.getPartyName() != null ? t.getPartyName() : "Unknown") 
                     .date(t.getDate())
+                    .time(time)
                     .type(t.getType())
                     .status(status)
                     .amount(t.getTotalAmount())
