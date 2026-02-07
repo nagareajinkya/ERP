@@ -73,7 +73,13 @@ export const TransactionsProvider = ({ children }) => {
 
     // Edit transaction handler
     const handleEdit = useCallback((transaction) => {
-        const path = transaction.type.toUpperCase() === 'SALE' ? '/new-sale' : '/new-purchase';
+        const type = transaction.type.toUpperCase();
+        let path = '/new-sale';
+
+        if (type === 'PURCHASE') path = '/new-purchase';
+        else if (type === 'RECEIPT') path = '/new-receipt';
+        else if (type === 'PAYMENT') path = '/new-payment';
+
         navigate(path, { state: { mode: 'edit', transaction } });
     }, [navigate]);
 

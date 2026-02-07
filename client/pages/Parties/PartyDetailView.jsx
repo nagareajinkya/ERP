@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../src/api';
+import SettlementModal from './SettlementModal';
 import {
     Phone, ArrowDownLeft, Receipt, MessageCircle,
     Edit2, Trash2, MapPin, ArrowUpRight, UserCircle2, Building2, Loader2
@@ -9,6 +10,7 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showSettlementModal, setShowSettlementModal] = useState(null); // null, 'receipt', or 'payment'
 
     useEffect(() => {
         if (party?.id) {
@@ -28,6 +30,13 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSettlementSuccess = () => {
+        // Refresh transactions and party data
+        fetchTransactions(party.id);
+        // Optionally trigger a parent refresh to update party balance
+        window.location.reload(); // Simple approach - could be optimized
     };
 
     if (!party) return null;
@@ -132,11 +141,37 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                     <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Quick Actions</h3>
                         <div className="space-y-3">
-                            <button className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                                <ArrowDownLeft size={20} /> Collect Payment
-                            </button>
-                            <button className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                                <Receipt size={20} /> Create New Sale
+                            {/* Settlement Actions */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowSettlementModal(true);
+                                        // We'll need to pass the mode to the modal. 
+                                        // I'll update the state to include mode.
+                                    }}
+                                    className="col-span-2 hidden" // Placeholder to remove old logic safely
+                                />
+                                <button
+                                    onClick={() => {
+                                        setShowSettlementModal('receipt');
+                                    }}
+                                    className="py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg shadow-green-600/20 flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]"
+                                >
+                                    <ArrowDownLeft size={24} />
+                                    <span>Record Receipt</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowSettlementModal('payment');
+                                    }}
+                                    className="py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]"
+                                >
+                                    <ArrowUpRight size={24} />
+                                    <span>Record Payment</span>
+                                </button>
+                            </div>
+                            <button className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                                <Receipt size={20} /> Create New {party.type === 0 ? 'Sale' : 'Purchase'}
                             </button>
                         </div>
                     </div>
@@ -165,6 +200,15 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Settlement Modal */}
+            <SettlementModal
+                isOpen={!!showSettlementModal}
+                onClose={() => setShowSettlementModal(null)}
+                party={party}
+                initialMode={showSettlementModal === 'receipt' ? 'receipt' : 'payment'} // Default if just true is passed, but we use string now
+                onSuccess={handleSettlementSuccess}
+            />
         </div>
     );
 };
