@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useRef, useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import api from '../../../src/api';
 import { useSettlementForm } from '../hooks/useSettlementForm';
 import { useSettlementParties } from '../hooks/useSettlementParties';
@@ -19,12 +20,15 @@ export const NewSettlementProvider = ({ type = 'receipt', children }) => {
     // Edit Mode State
     const [editingId, setEditingId] = useState(null);
 
-    // Notification state
-    const [notification, setNotification] = React.useState(null);
-
+    // Show notification helper using react-toastify
     const showNotify = (type, message) => {
-        setNotification({ type, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (type === 'error') {
+            toast.error(message);
+        } else if (type === 'success') {
+            toast.success(message);
+        } else {
+            toast.info(message);
+        }
     };
 
     // Refs
@@ -135,7 +139,6 @@ export const NewSettlementProvider = ({ type = 'receipt', children }) => {
         ...formData,
         ...partiesData,
         partyInputRef,
-        notification,
         showNotify,
         handleSave,
         isEditing: !!editingId

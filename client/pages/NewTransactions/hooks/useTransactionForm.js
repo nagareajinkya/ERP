@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { formatDateForInput } from '../utils/formatters';
 
 /**
@@ -21,13 +22,15 @@ export const useTransactionForm = (type) => {
     ]);
     const [paidAmount, setPaidAmount] = useState('');
 
-    // Notification
-    const [notification, setNotification] = useState({ type: '', message: '' });
-
-    // Show notification helper
+    // Show notification helper using react-toastify
     const showNotify = (type, message) => {
-        setNotification({ type, message });
-        setTimeout(() => setNotification({ type: '', message: '' }), 4000);
+        if (type === 'error') {
+            toast.error(message);
+        } else if (type === 'success') {
+            toast.success(message);
+        } else {
+            toast.info(message);
+        }
     };
 
     return {
@@ -51,7 +54,6 @@ export const useTransactionForm = (type) => {
         setPaidAmount,
 
         // Notifications
-        notification,
         showNotify,
     };
 };

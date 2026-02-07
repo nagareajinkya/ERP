@@ -7,7 +7,6 @@ import OffersPanel from './components/offers/OffersPanel';
 import TransactionFooter from './components/footer/TransactionFooter';
 import WalkInModal from './components/modals/WalkInModal';
 import ProductHistoryModal from './components/modals/ProductHistoryModal';
-import Toast from './components/common/Toast';
 
 /**
  * NewTransaction Page - Refactored Version
@@ -24,7 +23,6 @@ const NewTransactionContent = () => {
     productHistorySales,
     productHistoryPurchases,
     historyLoading,
-    notification,
   } = useNewTransactionContext();
 
   return (
@@ -66,9 +64,6 @@ const NewTransactionContent = () => {
         purchases={productHistoryPurchases}
         loading={historyLoading}
       />
-
-      {/* Toast Notification */}
-      <Toast notification={notification} />
     </div>
   );
 };

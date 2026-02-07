@@ -3,11 +3,8 @@ import { NewSettlementProvider, useNewSettlementContext } from './context/NewSet
 import SettlementHeader from './components/header/SettlementHeader';
 import SettlementForm from './components/body/SettlementForm';
 import PartyBalanceCard from './components/body/PartyBalanceCard';
-import Toast from '../NewTransactions/components/common/Toast'; // Reuse toast
 
 const NewSettlementContent = () => {
-    const { notification } = useNewSettlementContext();
-
     return (
         <div className="h-screen flex flex-col bg-gray-50 overflow-hidden font-sans">
             {/* Header */}
@@ -25,9 +22,6 @@ const NewSettlementContent = () => {
                     <PartyBalanceCard />
                 </div>
             </div>
-
-            {/* Toast Notification */}
-            <Toast notification={notification} />
         </div>
     );
 };
