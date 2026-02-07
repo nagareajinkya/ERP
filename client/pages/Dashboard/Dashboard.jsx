@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../src/api';
-import { CHART_DATA, RECENT_TRANSACTIONS, LOW_STOCK_ITEMS } from '../../src/data/dashboardData';
 import StatCard from '../../components/common/StatCard';
 
 const Dashboard = () => {
@@ -27,12 +26,13 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const { data } = await api.get('/dashboard/summary', {
+        const { data } = await api.get('/trading/dashboard/summary', {
           params: { period: chartPeriod }
         });
         setDashboardData(data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Keep existing data if error occurs, so UI doesn't break completely
       } finally {
         setLoading(false);
       }
@@ -42,6 +42,27 @@ const Dashboard = () => {
   }, [chartPeriod]);
 
   const { stats, chartData, recentTransactions, lowStockItems } = dashboardData;
+
+  // Loading skeleton
+  if (loading && !stats) {
+    return (
+      <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Overview</h1>
+            <p className="text-sm text-gray-500 font-medium">Loading your dashboard...</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-pulse">
+              <div className="h-16 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
@@ -96,7 +117,7 @@ const Dashboard = () => {
 
           <div className="flex-1 min-h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={CHART_DATA[chartPeriod]}>
+              <AreaChart data={chartData || []}>
                 <defs>
                   {/* Single Clean Gradient for Sales */}
                   <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
@@ -127,7 +148,7 @@ const Dashboard = () => {
             </button>
           </div>
           <div className="flex-1 space-y-4">
-            {LOW_STOCK_ITEMS.map(item => (
+            {lowStockItems && lowStockItems.length > 0 ? lowStockItems.map(item => (
               <div key={item.id} className="flex justify-between items-center p-3 bg-red-50/50 border border-red-100 rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
@@ -145,7 +166,11 @@ const Dashboard = () => {
                   </button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-400">
+                <p className="text-sm font-medium">No low stock items</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -173,7 +198,7 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {RECENT_TRANSACTIONS.map((trx, index) => (
+              {recentTransactions && recentTransactions.length > 0 ? recentTransactions.map((trx, index) => (
                 <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                   <td className="py-4 font-bold text-gray-800">{trx.id}</td>
                   <td className="py-4 font-medium text-gray-600">{trx.customer}</td>
@@ -193,7 +218,13 @@ const Dashboard = () => {
                     {trx.type === 'Sale' ? '+' : '-'} ₹{trx.amount.toLocaleString()}
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-gray-400">
+                    <p className="text-sm font-medium">No recent transactions</p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
