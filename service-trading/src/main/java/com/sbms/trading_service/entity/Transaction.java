@@ -50,4 +50,12 @@ public class Transaction extends BaseEntity {
         products.add(product);
         product.setTransaction(this);
     }
+
+    @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TransactionOffer> offers = new ArrayList<>();
+
+    public void addOffer(TransactionOffer offer) {
+        offers.add(offer);
+        offer.setTransaction(this);
+    }
 }

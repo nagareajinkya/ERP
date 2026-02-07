@@ -16,6 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import com.sbms.trading_service.dto.TransactionRequest;
 import com.sbms.trading_service.entity.Product;
 import com.sbms.trading_service.entity.Transaction;
+import com.sbms.trading_service.entity.TransactionOffer;
 import com.sbms.trading_service.entity.TransactionProduct;
 import com.sbms.trading_service.repository.ProductRepository;
 import com.sbms.trading_service.repository.TransactionRepository;
@@ -124,8 +125,69 @@ public class TransactionServiceImpl implements TransactionService {
             adjustStock(product, item.getQty(), request.getType(), false);
         }
 
+        // Process Offers Entity Creation (before save)
+        if (request.getAppliedOffers() != null) {
+            for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
+                TransactionOffer offer = new TransactionOffer();
+                offer.setOfferId(offerDto.getOfferId());
+                offer.setOfferName(offerDto.getOfferName());
+                offer.setDiscountAmount(offerDto.getDiscountAmount());
+                transaction.addOffer(offer);
+            }
+        }
+            
         Transaction saved = transactionRepository.save(transaction);
+
+        // Notify Smart Ops Service (After save to get Transaction ID)
+        if (request.getAppliedOffers() != null) {
+            for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
+                 recordOfferUsage(offerDto.getOfferId(), saved.getId().toString(), saved.getPartyId(), saved.getPartyName(), offerDto.getDiscountAmount());
+            }
+        }
+
         return saved.getId();
+    }
+
+    private void recordOfferUsage(String offerId, String transactionsId, Long partyId, String partyName, BigDecimal discountAmount) {
+        try {
+            String url = "http://localhost:8080/api/smart-ops/offers/redemption";
+            
+            // Body
+            Map<String, Object> body = Map.of(
+                "offerId", offerId,
+                "transactionId", transactionsId, 
+                "customerId", partyId != null ? partyId.toString() : "walk-in",
+                "partyName", partyName != null ? partyName : "Walk-in",
+                "discountAmount", discountAmount
+            );
+
+             // Get Token
+             String token = null;
+             ServletRequestAttributes attributes = 
+                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+             
+             if (attributes != null) {
+                 String authHeader = attributes.getRequest().getHeader("Authorization");
+                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                     token = authHeader.substring(7);
+                 }
+             }
+
+             HttpHeaders headers = new HttpHeaders();
+             if (token != null) headers.setBearerAuth(token);
+             
+             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+             
+             // Async or Fire-and-forget? RestTemplate is sync. 
+             // We don't want to fail transaction if this fails? 
+             // Requirement says "make it work". Let's do sync for now.
+             restTemplate.postForEntity(url, entity, Void.class);
+
+        } catch (Exception e) {
+            System.err.println("Failed to record offer usage: " + e.getMessage());
+            // Don't throw exception to avoid rolling back transaction? 
+            // Or do we want strict consistency? Usually marketing stats are non-critical.
+        }
     }
 
     // Helper to adjust stock
@@ -297,6 +359,31 @@ public class TransactionServiceImpl implements TransactionService {
             adjustStock(product, item.getQty(), request.getType(), false); // Reversal = false
         }
 
+        // 3.5 Handle Offers Update
+        // A. Rollback Old Offers
+        for (TransactionOffer oldOffer : existing.getOffers()) {
+             rollbackRedemption(oldOffer.getOfferId(), existing.getId().toString());
+        }
+        existing.getOffers().clear();
+
+        // B. Add New Offers
+        if (request.getAppliedOffers() != null) {
+            for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
+                TransactionOffer offer = new TransactionOffer();
+                // TransactionOffer entity defined doesn't have businessId, only ID, Transaction, OfferId, OfferName, Discount.
+                // It relies on Transaction -> Business linkage.
+                
+                offer.setOfferId(offerDto.getOfferId());
+                offer.setOfferName(offerDto.getOfferName());
+                offer.setDiscountAmount(offerDto.getDiscountAmount());
+                
+                existing.addOffer(offer);
+                
+                // Notify Smart Ops (Record Usage)
+                recordOfferUsage(offerDto.getOfferId(), existing.getId().toString(), existing.getPartyId(), existing.getPartyName(), offerDto.getDiscountAmount());
+            }
+        }
+
         // 4. Apply New Balance Impact
         if (request.getPartyId() != null) {
             BigDecimal newRemaining = request.getTotalAmount().subtract(request.getPaidAmount());
@@ -341,8 +428,47 @@ public class TransactionServiceImpl implements TransactionService {
             updatePartyBalance(existing.getPartyId(), adjustment.negate());
         }
 
-        // 3. Delete
+        // 3. Rollback Offers
+        for (TransactionOffer offer : existing.getOffers()) {
+             rollbackRedemption(offer.getOfferId(), existing.getId().toString());
+        }
+
+        // 4. Delete
         transactionRepository.delete(existing);
+    }
+
+    private void rollbackRedemption(String offerId, String transactionId) {
+        try {
+            String url = "http://localhost:8080/api/smart-ops/offers/redemption/rollback";
+             
+             // Body
+            Map<String, Object> body = Map.of(
+                "offerId", offerId,
+                "transactionId", transactionId
+            );
+
+             // Get Token
+             String token = null;
+             ServletRequestAttributes attributes = 
+                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+             
+             if (attributes != null) {
+                 String authHeader = attributes.getRequest().getHeader("Authorization");
+                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                     token = authHeader.substring(7);
+                 }
+             }
+
+             HttpHeaders headers = new HttpHeaders();
+             if (token != null) headers.setBearerAuth(token);
+             
+             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+             
+             restTemplate.postForEntity(url, entity, Void.class);
+
+        } catch (Exception e) {
+            System.err.println("Failed to rollback offer redemption: " + e.getMessage());
+        }
     }
 
     private void updatePartyBalance(Long partyId, BigDecimal adjustment) {

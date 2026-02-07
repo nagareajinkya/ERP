@@ -19,6 +19,15 @@ public class TransactionRequest {
     
     private List<TransactionProductDto> products;
 
+    private List<TransactionOfferDto> appliedOffers;
+
+    @Data
+    public static class TransactionOfferDto {
+        private String offerId;
+        private String offerName;
+        private BigDecimal discountAmount;
+    }
+
     @Data
     public static class TransactionProductDto {
         private Long productId;
