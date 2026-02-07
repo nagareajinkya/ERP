@@ -9,10 +9,14 @@ const {
     toggleStatus,
     recordRedemption,
     rollbackRedemption,
-    getOfferRedemptions
+    getOfferRedemptions,
+    getActiveOffersCount
 } = require('../controllers/offerController');
 
-router.use(auth); // Protect all routes
+// Internal endpoint for microservice communication (NO AUTH)
+router.get('/count/:businessId', getActiveOffersCount);
+
+router.use(auth); // Protect all routes below this line
 
 router.get('/', getOffers);
 router.post('/', createOffer);

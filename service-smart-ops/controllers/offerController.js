@@ -55,6 +55,26 @@ exports.getOffers = async (req, res) => {
     }
 };
 
+// @desc    Get active offers count for dashboard (Internal API - No Auth)
+// @route   GET /api/smart-ops/offers/count/:businessId
+// @access  Internal (No Authentication Required)
+exports.getActiveOffersCount = async (req, res) => {
+    try {
+        const { businessId } = req.params;
+
+        // Count only active offers
+        const count = await Offer.countDocuments({
+            businessId,
+            status: 'active'
+        });
+
+        res.json({ count });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
 // @desc    Create a new offer
 // @route   POST /api/smart-ops/offers
 // @access  Private
