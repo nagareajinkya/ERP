@@ -41,6 +41,7 @@ const Printer = () => {
     showHeaderPhone: true,
     showHeaderAddress: true,
     showSerialNo: true,
+    showInvoicePrefix: true, // New Field
     showDiscount: true,
     showUnitPrice: true,
     detailedGST: true,
@@ -84,7 +85,8 @@ const Printer = () => {
             addressState: profileRes.data.state,
             addressPincode: profileRes.data.pincode,
             phoneNumber: profileRes.data.phone,
-            gstin: profileRes.data.gstin
+            gstin: profileRes.data.gstin,
+            invoicePrefix: profileRes.data.invoicePrefix
           };
           setBusinessProfile(profile);
 
@@ -180,7 +182,7 @@ const Printer = () => {
         </div>
 
         <div class="border-t border-b py-2 text-center font-bold text-xs uppercase">
-            ${layout.invoiceTitle} #TEST-001
+            ${layout.invoiceTitle} #${layout.showInvoicePrefix && businessProfile?.invoicePrefix ? businessProfile.invoicePrefix : ''}001
         </div>
 
         <div style="padding: 20px 0; text-align: center; font-size: 12px;">
@@ -419,6 +421,7 @@ const Printer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { l: 'Row Index (#)', k: 'showSerialNo', i: Hash },
+                    { l: 'Show Invoice Prefix', k: 'showInvoicePrefix', i: FileText }, // New
                     { l: 'Product', k: 'showProductName', i: Tag }, // No logic change needed, just visual if hidden, though usually always shown
                     // removed HSN
                     { l: 'Show Quantity', k: 'showQty', i: Hash }, // New or just assumed
@@ -470,7 +473,7 @@ const Printer = () => {
             {/* Title Section */}
             <div className={`border-y border-dashed border-gray-300 py-2 mb-4 flex justify-between font-black uppercase text-gray-700`}>
               <span>{layout.invoiceTitle}</span>
-              <span>#INV-001</span>
+              <span>#{layout.showInvoicePrefix && businessProfile?.invoicePrefix ? businessProfile.invoicePrefix : ''}001</span>
             </div>
 
             {/* Items Table */}
