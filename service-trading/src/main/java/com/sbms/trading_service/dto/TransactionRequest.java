@@ -17,6 +17,11 @@ public class TransactionRequest {
     private BigDecimal totalAmount;
     private BigDecimal paidAmount;
     
+    // Settlement fields (for RECEIPT/PAYMENT types)
+    private String paymentMode; // Will be converted to enum in service
+    private String referenceNumber;
+    private String notes;
+    
     private List<TransactionProductDto> products;
 
     private List<TransactionOfferDto> appliedOffers;

@@ -21,6 +21,8 @@ public class TransactionResponse {
     private BigDecimal amount;
     private BigDecimal paidAmount;
     private String paymentMode;
+    private String referenceNumber;
+    private String notes;
     
     // Details for Modal
     private List<DetailDto> details;

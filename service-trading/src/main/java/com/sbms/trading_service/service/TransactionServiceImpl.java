@@ -19,6 +19,7 @@ import com.sbms.trading_service.entity.Transaction;
 import com.sbms.trading_service.entity.TransactionOffer;
 import com.sbms.trading_service.entity.TransactionProduct;
 import com.sbms.trading_service.enums.TransactionType;
+import com.sbms.trading_service.enums.PaymentMode;
 import com.sbms.trading_service.repository.ProductRepository;
 import com.sbms.trading_service.repository.TransactionRepository;
 
@@ -58,17 +59,32 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setTotalAmount(request.getTotalAmount());
         transaction.setPaidAmount(request.getPaidAmount());
 
+        // Set settlement fields (for RECEIPT/PAYMENT types)
+        if (request.getPaymentMode() != null) {
+            transaction.setPaymentMode(PaymentMode.valueOf(request.getPaymentMode().toUpperCase().replace(" ", "_")));
+        }
+        transaction.setReferenceNumber(request.getReferenceNumber());
+        transaction.setNotes(request.getNotes());
+
         // Update Party Balance via Service-Parties API
         if (request.getPartyId() != null) {
             try {
-                // Calculate Amount to adjust
-                BigDecimal remaining = transaction.getTotalAmount().subtract(transaction.getPaidAmount());
                 BigDecimal adjustment = BigDecimal.ZERO;
 
                 if (TransactionType.SALE.equals(type)) {
+                    // Calculate Amount to adjust for SALE
+                    BigDecimal remaining = transaction.getTotalAmount().subtract(transaction.getPaidAmount());
                     adjustment = remaining; // Positive (Receivable Increases)
                 } else if (TransactionType.PURCHASE.equals(type)) {
+                    // Calculate Amount to adjust for PURCHASE
+                    BigDecimal remaining = transaction.getTotalAmount().subtract(transaction.getPaidAmount());
                     adjustment = remaining.negate(); // Negative (Payable Increases / Receivable Decreases)
+                } else if (TransactionType.RECEIPT.equals(type)) {
+                    // RECEIPT: Customer pays you, reduces what they owe
+                    adjustment = transaction.getPaidAmount().negate(); // Negative reduces receivable
+                } else if (TransactionType.PAYMENT.equals(type)) {
+                    // PAYMENT: You pay supplier, reduces what you owe
+                    adjustment = transaction.getPaidAmount(); // Positive reduces payable (increases balance towards zero)
                 }
                 
                 if (adjustment.compareTo(BigDecimal.ZERO) != 0) {
@@ -106,8 +122,8 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
 
-        // Process Products
-        if (request.getProducts() != null) {
+        // Process Products (only for SALE/PURCHASE, not for RECEIPT/PAYMENT)
+        if (request.getProducts() != null && (TransactionType.SALE.equals(type) || TransactionType.PURCHASE.equals(type))) {
             for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
                 Product product = productRepository.findById(item.getProductId())
                         .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
@@ -132,8 +148,8 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
 
-        // Process Offers Entity Creation (before save)
-        if (request.getAppliedOffers() != null) {
+        // Process Offers Entity Creation (only for SALE/PURCHASE, not for RECEIPT/PAYMENT)
+        if (request.getAppliedOffers() != null && (TransactionType.SALE.equals(type) || TransactionType.PURCHASE.equals(type))) {
             for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
                 TransactionOffer offer = new TransactionOffer();
                 offer.setOfferId(offerDto.getOfferId());
@@ -295,6 +311,12 @@ public class TransactionServiceImpl implements TransactionService {
             time = t.getCreatedAt().format(timeFormatter);
         }
 
+        // For RECEIPT/PAYMENT, use paymentMode if available
+        String paymentModeStr = "Cash"; // Default
+        if (t.getPaymentMode() != null) {
+            paymentModeStr = t.getPaymentMode().name().replace("_", " ");
+        }
+
         return TransactionResponse.builder()
                 .id(t.getId())
                 .partyId(t.getPartyId())
@@ -305,7 +327,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .status(status)
                 .amount(t.getTotalAmount())
                 .paidAmount(t.getPaidAmount())
-                .paymentMode("Cash") 
+                .paymentMode(paymentModeStr) 
                 .products(t.getProducts().size())
                 .details(t.getProducts().stream().map(p -> TransactionResponse.DetailDto.builder()
                         .productId(p.getProduct().getId())
@@ -330,15 +352,19 @@ public class TransactionServiceImpl implements TransactionService {
 
         // 1. Revert Old Balance Impact
         if (existing.getPartyId() != null) {
-            BigDecimal oldRemaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
             BigDecimal oldAdjustment = BigDecimal.ZERO;
             
             TransactionType oldType = existing.getType();
-            TransactionType oldType = existing.getType();
             if (TransactionType.SALE.equals(oldType)) {
+                BigDecimal oldRemaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
                 oldAdjustment = oldRemaining; 
             } else if (TransactionType.PURCHASE.equals(oldType)) {
+                BigDecimal oldRemaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
                 oldAdjustment = oldRemaining.negate();
+            } else if (TransactionType.RECEIPT.equals(oldType)) {
+                oldAdjustment = existing.getPaidAmount().negate();
+            } else if (TransactionType.PAYMENT.equals(oldType)) {
+                oldAdjustment = existing.getPaidAmount();
             }
             // Reverse it (negate)
             updatePartyBalance(existing.getPartyId(), oldAdjustment.negate());
@@ -357,14 +383,24 @@ public class TransactionServiceImpl implements TransactionService {
         existing.setTotalAmount(request.getTotalAmount());
         existing.setPaidAmount(request.getPaidAmount());
 
-        // 3. Clear and Re-add Products
-        // A. Rever Old Stock
+        // Update settlement fields
+        if (request.getPaymentMode() != null) {
+            existing.setPaymentMode(PaymentMode.valueOf(request.getPaymentMode().toUpperCase().replace(" ", "_")));
+        } else {
+            existing.setPaymentMode(null);
+        }
+        existing.setReferenceNumber(request.getReferenceNumber());
+        existing.setNotes(request.getNotes());
+
+        // 3. Clear and Re-add Products (only for SALE/PURCHASE)
+        // A. Revert Old Stock
+        TransactionType existingType = existing.getType();
         for (TransactionProduct oldItem : existing.getProducts()) {
-            adjustStock(oldItem.getProduct(), oldItem.getQty(), existing.getType(), true); // Reversal = true
+            adjustStock(oldItem.getProduct(), oldItem.getQty(), existingType, true); // Reversal = true
         }
 
         existing.getProducts().clear();
-        if (request.getProducts() != null) {
+        if (request.getProducts() != null && (TransactionType.SALE.equals(newType) || TransactionType.PURCHASE.equals(newType))) {
             for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
                 Product product = productRepository.findById(item.getProductId())
                         .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
@@ -384,7 +420,7 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
 
-        // 3.5 Handle Offers Update
+        // 3.5 Handle Offers Update (only for SALE/PURCHASE)
         // A. Rollback Old Offers
         for (TransactionOffer oldOffer : existing.getOffers()) {
              rollbackRedemption(oldOffer.getOfferId(), existing.getId().toString());
@@ -392,7 +428,7 @@ public class TransactionServiceImpl implements TransactionService {
         existing.getOffers().clear();
 
         // B. Add New Offers
-        if (request.getAppliedOffers() != null) {
+        if (request.getAppliedOffers() != null && (TransactionType.SALE.equals(newType) || TransactionType.PURCHASE.equals(newType))) {
             for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
                 TransactionOffer offer = new TransactionOffer();
                 // TransactionOffer entity defined doesn't have businessId, only ID, Transaction, OfferId, OfferName, Discount.
@@ -411,13 +447,18 @@ public class TransactionServiceImpl implements TransactionService {
 
         // 4. Apply New Balance Impact
         if (request.getPartyId() != null) {
-            BigDecimal newRemaining = request.getTotalAmount().subtract(request.getPaidAmount());
             BigDecimal newAdjustment = BigDecimal.ZERO;
             
             if (TransactionType.SALE.equals(newType)) {
+                BigDecimal newRemaining = request.getTotalAmount().subtract(request.getPaidAmount());
                 newAdjustment = newRemaining;
             } else if (TransactionType.PURCHASE.equals(newType)) {
+                BigDecimal newRemaining = request.getTotalAmount().subtract(request.getPaidAmount());
                 newAdjustment = newRemaining.negate();
+            } else if (TransactionType.RECEIPT.equals(newType)) {
+                newAdjustment = request.getPaidAmount().negate();
+            } else if (TransactionType.PAYMENT.equals(newType)) {
+                newAdjustment = request.getPaidAmount();
             }
             updatePartyBalance(request.getPartyId(), newAdjustment);
         }
@@ -443,15 +484,19 @@ public class TransactionServiceImpl implements TransactionService {
 
         // 2. Revert Balance Impact
         if (existing.getPartyId() != null) {
-            BigDecimal remaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
             BigDecimal adjustment = BigDecimal.ZERO;
             
             TransactionType type = existing.getType();
-            TransactionType type = existing.getType();
             if (TransactionType.SALE.equals(type)) {
+                BigDecimal remaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
                 adjustment = remaining; 
             } else if (TransactionType.PURCHASE.equals(type)) {
+                BigDecimal remaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
                 adjustment = remaining.negate();
+            } else if (TransactionType.RECEIPT.equals(type)) {
+                adjustment = existing.getPaidAmount().negate();
+            } else if (TransactionType.PAYMENT.equals(type)) {
+                adjustment = existing.getPaidAmount();
             }
             // Reverse it
             updatePartyBalance(existing.getPartyId(), adjustment.negate());

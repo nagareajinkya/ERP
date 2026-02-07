@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.sbms.trading_service.enums.TransactionType;
+import com.sbms.trading_service.enums.PaymentMode;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,6 +45,17 @@ public class Transaction extends BaseEntity {
 
     @Column(precision = 10, scale = 2)
     private BigDecimal paidAmount;
+
+    // Settlement Information (for RECEIPT/PAYMENT types)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_mode")
+    private PaymentMode paymentMode;
+
+    @Column(name = "reference_number")
+    private String referenceNumber;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     // Relations
     @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
