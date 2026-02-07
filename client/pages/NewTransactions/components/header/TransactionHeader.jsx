@@ -10,7 +10,19 @@ import PartySearch from './PartySearch';
  */
 const TransactionHeader = () => {
     const navigate = useNavigate();
-    const { date, setDate, editMode, handleSave, theme } = useNewTransactionContext();
+    const { date, setDate, editMode, handleSave, theme, selectedCustomer } = useNewTransactionContext();
+
+    const getSaveLabel = () => {
+        if (editMode) return 'Update';
+        return 'Save Bill';
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR'
+        }).format(amount);
+    };
 
     return (
         <div className="shrink-0 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm z-30">
@@ -20,7 +32,12 @@ const TransactionHeader = () => {
 
                 <div className="h-8 w-px bg-gray-200 mx-2"></div>
 
-                <PartySearch />
+                <div className="flex items-center gap-4">
+                    <PartySearch />
+
+                    {/* Party Balance Display */}
+
+                </div>
 
                 <div className="relative">
                     <input
@@ -46,7 +63,7 @@ const TransactionHeader = () => {
                     onClick={handleSave}
                     className={`flex items-center gap-2 px-6 py-2.5 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-95 font-medium ${theme.primary} ${theme.primaryHover}`}
                 >
-                    <Save size={18} /> {editMode ? 'Update' : 'Save Bill'}
+                    <Save size={18} /> {getSaveLabel()}
                 </button>
             </div>
         </div>

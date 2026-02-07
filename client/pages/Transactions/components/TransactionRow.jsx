@@ -45,13 +45,10 @@ const TransactionRow = memo(({ transaction }) => {
             </td>
 
             <td className="py-4 px-6 text-right">
-                <p className={`text-base font-extrabold ${transaction.type === 'Sale'
-                    ? 'text-green-600'
-                    : transaction.type === 'Purchase'
-                        ? 'text-gray-800'
-                        : 'text-gray-400'
+                <p className={`text-base font-extrabold ${transaction.type === 'Sale' ? 'text-green-600' :
+                    transaction.type === 'Purchase' ? 'text-red-600' : 'text-gray-600'
                     }`}>
-                    {transaction.type === 'Sale' ? '+' : transaction.type === 'Purchase' ? '-' : ''} {formatCurrency(transaction.amount)}
+                    {['Sale'].includes(transaction.type) ? '+' : ['Purchase'].includes(transaction.type) ? '-' : ''} {formatCurrency(transaction.amount)}
                 </p>
                 {transaction.status === 'Partial' && (
                     <p className="text-[10px] text-red-500 font-bold">

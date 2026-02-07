@@ -1,5 +1,5 @@
 // Transaction Types
-export const TRANSACTION_TYPES = ['All', 'Sale', 'Purchase', 'Adjustment'];
+export const TRANSACTION_TYPES = ['All', 'Sale', 'Purchase'];
 
 // Date Filter Options
 export const DATE_FILTERS = ['Today', 'Yesterday', 'This Week', 'This Month'];

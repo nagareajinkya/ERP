@@ -28,7 +28,7 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
     const historyData = useProductHistory(formData.showNotify);
 
     // Theme based on transaction type
-    const theme = getTheme(formData.isSale);
+    const theme = getTheme(formData.type);
 
     // Calculation engine (depends on form and product data)
     const calculationData = useCalculationEngine({

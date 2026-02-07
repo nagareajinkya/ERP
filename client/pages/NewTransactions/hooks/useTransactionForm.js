@@ -8,6 +8,7 @@ import { formatDateForInput } from '../utils/formatters';
 export const useTransactionForm = (type) => {
     const { state } = useLocation();
     const isSale = type === 'sale';
+    const isPurchase = type === 'purchase';
 
     // Edit mode
     const [editMode, setEditMode] = useState(false);
@@ -37,7 +38,9 @@ export const useTransactionForm = (type) => {
         setEditingId,
 
         // Transaction type
+        type,
         isSale,
+        isPurchase,
 
         // Form fields
         date,

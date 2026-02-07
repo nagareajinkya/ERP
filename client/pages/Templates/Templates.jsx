@@ -38,7 +38,7 @@ const Templates = () => {
 
   // --- EDITOR STATE ---
   const [tempName, setTempName] = useState('');
-  const [tempCategory, setTempCategory] = useState('Payment');
+  const [tempCategory, setTempCategory] = useState('Order');
   const [tempOfferId, setTempOfferId] = useState(''); // For Offer templates
   const [messageText, setMessageText] = useState('');
   const textAreaRef = useRef(null);
@@ -223,7 +223,7 @@ const Templates = () => {
     setEditingTemplate(null);
     setTempName('');
     setMessageText('');
-    setTempCategory('Payment');
+    setTempCategory('Order');
     setTempOfferId('');
     setIsEditorOpen(true);
   };
@@ -242,8 +242,7 @@ const Templates = () => {
     if (!selectedForBroadcast) return [];
 
     switch (selectedForBroadcast.category) {
-      case 'Payment':
-        return parties.filter(p => p.currentBalance > 0);
+
       case 'Offer':
         if (!selectedForBroadcast.offerId) return []; // Should not happen if linked correctly
         // selectedForBroadcast.offerId should be populated object
@@ -302,8 +301,7 @@ const Templates = () => {
               <div key={t.id} onClick={() => openEditEditor(t)} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
                 <div className="flex justify-between items-center mb-3">
                   <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest 
-                    ${t.category === 'Payment' ? 'bg-red-50 text-red-600' :
-                      t.category === 'Offer' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>
+                    ${t.category === 'Offer' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>
                     {t.category}
                   </span>
                   <WhatsAppIcon size={14} className="text-green-500" />
@@ -335,7 +333,7 @@ const Templates = () => {
                     <div>
                       <FormLabel text="Category" className="text-[10px] font-black text-gray-400 uppercase ml-1" />
                       <select value={tempCategory} onChange={e => setTempCategory(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm outline-none mt-1">
-                        <option>Payment</option><option>Order</option><option>Marketing</option><option>Offer</option>
+                        <option>Order</option><option>Marketing</option><option>Offer</option>
                       </select>
                     </div>
                   </div>

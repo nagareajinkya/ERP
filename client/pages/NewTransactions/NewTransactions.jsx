@@ -1,5 +1,5 @@
 import React from 'react';
-import { NewTransactionProvider } from './context/NewTransactionContext';
+import { NewTransactionProvider, useNewTransactionContext } from './context/NewTransactionContext';
 import TransactionHeader from './components/header/TransactionHeader';
 import ProductsTable from './components/products/ProductsTable';
 import ProductMasterList from './components/products/ProductMasterList';
@@ -8,7 +8,6 @@ import TransactionFooter from './components/footer/TransactionFooter';
 import WalkInModal from './components/modals/WalkInModal';
 import ProductHistoryModal from './components/modals/ProductHistoryModal';
 import Toast from './components/common/Toast';
-import { useNewTransactionContext } from './context/NewTransactionContext';
 
 /**
  * NewTransaction Page - Refactored Version
@@ -83,4 +82,3 @@ const NewTransaction = ({ type = 'sale' }) => {
 };
 
 export default NewTransaction;
-

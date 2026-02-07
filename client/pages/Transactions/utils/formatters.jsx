@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, ArrowUpRight, ArrowDownRight, Sliders } from 'lucide-react';
+import { CheckCircle2, Clock, ArrowUpRight, ArrowDownRight, Sliders, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 
 /**
  * Formatting utilities for transaction display
@@ -58,7 +58,7 @@ export const getTypeIcon = (type) => {
     }
 
     return (
-        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+        <div className="p-2 bg-gray-50 text-gray-600 rounded-lg">
             <Sliders size={18} />
         </div>
     );
@@ -89,12 +89,15 @@ export const getTypeColorClass = (type) => {
 
     if (typeUpper === 'SALE') return 'text-green-600';
     if (typeUpper === 'PURCHASE') return 'text-red-600';
-    return 'text-orange-600';
+    return 'text-gray-600';
 };
 
 // Get amount display with sign
 export const formatAmountWithSign = (amount, type) => {
     const typeUpper = type?.toUpperCase();
-    const sign = typeUpper === 'SALE' ? '+' : typeUpper === 'PURCHASE' ? '-' : '';
+    let sign = '';
+    if (['SALE'].includes(typeUpper)) sign = '+';
+    if (['PURCHASE'].includes(typeUpper)) sign = '-';
+
     return `${sign} ${formatCurrency(amount)}`;
 };
