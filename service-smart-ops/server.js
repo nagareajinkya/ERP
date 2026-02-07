@@ -13,7 +13,7 @@ const app = express();
 const PORT = 5002;
 
 // Middleware
-app.use(cors());
+//app.use(cors());
 app.options('*', (req, res) => res.sendStatus(200)); // Handle preflight status manually
 
 

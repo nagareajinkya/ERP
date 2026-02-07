@@ -486,3 +486,4 @@ E:\gurudevWeb\service-parties\obj\Debug\net10.0\refint\SBMS.Parties.dll
 E:\gurudevWeb\service-parties\obj\Debug\net10.0\SBMS.Parties.pdb
 E:\gurudevWeb\service-parties\obj\Debug\net10.0\SBMS.Parties.genruntimeconfig.cache
 E:\gurudevWeb\service-parties\obj\Debug\net10.0\ref\SBMS.Parties.dll
+E:\gurudevWeb\service-parties\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

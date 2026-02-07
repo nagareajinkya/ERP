@@ -9,13 +9,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.sbms.trading_service.entity.Transaction;
+import com.sbms.trading_service.enums.TransactionType;
 
 import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
-    @Query("SELECT t.partyId, SUM(t.totalAmount) FROM Transaction t WHERE t.businessId = :businessId AND UPPER(t.type) = 'SALE' GROUP BY t.partyId ORDER BY SUM(t.totalAmount) DESC")
+    @Query("SELECT t.partyId, SUM(t.totalAmount) FROM Transaction t WHERE t.businessId = :businessId AND t.type = TransactionType.SALE GROUP BY t.partyId ORDER BY SUM(t.totalAmount) DESC")
     List<Object[]> findTopSpenders(@Param("businessId") UUID businessId);
 
     @Query("SELECT t.partyId, COUNT(t) FROM Transaction t WHERE t.businessId = :businessId GROUP BY t.partyId ORDER BY COUNT(t) DESC")
@@ -28,7 +29,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     // standard method for specific "Type" (today,yesterday,this week,this month)
     List<Transaction> findByBusinessIdAndPartyNameContainingIgnoreCaseAndTypeAndDateBetweenOrderByDateDesc(
-        UUID businessId, String partyName, String type, LocalDate startDate, LocalDate endDate
+        UUID businessId, String partyName, TransactionType type, LocalDate startDate, LocalDate endDate
     );
 
     // Find by Party ID
@@ -38,7 +39,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT t FROM Transaction t JOIN t.products tp WHERE tp.product.id = :productId AND t.type = :type AND t.businessId = :businessId ORDER BY t.createdAt DESC")
     List<Transaction> findTransactionsByProductAndType(
         @Param("productId") Long productId,
-        @Param("type") String type,
+        @Param("type") TransactionType type,
         @Param("businessId") UUID businessId
     );
 }

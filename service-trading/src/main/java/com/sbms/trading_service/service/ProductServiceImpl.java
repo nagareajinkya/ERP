@@ -21,6 +21,7 @@ import com.sbms.trading_service.entity.Category;
 import com.sbms.trading_service.entity.Product;
 import com.sbms.trading_service.entity.Transaction;
 import com.sbms.trading_service.entity.Unit;
+import com.sbms.trading_service.enums.TransactionType;
 import com.sbms.trading_service.repository.CategoryRepository;
 import com.sbms.trading_service.repository.ProductRepository;
 import com.sbms.trading_service.repository.TransactionRepository;
@@ -160,11 +161,11 @@ public class ProductServiceImpl implements ProductService {
 
         // Fetch sales transactions
         List<Transaction> salesTransactions = transactionRepository
-                .findTransactionsByProductAndType(productId, "SALE", businessId);
+                .findTransactionsByProductAndType(productId, TransactionType.SALE, businessId);
 
         // Fetch purchase transactions
         List<Transaction> purchaseTransactions = transactionRepository
-                .findTransactionsByProductAndType(productId, "PURCHASE", businessId);
+                .findTransactionsByProductAndType(productId, TransactionType.PURCHASE, businessId);
 
         // Convert to DTOs and limit to last 5
         // Build sales history by iterating transactions and their products,

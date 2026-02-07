@@ -18,6 +18,7 @@ import com.sbms.trading_service.entity.Product;
 import com.sbms.trading_service.entity.Transaction;
 import com.sbms.trading_service.entity.TransactionOffer;
 import com.sbms.trading_service.entity.TransactionProduct;
+import com.sbms.trading_service.enums.TransactionType;
 import com.sbms.trading_service.repository.ProductRepository;
 import com.sbms.trading_service.repository.TransactionRepository;
 
@@ -48,7 +49,10 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setPartyId(request.getPartyId());
         transaction.setPartyName(request.getPartyName());
         transaction.setDate(request.getDate());
-        transaction.setType(request.getType()); 
+        
+        TransactionType type = TransactionType.valueOf(request.getType().toUpperCase());
+        transaction.setType(type); 
+        
         transaction.setSubTotal(request.getSubTotal());
         transaction.setDiscount(request.getDiscount());
         transaction.setTotalAmount(request.getTotalAmount());
@@ -61,10 +65,10 @@ public class TransactionServiceImpl implements TransactionService {
                 BigDecimal remaining = transaction.getTotalAmount().subtract(transaction.getPaidAmount());
                 BigDecimal adjustment = BigDecimal.ZERO;
 
-                if ("SALE".equalsIgnoreCase(request.getType())) {
-                    adjustment = remaining; // Positive
-                } else if ("PURCHASE".equalsIgnoreCase(request.getType())) {
-                    adjustment = remaining.negate(); // Negative
+                if (TransactionType.SALE.equals(type)) {
+                    adjustment = remaining; // Positive (Receivable Increases)
+                } else if (TransactionType.PURCHASE.equals(type)) {
+                    adjustment = remaining.negate(); // Negative (Payable Increases / Receivable Decreases)
                 }
                 
                 if (adjustment.compareTo(BigDecimal.ZERO) != 0) {
@@ -103,27 +107,29 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         // Process Products
-        for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
+        if (request.getProducts() != null) {
+            for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
+                Product product = productRepository.findById(item.getProductId())
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
 
-            // Verify Product belongs to business?
-             if (!product.getBusinessId().equals(businessId)) {
-                 throw new RuntimeException("Product does not belong to this business");
-             }
+                // Verify Product belongs to business?
+                 if (!product.getBusinessId().equals(businessId)) {
+                     throw new RuntimeException("Product does not belong to this business");
+                 }
 
-            TransactionProduct tp = new TransactionProduct();
-            tp.setBusinessId(businessId);
-            tp.setProduct(product);
-            tp.setQty(item.getQty());
-            tp.setPrice(item.getPrice());
-            tp.setAmount(item.getAmount());
-            tp.setFree(item.isFree());
+                TransactionProduct tp = new TransactionProduct();
+                tp.setBusinessId(businessId);
+                tp.setProduct(product);
+                tp.setQty(item.getQty());
+                tp.setPrice(item.getPrice());
+                tp.setAmount(item.getAmount());
+                tp.setFree(item.isFree());
 
-            transaction.addProduct(tp);
-            
-            // Update Inventory (Current Stock)
-            adjustStock(product, item.getQty(), request.getType(), false);
+                transaction.addProduct(tp);
+                
+                // Update Inventory (Current Stock)
+                adjustStock(product, item.getQty(), type, false);
+            }
         }
 
         // Process Offers Entity Creation (before save)
@@ -192,7 +198,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     // Helper to adjust stock
-    private void adjustStock(Product product, BigDecimal qty, String type, boolean isReversal) {
+    // Helper to adjust stock
+    private void adjustStock(Product product, BigDecimal qty, TransactionType type, boolean isReversal) {
         if (qty == null || qty.compareTo(BigDecimal.ZERO) == 0) return;
 
         BigDecimal adjustment = qty;
@@ -202,9 +209,9 @@ public class TransactionServiceImpl implements TransactionService {
         // Purchase: +Qty
         // Reversal: Flip sign
         
-        if ("SALE".equalsIgnoreCase(type)) {
+        if (TransactionType.SALE.equals(type)) {
             adjustment = adjustment.negate();
-        } else if ("PURCHASE".equalsIgnoreCase(type)) {
+        } else if (TransactionType.PURCHASE.equals(type)) {
             // Keep positive
         }
         
@@ -259,8 +266,9 @@ public class TransactionServiceImpl implements TransactionService {
                  businessId, safeQuery, startDate, endDate
              );
         } else {
+             TransactionType tType = TransactionType.valueOf(type.toUpperCase());
              transactions = transactionRepository.findByBusinessIdAndPartyNameContainingIgnoreCaseAndTypeAndDateBetweenOrderByDateDesc(
-                 businessId, safeQuery, type, startDate, endDate
+                 businessId, safeQuery, tType, startDate, endDate
              );
         }
 
@@ -293,7 +301,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .party(t.getPartyName() != null ? t.getPartyName() : "Unknown") 
                 .date(t.getDate())
                 .time(time)
-                .type(t.getType())
+                .type(t.getType().name())
                 .status(status)
                 .amount(t.getTotalAmount())
                 .paidAmount(t.getPaidAmount())
@@ -324,9 +332,12 @@ public class TransactionServiceImpl implements TransactionService {
         if (existing.getPartyId() != null) {
             BigDecimal oldRemaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
             BigDecimal oldAdjustment = BigDecimal.ZERO;
-            if ("SALE".equalsIgnoreCase(existing.getType())) {
+            
+            TransactionType oldType = existing.getType();
+            TransactionType oldType = existing.getType();
+            if (TransactionType.SALE.equals(oldType)) {
                 oldAdjustment = oldRemaining; 
-            } else if ("PURCHASE".equalsIgnoreCase(existing.getType())) {
+            } else if (TransactionType.PURCHASE.equals(oldType)) {
                 oldAdjustment = oldRemaining.negate();
             }
             // Reverse it (negate)
@@ -337,7 +348,10 @@ public class TransactionServiceImpl implements TransactionService {
         existing.setPartyId(request.getPartyId());
         existing.setPartyName(request.getPartyName());
         existing.setDate(request.getDate());
-        existing.setType(request.getType());
+        
+        TransactionType newType = TransactionType.valueOf(request.getType().toUpperCase());
+        existing.setType(newType);
+        
         existing.setSubTotal(request.getSubTotal());
         existing.setDiscount(request.getDiscount());
         existing.setTotalAmount(request.getTotalAmount());
@@ -350,22 +364,24 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         existing.getProducts().clear();
-        for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
-            
-            TransactionProduct tp = new TransactionProduct();
-            tp.setBusinessId(businessId);
-            tp.setTransaction(existing); // Important linkage
-            tp.setProduct(product);
-            tp.setQty(item.getQty());
-            tp.setPrice(item.getPrice());
-            tp.setAmount(item.getAmount());
-            tp.setFree(item.isFree());
-            existing.getProducts().add(tp);
+        if (request.getProducts() != null) {
+            for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
+                Product product = productRepository.findById(item.getProductId())
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
+                
+                TransactionProduct tp = new TransactionProduct();
+                tp.setBusinessId(businessId);
+                tp.setTransaction(existing); // Important linkage
+                tp.setProduct(product);
+                tp.setQty(item.getQty());
+                tp.setPrice(item.getPrice());
+                tp.setAmount(item.getAmount());
+                tp.setFree(item.isFree());
+                existing.getProducts().add(tp);
 
-            // B. Apply New Stock
-            adjustStock(product, item.getQty(), request.getType(), false); // Reversal = false
+                // B. Apply New Stock
+                adjustStock(product, item.getQty(), newType, false); // Reversal = false
+            }
         }
 
         // 3.5 Handle Offers Update
@@ -397,9 +413,10 @@ public class TransactionServiceImpl implements TransactionService {
         if (request.getPartyId() != null) {
             BigDecimal newRemaining = request.getTotalAmount().subtract(request.getPaidAmount());
             BigDecimal newAdjustment = BigDecimal.ZERO;
-            if ("SALE".equalsIgnoreCase(request.getType())) {
+            
+            if (TransactionType.SALE.equals(newType)) {
                 newAdjustment = newRemaining;
-            } else if ("PURCHASE".equalsIgnoreCase(request.getType())) {
+            } else if (TransactionType.PURCHASE.equals(newType)) {
                 newAdjustment = newRemaining.negate();
             }
             updatePartyBalance(request.getPartyId(), newAdjustment);
@@ -428,9 +445,12 @@ public class TransactionServiceImpl implements TransactionService {
         if (existing.getPartyId() != null) {
             BigDecimal remaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
             BigDecimal adjustment = BigDecimal.ZERO;
-            if ("SALE".equalsIgnoreCase(existing.getType())) {
+            
+            TransactionType type = existing.getType();
+            TransactionType type = existing.getType();
+            if (TransactionType.SALE.equals(type)) {
                 adjustment = remaining; 
-            } else if ("PURCHASE".equalsIgnoreCase(existing.getType())) {
+            } else if (TransactionType.PURCHASE.equals(type)) {
                 adjustment = remaining.negate();
             }
             // Reverse it
