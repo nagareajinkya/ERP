@@ -6,8 +6,8 @@ import {
   Repeat, Receipt, Copy, ChevronDown, Package, Percent, ShoppingBag, Zap, CheckCircle2,
   StopCircle, PlayCircle, IndianRupee
 } from 'lucide-react';
-import api from '../../src/api';
 import { toast } from 'react-toastify';
+import { useOffers } from '../../hooks/useOffers';
 import SearchBar from '../../components/common/SearchBar';
 import TabsBar from '../../components/common/TabsBar';
 import StatCard from '../../components/common/StatCard';
@@ -88,6 +88,22 @@ const ProductSearch = ({ label, placeholder, value, onSelect, unit, onUnitChange
 };
 
 const Offers = () => {
+  // --- HOOK ---
+  const {
+    offers,
+    loading, // Used to maybe show loader?
+    allProducts,
+    allUnits,
+    redemptions,
+    fetchRedemptions,
+    createOffer,
+    updateOffer,
+    togglePause,
+    deleteOffer,
+    stopOffer,
+    searchParties
+  } = useOffers();
+
   // --- UI STATE ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
@@ -95,7 +111,7 @@ const Offers = () => {
 
   // --- MODAL STATE ---
   const [viewOffer, setViewOffer] = useState(null);
-  const [redemptions, setRedemptions] = useState([]);
+  // Redemptions now come from hook
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, offerId: null, offerName: '' });
 
   // --- FORM & EDITING STATE ---
@@ -125,94 +141,36 @@ const Offers = () => {
   const [formData, setFormData] = useState(initialForm);
   const [customerSearch, setCustomerSearch] = useState('');
   const [activeCustomerFilter, setActiveCustomerFilter] = useState('All');
-  const [offers, setOffers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [allProducts, setAllProducts] = useState([]);
-  const [allUnits, setAllUnits] = useState([]);
 
+  // Removed local data states (offers, allProducts, etc.) as they are in hook
 
-  // --- FETCH DATA ---
-  const fetchOffers = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/smart-ops/offers'); // Assuming filtering by activeTab and offerSearch happens here or later
-      setOffers(res.data);
-    } catch (err) {
-      console.error("Failed to fetch offers", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchResources = async () => {
-    try {
-      const [prodRes, unitRes] = await Promise.all([
-        api.get('/trading/products'),
-        api.get('/trading/units')
-      ]);
-      setAllProducts(prodRes.data);
-      setAllUnits(unitRes.data);
-    } catch (err) {
-      console.error("Failed to fetch resources", err);
-    }
-  };
-
+  // --- EFFECT: VIEW REDEMPTIONS ---
   useEffect(() => {
     if (viewOffer) {
-      const fetchRedemptions = async () => {
-        try {
-          const res = await api.get(`/smart-ops/offers/${viewOffer._id}/redemptions`);
-          setRedemptions(res.data);
-        } catch (err) {
-          console.error("Failed to load redemptions", err);
-        }
-      };
-      fetchRedemptions();
+      fetchRedemptions(viewOffer._id || viewOffer.id);
     } else {
-      setRedemptions([]);
+      fetchRedemptions(null); // Clear
     }
-  }, [viewOffer]);
-
-  useEffect(() => {
-    fetchOffers();
-    fetchResources();
-  }, []);
+  }, [viewOffer, fetchRedemptions]);
 
   // --- CUSTOMER SEARCH ---
   const [searchedCustomers, setSearchedCustomers] = useState([]);
 
   useEffect(() => {
-    const searchParties = async () => {
-      let endpoint = '';
-      if (formData.targetType === 'top_spenders') {
-        endpoint = `/trading/stats/top-spenders?limit=${formData.topSpenderCount || 10}`;
-      } else if (formData.targetType === 'frequent') {
-        endpoint = `/trading/stats/frequent-visitors?limit=${formData.minVisits || 10}`; // Logic uses minVisits as a threshold usually, but api uses limit. We might need to adjust logic, but for now passing params.
-      } else if (formData.targetType === 'specific') {
-        endpoint = `/parties?search=${customerSearch}`;
-      }
-
-      if (endpoint) {
-        try {
-          const res = await api.get(endpoint);
-          setSearchedCustomers(res.data);
-        } catch (err) {
-          console.error(err);
-          setSearchedCustomers([]);
-        }
-      }
+    const performSearch = async () => {
+      const results = await searchParties({
+        targetType: formData.targetType,
+        topSpenderCount: formData.topSpenderCount,
+        minVisits: formData.minVisits,
+        customerSearch
+      });
+      setSearchedCustomers(results);
     };
-    const debounce = setTimeout(searchParties, 500);
+    const debounce = setTimeout(performSearch, 500);
     return () => clearTimeout(debounce);
-  }, [customerSearch, formData.targetType, formData.topSpenderCount, formData.minVisits]);
+  }, [customerSearch, formData.targetType, formData.topSpenderCount, formData.minVisits, searchParties]);
 
-  const getEligibleCustomers = () => {
-    // For 'specific', we use the searched list.
-    // For 'top_spenders'/'frequent', backend would handle the logic during evaluation, 
-    // but if we want to show a preview, we would need a dedicated API.
-    // For prototype, we just show searched customers.
-    return searchedCustomers;
-  };
+  const getEligibleCustomers = () => searchedCustomers;
 
   // --- ANALYTICS ---
   // Simple client-side counts based on fetched data
@@ -317,29 +275,24 @@ const Offers = () => {
     }
 
     try {
+      let success = false;
       if (editingOfferId) {
-        await api.put(`/smart-ops/offers/${editingOfferId}`, formData);
+        success = await updateOffer(editingOfferId, formData);
       } else {
-        await api.post('/smart-ops/offers', formData);
+        success = await createOffer(formData);
       }
-      await fetchOffers();
-      setIsModalOpen(false);
+
+      if (success) {
+        setIsModalOpen(false);
+      }
     } catch (err) {
-      console.error("Error saving offer", err);
-      toast.error("Failed to save offer");
+      // toast handled in hook
     }
   };
 
   const handlePauseToggle = async (id, currentStatus, e) => {
-    e.stopPropagation(); // Stop row click
-    // The main container click (setViewOffer) will NOT execute if we stop propagation here.
-    try {
-      const newStatus = currentStatus === 'active' ? 'paused' : 'active';
-      await api.patch(`/smart-ops/offers/${id}/status`, { status: newStatus });
-      fetchOffers();
-    } catch (err) {
-      console.error("Error toggling status", err);
-    }
+    e.stopPropagation();
+    await togglePause(id, currentStatus);
   };
 
   const initiateStop = (offer, e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, type: 'stop', offerId: offer.id, offerName: offer.name }); };
@@ -348,13 +301,12 @@ const Offers = () => {
   const confirmAction = async () => {
     try {
       if (confirmModal.type === 'stop') {
-        await api.patch(`/smart-ops/offers/${confirmModal.offerId}/status`, { status: 'expired' });
+        await stopOffer(confirmModal.offerId);
       } else {
-        await api.delete(`/smart-ops/offers/${confirmModal.offerId}`);
+        await deleteOffer(confirmModal.offerId);
       }
-      await fetchOffers();
     } catch (err) {
-      console.error("Error performing action", err);
+      // toast handled in hook
     }
     setConfirmModal({ isOpen: false, type: null, offerId: null, offerName: '' });
   };

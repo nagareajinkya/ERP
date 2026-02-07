@@ -4,16 +4,24 @@ import {
   Building2, UserCircle2, Briefcase, Loader2, Edit2, Trash2, Phone, MapPin, MessageCircle
 } from 'lucide-react';
 import SearchBar from '../../components/common/SearchBar';
-import api from '../../src/api';
+import { useParties } from '../../hooks/useParties';
 import { toast } from 'react-toastify';
 import PartyDetailView from './PartyDetailView';
 import PartyFormModal from './PartyFormModal';
 
 const Parties = () => {
-  const [parties, setParties] = useState([]);
+  const {
+    parties,
+    loading,
+    financialSummary,
+    fetchParties,
+    addParty,
+    updateParty,
+    deleteParty
+  } = useParties();
+
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const [selectedParty, setSelectedParty] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -28,16 +36,9 @@ const Parties = () => {
     editingId: null
   });
 
-  const [financialSummary, setFinancialSummary] = useState({ totalToReceive: 0, totalToPay: 0, netBalance: 0 });
-
   useEffect(() => {
     fetchParties();
-  }, []);
-
-  // Recalculate summary when parties change
-  useEffect(() => {
-    calculateFinancialSummary(parties);
-  }, [parties]);
+  }, [fetchParties]);
 
   // Update selected party object when parties list changes (to keep detail view in sync)
   useEffect(() => {
@@ -46,36 +47,7 @@ const Parties = () => {
       if (updated) setSelectedParty(updated);
       // Logic for delete redirect handled in deletion function
     }
-  }, [parties]);
-
-  const fetchParties = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get('/parties');
-      setParties(data || []);
-    } catch (error) {
-      console.error('Error fetching parties:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateFinancialSummary = (data) => {
-    let toReceive = 0;
-    let toPay = 0;
-
-    data.forEach(p => {
-      const bal = p.currentBalance || 0;
-      if (bal > 0) toReceive += bal;
-      else toPay += Math.abs(bal);
-    });
-
-    setFinancialSummary({
-      totalToReceive: toReceive,
-      totalToPay: toPay,
-      netBalance: toReceive - toPay
-    });
-  };
+  }, [parties, selectedParty]);
 
   // Filter logic
   const filteredParties = parties.filter(party => {
@@ -142,22 +114,20 @@ const Parties = () => {
 
     try {
       if (modalState.isEditing) {
-        await api.put(`/parties/${modalState.editingId}`, { id: modalState.editingId, ...payload });
+        await updateParty(modalState.editingId, { id: modalState.editingId, ...payload });
       } else {
-        await api.post('/parties', payload);
+        await addParty(payload);
       }
       closeModal();
-      fetchParties();
     } catch (error) {
-      console.error('Error saving party:', error);
-      toast.error('Failed to save party');
+      // toast handled in hook
     }
   };
 
   const handleDeleteParty = async () => {
     if (!deleteConfirmId) return;
     try {
-      await api.delete(`/parties/${deleteConfirmId}`);
+      await deleteParty(deleteConfirmId);
 
       // If the deleted party was the one currently selected in detail view, clear it
       if (selectedParty && selectedParty.id === deleteConfirmId) {
@@ -165,10 +135,8 @@ const Parties = () => {
       }
 
       setDeleteConfirmId(null);
-      fetchParties();
     } catch (error) {
-      console.error('Error deleting party:', error);
-      toast.error('Failed to delete party');
+      // toast handled in hook
     }
   };
 

@@ -7,6 +7,7 @@ import {
 import api from '../../src/api';
 import { toast } from 'react-toastify';
 import FormLabel from '../../components/common/FormLabel';
+import { useAuth } from '../../context/AuthContext';
 
 const Profile = () => {
    // --- STATE ---
@@ -55,6 +56,10 @@ const Profile = () => {
       lowStock: false
    });
 
+   /* import { useAuth } from '../../context/AuthContext'; */ // Added below
+
+   const { checkAuth } = useAuth();
+
    // --- LOGIC ---
 
 
@@ -81,10 +86,12 @@ const Profile = () => {
          const payload = { ...formData, ...notifications };
          await api.put('/auth/profile', payload);
 
+         await checkAuth(); // Refresh global auth state
+
          setIsEditing(false);
          setIsVerifyModalOpen(false);
          setVerifyPasswordInput('');
-         await fetchProfile(); // Refresh
+         await fetchProfile(); // Refresh local form
       } catch (error) {
          console.error("Failed to update profile", error);
          // alert("Failed to update profile.");

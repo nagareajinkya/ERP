@@ -5,41 +5,19 @@ import {
   ArrowRight, Package, DollarSign, Zap, ArrowUpRight, ArrowDownRight, Plus
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import api from '../../src/api';
 import StatCard from '../../components/common/StatCard';
+import { useDashboard } from '../../hooks/useDashboard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
   // --- STATE FOR CHART FILTER & DATA ---
-  const [chartPeriod, setChartPeriod] = useState('today');
-  const [dashboardData, setDashboardData] = useState({
-    stats: { todaysSales: 0, salesTrend: '0%', totalBills: 0, dailyAverage: 0, lowStockItems: 0, activeOffers: 0 },
-    chartData: [],
-    recentTransactions: [],
-    lowStockItems: []
-  });
-  const [loading, setLoading] = useState(false);
-
-  // --- FETCH DASHBOARD DATA FROM API ---
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      try {
-        const { data } = await api.get('/trading/dashboard/summary', {
-          params: { period: chartPeriod }
-        });
-        setDashboardData(data);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        // Keep existing data if error occurs, so UI doesn't break completely
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [chartPeriod]);
+  const {
+    chartPeriod,
+    setChartPeriod,
+    dashboardData,
+    loading
+  } = useDashboard('today');
 
   const { stats, chartData, recentTransactions, lowStockItems } = dashboardData;
 

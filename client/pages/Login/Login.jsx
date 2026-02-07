@@ -3,6 +3,7 @@ import api from '../../src/api';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, ArrowRight, ShieldCheck, Lock, CheckCircle2, ChevronLeft, Store, User, MapPin, FileText, QrCode, Search, ChevronDown } from 'lucide-react';
 import FormLabel from '../../components/common/FormLabel';
+import { useAuth } from '../../context/AuthContext';
 
 // --- GOOGLE ICON SVG ---
 const GoogleIcon = () => (
@@ -144,6 +145,10 @@ const Login = () => {
     };
   }, []);
 
+  /* import { useAuth } from '../../context/AuthContext'; */ // Added below
+
+  const { login: authLogin } = useAuth(); // Rename to avoid conflict with method name if any
+
   // --- HANDLERS ---
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -163,8 +168,7 @@ const Login = () => {
       const res = await api.post('/auth/login', { identifier: email, password });
       const { token, ...user } = res.data;
       if (token) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        authLogin(token, user);
         navigate('/Dashboard');
       } else {
         setError('Login failed: no token returned');
@@ -209,8 +213,7 @@ const Login = () => {
       const res = await api.post('/auth/verify-otp', { phone: `+91${phone}`, code: otp.join('') });
       const { token, ...user } = res.data;
       if (token) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        authLogin(token, user);
         navigate('/Dashboard');
       } else if (mode === 'signup') {
         setStep(3);
@@ -245,8 +248,7 @@ const Login = () => {
       const { token, ...user } = res.data;
 
       if (token) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        authLogin(token, user);
         navigate('/Dashboard');
       } else {
         setError('Registration successful but no token received. Please login.');

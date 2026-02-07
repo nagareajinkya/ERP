@@ -13,16 +13,21 @@ import StatCard from '../../components/common/StatCard';
 import FormLabel from '../../components/common/FormLabel';
 // IMPORT REUSABLE COMPONENT
 import AddPropertyModal from '../../components/common/AddPropertyModal';
+import useInventory from '../../hooks/useInventory';
 
 const Inventory = () => {
   // --- STATE ---
-  const [products, setProducts] = useState([]);
-
-  // These now hold objects {id, name}
-  const [categoriesList, setCategoriesList] = useState([]);
-  const [unitsList, setUnitsList] = useState([]);
-
-  const [loading, setLoading] = useState(false);
+  const {
+    products,
+    categoriesList,
+    unitsList,
+    loading,
+    fetchProducts,
+    fetchMetadata,
+    addProduct,
+    updateProduct,
+    deleteProduct
+  } = useInventory();
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,16 +38,9 @@ const Inventory = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
 
-  // Nested Modal States (REPLACED by unified state)
-  // const [isAddCatModalOpen, setIsAddCatModalOpen] = useState(false);
-  // const [isAddUnitModalOpen, setIsAddUnitModalOpen] = useState(false);
-  // const [newCatName, setNewCatName] = useState('');
-  // const [newUnitName, setNewUnitName] = useState('');
-
   // Unified Add Prop Modal State
   const [addPropType, setAddPropType] = useState(null); // 'category' or 'unit' or null
   const [addPropInitialName, setAddPropInitialName] = useState('');
-
 
   // Dropdown States
   const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
@@ -62,63 +60,11 @@ const Inventory = () => {
   const [formErrors, setFormErrors] = useState({});
 
   // --- FETCH DATA FROM API ---
-  useEffect(() => {
-    fetchMetadata();
-  }, []);
+  // Metadata fetched by hook on mount
 
   useEffect(() => {
-    fetchProducts();
-  }, [searchQuery, selectedCategory]);
-
-  const fetchMetadata = async () => {
-    try {
-      const [catRes, unitRes] = await Promise.all([
-        api.get('/trading/categories'), // Gateway routes
-        api.get('/trading/units')
-      ]);
-      setCategoriesList(catRes.data || []);
-      setUnitsList(unitRes.data || []);
-    } catch (error) {
-      console.error('Error fetching metadata:', error);
-    }
-  };
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      // Fetch all products first (Client-side filtering for now as per plan)
-      const { data } = await api.get('/trading/products');
-
-      // Map Backend DTO to Frontend Structure
-      const mappedProducts = (data || []).map(p => ({
-        ...p,
-        category: p.categoryName || '', // Map name for UI
-        unit: p.unitName || '',         // Map name for UI
-        qty: p.currentStock || 0
-      }));
-
-      // Client-side filtering
-      let filtered = mappedProducts;
-      if (selectedCategory !== 'All') {
-        filtered = filtered.filter(p => p.category === selectedCategory);
-      }
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(p =>
-          p.name?.toLowerCase().includes(q) ||
-          p.sku?.toLowerCase().includes(q) ||
-          p.hsn?.includes(q)
-        );
-      }
-
-      setProducts(filtered);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchProducts({ searchQuery, selectedCategory });
+  }, [searchQuery, selectedCategory, fetchProducts]);
 
   // --- EFFECT: Click Outside to Close Dropdowns ---
   useEffect(() => {
@@ -218,27 +164,25 @@ const Inventory = () => {
 
     try {
       if (isEditing) {
-        await api.put(`/trading/products/${formData.id}`, payload);
+        await updateProduct(formData.id, payload);
       } else {
-        await api.post('/trading/products', payload);
+        await addProduct(payload);
       }
       setIsModalOpen(false);
-      fetchProducts(); // Refresh list
+      fetchProducts({ searchQuery, selectedCategory }); // Refresh list
     } catch (error) {
-      console.error("Error saving product:", error);
-      toast.error("Failed to save product");
+      // toast handled in hook
     }
   };
 
   const handleDeleteProduct = async () => {
     if (!deleteConfirmId) return;
     try {
-      await api.delete(`/trading/products/${deleteConfirmId}`);
+      await deleteProduct(deleteConfirmId);
       setDeleteConfirmId(null);
-      fetchProducts();
+      fetchProducts({ searchQuery, selectedCategory });
     } catch (error) {
-      console.error("Error deleting product:", error);
-      toast.error("Failed to delete product");
+      // toast handled in hook
     }
   };
 
@@ -293,10 +237,18 @@ const Inventory = () => {
     };
 
     try {
-      await api.put(`/trading/products/${formData.id}`, payload);
+      // Prepare simplified payload for update
+      const payload = {
+        ...formData,
+        categoryId: catObj.id,
+        unitId: unitObj.id,
+        currentStock: newQty
+      };
+
+      await updateProduct(formData.id, payload);
 
       // Update local state without full refetch for speed, or refetch to be safe
-      fetchProducts();
+      fetchProducts({ searchQuery, selectedCategory });
       setFormData({ ...formData, qty: newQty }); // Update open form
       setIsAdjustModalOpen(false);
     } catch (error) {
