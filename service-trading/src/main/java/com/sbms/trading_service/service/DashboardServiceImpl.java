@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.DayOfWeek;
 
 @Service
 @RequiredArgsConstructor
@@ -170,8 +171,8 @@ public class DashboardServiceImpl implements DashboardService {
         return switch (period.toLowerCase()) {
             case "today" -> generateHourlyData(salesTransactions);
             case "yesterday" -> generateHourlyDataForYesterday(salesTransactions);
-            case "this_week" -> generateDailyData(salesTransactions, LocalDate.now().with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)));
-            case "last_week" -> generateDailyData(salesTransactions, LocalDate.now().minusWeeks(1).with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)));
+            case "this_week" -> generateDailyData(salesTransactions, LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+            case "last_week" -> generateDailyData(salesTransactions, LocalDate.now().minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
             case "this_month" -> generateWeeklyData(salesTransactions, LocalDate.now().withDayOfMonth(1));
             default -> generateHourlyData(salesTransactions);
         };

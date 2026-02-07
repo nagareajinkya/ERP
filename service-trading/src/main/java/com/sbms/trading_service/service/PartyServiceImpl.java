@@ -4,8 +4,14 @@ import com.sbms.trading_service.repository.PartyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.sbms.trading_service.dto.PartyStatsDto;
+import com.sbms.trading_service.entity.Party;
+import com.sbms.trading_service.repository.TransactionRepository;
+
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -14,7 +20,7 @@ import java.util.UUID;
 public class PartyServiceImpl implements PartyService {
 
     private final PartyRepository partyRepository;
-    private final com.sbms.trading_service.repository.TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository;
 
     @Override
     public Map<String, Double> getStats(UUID businessId) {
@@ -33,31 +39,31 @@ public class PartyServiceImpl implements PartyService {
     }
 
     @Override
-    public java.util.List<com.sbms.trading_service.dto.PartyStatsDto> getTopSpenders(UUID businessId, int limit) {
-        java.util.List<Object[]> results = transactionRepository.findTopSpenders(businessId);
+    public List<PartyStatsDto> getTopSpenders(UUID businessId, int limit) {
+        List<Object[]> results = transactionRepository.findTopSpenders(businessId);
         return mapToDto(results, businessId, "Top Spender", limit);
     }
 
     @Override
-    public java.util.List<com.sbms.trading_service.dto.PartyStatsDto> getFrequentVisitors(UUID businessId, int limit) {
-        java.util.List<Object[]> results = transactionRepository.findFrequentVisitors(businessId);
+    public List<PartyStatsDto> getFrequentVisitors(UUID businessId, int limit) {
+        List<Object[]> results = transactionRepository.findFrequentVisitors(businessId);
         return mapToDto(results, businessId, "Frequent Visitor", limit);
     }
 
-    private java.util.List<com.sbms.trading_service.dto.PartyStatsDto> mapToDto(java.util.List<Object[]> results, UUID businessId, String type, int limit) {
-        java.util.List<com.sbms.trading_service.dto.PartyStatsDto> dtos = new java.util.ArrayList<>();
+    private List<PartyStatsDto> mapToDto(List<Object[]> results, UUID businessId, String type, int limit) {
+        List<PartyStatsDto> dtos = new ArrayList<>();
         int count = 0;
         
         for (Object[] row : results) {
             if (count >= limit) break;
             
             Long partyId = (Long) row[0];
-            java.math.BigDecimal value = (row[1] instanceof java.math.BigDecimal) ? (java.math.BigDecimal) row[1] : java.math.BigDecimal.valueOf((Long) row[1]);
+            BigDecimal value = (row[1] instanceof BigDecimal) ? (BigDecimal) row[1] : BigDecimal.valueOf((Long) row[1]);
             
-            com.sbms.trading_service.entity.Party party = partyRepository.findById(partyId).orElse(null);
+            Party party = partyRepository.findById(partyId).orElse(null);
             
             if (party != null) {
-                dtos.add(com.sbms.trading_service.dto.PartyStatsDto.builder()
+                dtos.add(PartyStatsDto.builder()
                         .id(partyId)
                         .name(party.getName())
                         .phoneNumber(party.getPhoneNumber())

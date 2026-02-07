@@ -2,6 +2,7 @@ package com.sbms.trading_service.service;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
@@ -229,7 +230,7 @@ public class ProductServiceImpl implements ProductService {
 
             if (!recentPrices.isEmpty()) {
             // frequency map
-            java.util.Map<BigDecimal, Long> freq = new HashMap<>();
+            Map<BigDecimal, Long> freq = new HashMap<>();
             for (BigDecimal p : recentPrices) {
                 freq.merge(p, 1L, Long::sum);
             }
