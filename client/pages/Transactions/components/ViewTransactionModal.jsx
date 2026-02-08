@@ -97,9 +97,6 @@ const ViewTransactionModal = () => {
                                         <td className="px-4 py-2.5 font-medium text-gray-700">
                                             <div className="flex items-center gap-2">
                                                 <span>{item.name}</span>
-                                                {item.isFree && (
-                                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-bold">FREE</span>
-                                                )}
                                             </div>
                                         </td>
                                         <td className="px-4 py-2.5 text-center text-gray-600">{item.qty}</td>
@@ -110,25 +107,6 @@ const ViewTransactionModal = () => {
                             </tbody>
                         </table>
                     </div>
-                    {/* Applied Offers */}
-                    {selectedTransaction.appliedOffers && selectedTransaction.appliedOffers.length > 0 && (
-                        <div className="mb-4">
-                            <h5 className="text-xs text-gray-400 font-bold uppercase mb-2">Applied Offers</h5>
-                            <div className="flex flex-wrap gap-2">
-                                {selectedTransaction.appliedOffers.map((o, i) => (
-                                    <div key={i} className="px-3 py-1 bg-green-50 text-green-700 rounded-xl border border-green-100 text-xs shadow-sm">
-                                        <div className="font-bold flex items-center gap-1.5 mb-0.5">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                                            {o.offerName}
-                                        </div>
-                                        <div className="text-[10px] opacity-70">
-                                            {o.description} • Save {formatCurrency(o.discountAmount || 0)}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
                     {/* Totals & Meta */}
                     <div className="flex justify-end gap-6 items-center mb-6">
