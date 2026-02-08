@@ -242,6 +242,18 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    public TransactionResponse getTransaction(Long id, UUID businessId) {
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+
+        if (!transaction.getBusinessId().equals(businessId)) {
+            throw new RuntimeException("Unauthorized access to transaction");
+        }
+
+        return mapToResponse(transaction);
+    }
+
+    @Override
     public List<TransactionResponse> searchTransactions(UUID businessId, String query, String type, String dateRange, LocalDate customStart, LocalDate customEnd) {
         // Calculate Date Range
         LocalDate startDate = null;
@@ -328,7 +340,11 @@ public class TransactionServiceImpl implements TransactionService {
                 .amount(t.getTotalAmount())
                 .paidAmount(t.getPaidAmount())
                 .paymentMode(paymentModeStr) 
+            .subTotal(t.getSubTotal())
+            .discount(t.getDiscount())
                 .products(t.getProducts().size())
+            .referenceNumber(t.getReferenceNumber())
+            .notes(t.getNotes())
                 .details(t.getProducts().stream().map(p -> TransactionResponse.DetailDto.builder()
                         .productId(p.getProduct().getId())
                         .name(p.getProduct().getName())
@@ -337,6 +353,11 @@ public class TransactionServiceImpl implements TransactionService {
                         .rate(p.getPrice())
                         .total(p.getAmount())
                         .build()).collect(Collectors.toList()))
+            .appliedOffers(t.getOffers().stream().map(o -> TransactionResponse.OfferDto.builder()
+                .offerId(o.getOfferId())
+                .offerName(o.getOfferName())
+                .discountAmount(o.getDiscountAmount())
+                .build()).collect(Collectors.toList()))
                 .build();
     }
 

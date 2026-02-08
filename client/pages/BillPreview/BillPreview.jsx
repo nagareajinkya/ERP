@@ -86,6 +86,9 @@ const BillPreview = () => {
   };
 
   const totals = calculateTotals();
+  const invoiceNumber = businessProfile?.invoicePrefix
+    ? `${businessProfile.invoicePrefix}${transaction?.id || ''}`
+    : (transaction?.id || '');
 
   // Handle Print
   const handlePrint = async () => {
@@ -142,9 +145,9 @@ const BillPreview = () => {
                </div>
           </div>
 
-          <div class="border-t border-b py-2 text-center font-bold text-xs uppercase">
-              ${layout?.invoiceTitle || 'Invoice'} #${transaction?.id || ''}
-          </div>
+            <div class="border-t border-b py-2 text-center font-bold text-xs uppercase">
+              ${layout?.invoiceTitle || 'Invoice'} #${invoiceNumber}
+            </div>
 
           <div style="padding: 10px 0; font-size: 10px;">
             <p><strong>Date:</strong> ${new Date(transaction?.date).toLocaleDateString()}</p>
@@ -320,7 +323,7 @@ const BillPreview = () => {
           {/* Title Section */}
           <div className="border-y border-dashed border-gray-300 py-2 mb-4 flex justify-between font-black uppercase text-gray-700 text-[10px]">
             <span>{layout?.invoiceTitle || 'Invoice'}</span>
-            <span>#{transaction?.id || ''}</span>
+            <span>#{invoiceNumber}</span>
           </div>
 
           {/* Date & Customer */}

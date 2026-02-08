@@ -40,16 +40,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 	
-	@PostMapping("/send-otp")
-    public ResponseEntity<String> sendOtp(@RequestBody OtpRequest request) {
-        authService.sendOtp(request);
-        return ResponseEntity.ok("OTP sent successfully");
-    }
 
-    @PostMapping("/verify-otp")
-    public ResponseEntity<AuthResponse> verifyOtp(@RequestBody OtpVerifyRequest request) {
-        return ResponseEntity.ok(authService.verifyOtp(request));
-    }
 
     @GetMapping("/me")
     public ResponseEntity<SidebarDto> getCurrentUser(Principal principal) {
@@ -79,5 +70,26 @@ public class AuthController {
             @RequestBody ChangePasswordRequest request) {
         authService.changePassword(principal.getName(), request);
         return ResponseEntity.ok("Password updated successfully");
+    }
+
+    @PostMapping("/upload/profile-photo")
+    public ResponseEntity<ProfileDto> uploadProfilePhoto(
+            Principal principal,
+            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(authService.uploadProfilePhoto(principal.getName(), file));
+    }
+
+    @PostMapping("/upload/signature")
+    public ResponseEntity<ProfileDto> uploadSignature(
+            Principal principal,
+            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(authService.uploadSignature(principal.getName(), file));
+    }
+
+    @PostMapping("/upload/stamp")
+    public ResponseEntity<ProfileDto> uploadStamp(
+            Principal principal,
+            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(authService.uploadStamp(principal.getName(), file));
     }
 }

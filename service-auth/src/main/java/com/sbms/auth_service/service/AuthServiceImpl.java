@@ -36,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
 	private final ModelMapper modelMapper;
 	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
+	private final S3Service s3Service;
 
 	
 	public AuthResponse register(UserRegisterDto registerDto) {
@@ -79,40 +80,11 @@ public class AuthServiceImpl implements AuthService {
 		return response;
 	}
 
-	@Override
-	public void sendOtp(OtpRequest request) {
-		// Temporary implementation: Log the OTP request (console only)
-		System.out.println("OTP Requested for phone: " + request.getPhone() + ". use code 1234");
-	}
 
-	@Override
-	public AuthResponse verifyOtp(OtpVerifyRequest request) {
-		if (!"1234".equals(request.getCode())) {
-			throw new RuntimeException("Invalid OTP"); 
-		}
-
-		Optional<User> userOptional = userRepository.findByPhoneNumber(request.getPhone());
-		
-		if (userOptional.isEmpty()) {
-			return new AuthResponse();
-		}
-
-		User user = userOptional.get();
-
-		String jwtToken = jwtService.generateToken(user);
-		AuthResponse response = modelMapper.map(user, AuthResponse.class);
-		response.setToken(jwtToken);
-		response.setBusinessId(user.getBusiness().getId());
-		response.setUserId(user.getId());
-		response.setBusinessName(user.getBusiness().getBusinessName());
-		
-		
-		return response;
-	}
 
 	@Override
 	public SidebarDto getCurrentUser(String identifier) {
-		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 		
 		SidebarDto response = modelMapper.map(user, SidebarDto.class);
@@ -125,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	public CollapsedSidebarDetailDto getCollapsedSidebarDetail(String identifier) {
-		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 		
 		CollapsedSidebarDetailDto dto = new CollapsedSidebarDetailDto();
@@ -137,7 +109,7 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	public ProfileDto getProfile(String identifier) {
-		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 		
 		ProfileDto dto = new ProfileDto();
@@ -146,6 +118,11 @@ public class AuthServiceImpl implements AuthService {
 		dto.setFullName(user.getFullName());
 		dto.setEmail(user.getEmail());
 		dto.setPhone(user.getPhoneNumber());
+		
+		// Use Presigned URLs for images
+		dto.setProfilePicUrl(user.getProfilePicUrl());
+		dto.setSignatureUrl(user.getSignatureUrl());
+		dto.setStampUrl(user.getStampUrl());
 		
 		// Business Info
 		Business biz = user.getBusiness();
@@ -174,11 +151,24 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	public ProfileDto updateProfile(String identifier, ProfileDto dto) {
-		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 		
 		// Update User Info
 		user.setFullName(dto.getFullName());
+		// Check if sensitive fields (Phone/Email) are changing
+		boolean isSensitiveChange = !user.getPhoneNumber().equals(dto.getPhone()) || !user.getEmail().equals(dto.getEmail());
+		
+		if (isSensitiveChange) {
+			// Verify Password
+			if (dto.getVerificationPassword() == null || dto.getVerificationPassword().isBlank()) {
+				throw new RuntimeException("Password is required to change Phone Number or Email");
+			}
+			if (!passwordEncoder.matches(dto.getVerificationPassword(), user.getPassword())) {
+				throw new RuntimeException("Invalid Password");
+			}
+		}
+
 		// Updating unique fields like email/phone might need validation/check if exists logic for MVP skipping it partially or trusting user input
 		// Assuming identifier (email) matches context, changing email would need re-login.
 		// For MVP: Update non-identifying fields safely. 
@@ -187,6 +177,10 @@ public class AuthServiceImpl implements AuthService {
 			if(userRepository.existsByPhoneNumber(dto.getPhone())) throw new UserAlreadyExistsException("Phone already in use");
 			user.setPhoneNumber(dto.getPhone());
 		}
+		
+		user.setProfilePicUrl(dto.getProfilePicUrl());
+		user.setSignatureUrl(dto.getSignatureUrl());
+		user.setStampUrl(dto.getStampUrl());
 		// If email changed
 		if(!user.getEmail().equals(dto.getEmail())) {
 			if(userRepository.existsByEmail(dto.getEmail())) throw new UserAlreadyExistsException("Email already in use");
@@ -223,7 +217,7 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	public void changePassword(String identifier, ChangePasswordRequest request) {
-		User user = userRepository.findByEmailOrPhoneNumber(identifier, identifier)
+		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 				
 		if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -232,6 +226,63 @@ public class AuthServiceImpl implements AuthService {
 		
 		user.setPassword(passwordEncoder.encode(request.getNewPassword()));
 		userRepository.save(user);
+	}
+
+	@Override
+	public ProfileDto uploadProfilePhoto(String identifier, org.springframework.web.multipart.MultipartFile file) {
+		User user = userRepository.findByEmail(identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		
+		// Delete old image if exists
+		if (user.getProfilePicUrl() != null && !user.getProfilePicUrl().isBlank()) {
+			s3Service.deleteFile(user.getProfilePicUrl());
+		}
+		
+		// Upload new image
+		String imageUrl = s3Service.uploadFile(file, "profile-photos", user.getId(), user.getBusiness().getId());
+		user.setProfilePicUrl(imageUrl);
+
+		userRepository.save(user);
+		
+		return getProfile(user.getEmail());
+	}
+
+	@Override
+	public ProfileDto uploadSignature(String identifier, org.springframework.web.multipart.MultipartFile file) {
+		User user = userRepository.findByEmail(identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		
+		// Delete old image if exists
+		if (user.getSignatureUrl() != null && !user.getSignatureUrl().isBlank()) {
+			s3Service.deleteFile(user.getSignatureUrl());
+		}
+		
+		// Upload new image
+		String imageUrl = s3Service.uploadFile(file, "signatures", user.getId(), user.getBusiness().getId());
+		user.setSignatureUrl(imageUrl);
+
+		userRepository.save(user);
+		
+		return getProfile(user.getEmail());
+	}
+
+	@Override
+	public ProfileDto uploadStamp(String identifier, org.springframework.web.multipart.MultipartFile file) {
+		User user = userRepository.findByEmail(identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		
+		// Delete old image if exists
+		if (user.getStampUrl() != null && !user.getStampUrl().isBlank()) {
+			s3Service.deleteFile(user.getStampUrl());
+		}
+		
+		// Upload new image
+		String imageUrl = s3Service.uploadFile(file, "stamps", user.getId(), user.getBusiness().getId());
+		user.setStampUrl(imageUrl);
+
+		userRepository.save(user);
+		
+		return getProfile(user.getEmail());
 	}
 
 }

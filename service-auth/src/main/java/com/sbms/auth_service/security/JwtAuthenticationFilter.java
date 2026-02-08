@@ -1,6 +1,8 @@
 package com.sbms.auth_service.security;
 
 import java.io.IOException;
+import java.util.UUID;
+
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,7 +39,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (jwtService.isTokenValid(jwt)) {
                     Authentication authentication = jwtService.getAuthentication(jwt);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    
+                    UUID businessId = jwtService.extractBusinessId(jwt);
+                    if(businessId != null) {
+                        request.setAttribute("businessId", businessId);
+                    }
                 }
+
             } catch (Exception e) {
                 // If token is invalid/expired, we simply ignore it and 
                 // let Spring Security handle the 403 error later if needed.

@@ -35,21 +35,23 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Long>> createTransaction(
+    public ResponseEntity<ApiResponse<TransactionResponse>> createTransaction(
             @RequestAttribute("businessId") UUID businessId,
             @RequestBody TransactionRequest request) {
         
         Long id = transactionService.createTransaction(request, businessId);
-        return ResponseEntity.ok(ApiResponse.success(id));
+        TransactionResponse response = transactionService.getTransaction(id, businessId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Long>> updateTransaction(
+    public ResponseEntity<ApiResponse<TransactionResponse>> updateTransaction(
             @PathVariable Long id,
             @RequestAttribute("businessId") UUID businessId,
             @RequestBody TransactionRequest request) {
         Long updatedId = transactionService.updateTransaction(id, request, businessId);
-        return ResponseEntity.ok(ApiResponse.success(updatedId));
+        TransactionResponse response = transactionService.getTransaction(updatedId, businessId);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @DeleteMapping("/{id}")
@@ -58,6 +60,14 @@ public class TransactionController {
             @RequestAttribute("businessId") UUID businessId) {
         transactionService.deleteTransaction(id, businessId);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<TransactionResponse>> getTransaction(
+            @PathVariable Long id,
+            @RequestAttribute("businessId") UUID businessId) {
+        TransactionResponse result = transactionService.getTransaction(id, businessId);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/search")

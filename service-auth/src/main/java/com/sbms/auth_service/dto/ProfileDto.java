@@ -22,10 +22,18 @@ public class ProfileDto {
     private String accountName;
     private String accountNumber;
     private String ifsc;
+
+    // Profile Pic
+    private String profilePicUrl;
+    private String signatureUrl;
+    private String stampUrl;
     
     // Preferences
     private String invoicePrefix;
     private boolean notifySales;
     private boolean notifyPayments;
     private boolean notifyLowStock;
+    
+    // Verification
+    private String verificationPassword;
 }

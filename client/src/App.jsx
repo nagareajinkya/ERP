@@ -17,6 +17,7 @@ import Login from '../pages/Login/Login';
 import Transactions from '../pages/Transactions/Transactions';
 import Templates from '../pages/Templates/Templates';
 import Printer from '../pages/Printer/Printer';
+import BillPreview from '../pages/BillPreview/BillPreview';
 
 import { AuthProvider } from '../context/AuthContext';
 import { UIProvider } from '../context/UIContext';
@@ -41,6 +42,7 @@ function App() {
             <Route path="/Dashboard" element={<Dashboard />} />
             <Route path="/parties" element={<Parties />} />
             <Route path="/transactions" element={<Transactions />} />
+            <Route path="/bill-preview" element={<BillPreview />} />
             <Route path="/new-sale" element={<NewTransaction type="sale" />} />
             <Route path="/new-purchase" element={<NewTransaction type="purchase" />} />
             <Route path="/new-receipt" element={<NewSettlement type="receipt" />} />

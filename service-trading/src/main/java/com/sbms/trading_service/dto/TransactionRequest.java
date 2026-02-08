@@ -31,6 +31,7 @@ public class TransactionRequest {
         private String offerId;
         private String offerName;
         private BigDecimal discountAmount;
+        private String description;
     }
 
     @Data

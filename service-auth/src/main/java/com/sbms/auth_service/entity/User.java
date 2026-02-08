@@ -32,6 +32,10 @@ public class User extends BaseEntity implements UserDetails {
     private String password;
     @Column(name = "profile_pic_url")
     private String profilePicUrl;
+    @Column(name = "signature_url")
+    private String signatureUrl;
+    @Column(name = "stamp_url")
+    private String stampUrl;
     
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "business_id", referencedColumnName = "business_id", nullable = false, unique = true)

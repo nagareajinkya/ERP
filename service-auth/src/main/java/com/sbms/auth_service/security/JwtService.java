@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.UUID;
+
 
 import javax.crypto.SecretKey;
 
@@ -84,10 +86,12 @@ public class JwtService {
 		return extractClaim(token, Claims::getSubject);
 	}
 	
-	public String extractBusinessId(String token) {
+	public UUID extractBusinessId(String token) {
 		final Claims claims = extractAllClaims(token);
-		return claims.get("businessId", String.class);
+		String idStr = claims.get("businessId", String.class);
+		return idStr != null ? UUID.fromString(idStr) : null;
 	}
+
 	
 	public String extractUserId(String token) {
 		final Claims claims = extractAllClaims(token);

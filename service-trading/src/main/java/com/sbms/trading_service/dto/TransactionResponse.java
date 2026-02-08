@@ -23,6 +23,9 @@ public class TransactionResponse {
     private String paymentMode;
     private String referenceNumber;
     private String notes;
+    private BigDecimal subTotal;
+    private BigDecimal discount;
+    private java.util.List<OfferDto> appliedOffers;
     
     // Details for Modal
     private List<DetailDto> details;
@@ -36,5 +39,13 @@ public class TransactionResponse {
         private BigDecimal rate;
         private BigDecimal qty;
         private BigDecimal total;
+    }
+
+    @Data
+    @Builder
+    public static class OfferDto {
+        private String offerId;
+        private String offerName;
+        private BigDecimal discountAmount;
     }
 }

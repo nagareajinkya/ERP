@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SBMS.Parties")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4cb2211f64752809cc5d6da95fb09d6e7130b490")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+760dafee9c29deb9453a30573ebe2675c989906b")]
 [assembly: System.Reflection.AssemblyProductAttribute("SBMS.Parties")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SBMS.Parties")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-   User, Upload, CreditCard, Landmark,
-   Bell, Shield, Lock, Eye, EyeOff, Save, X,
-   CheckCircle2, Plus, Edit2, AlertTriangle, FileText
+   User, CreditCard, Landmark,
+   Bell, Shield, Lock, Save, X,
+   Edit2, AlertTriangle, FileText,
+   MapPin, Phone, Mail, Building, FileCheck
 } from 'lucide-react';
 import api from '../../src/api';
 import { toast } from 'react-toastify';
 import FormLabel from '../../components/common/FormLabel';
 import { useAuth } from '../../context/AuthContext';
+import ImageUploader from '../../components/ImageUploader';
 
 const Profile = () => {
    // --- STATE ---
@@ -16,9 +18,11 @@ const Profile = () => {
    const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
    const [verifyPasswordInput, setVerifyPasswordInput] = useState('');
 
+   // Upload Modal State
+   const [uploadModalType, setUploadModalType] = useState(null); // 'profile-photo' | 'signature' | 'stamp' | null
+
    // Change Password State
    const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
-
 
    const [initialData, setInitialData] = useState({});
    const [formData, setFormData] = useState({
@@ -27,10 +31,22 @@ const Profile = () => {
       address: '', city: '', state: '', pincode: '',
       accountName: '', accountNumber: '', ifsc: '',
       invoicePrefix: '',
+      profilePicUrl: '',
+      signatureUrl: '',
+      stampUrl: '',
    });
 
-   // Fetch Profile Data
-   React.useEffect(() => {
+   // Notifications (Auto-Save Independent of Edit Mode)
+   const [notifications, setNotifications] = useState({
+      sales: true,
+      payments: true,
+      lowStock: false
+   });
+
+   const { checkAuth } = useAuth();
+
+   // --- EFFECTS ---
+   useEffect(() => {
       fetchProfile();
    }, []);
 
@@ -46,23 +62,11 @@ const Profile = () => {
          });
       } catch (error) {
          console.error("Failed to fetch profile", error);
+         toast.error("Failed to load profile data.");
       }
    };
 
-   // Notifications (Auto-Save Independent of Edit Mode)
-   const [notifications, setNotifications] = useState({
-      sales: true,
-      payments: true,
-      lowStock: false
-   });
-
-   /* import { useAuth } from '../../context/AuthContext'; */ // Added below
-
-   const { checkAuth } = useAuth();
-
    // --- LOGIC ---
-
-
    const toggleNotification = (key) => {
       setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
    };
@@ -82,8 +86,13 @@ const Profile = () => {
 
    const commitSave = async () => {
       try {
-         // Update payload to match DTO structure
-         const payload = { ...formData, ...notifications };
+         const payload = {
+            ...formData,
+            notifySales: notifications.sales,
+            notifyPayments: notifications.payments,
+            notifyLowStock: notifications.lowStock,
+            verificationPassword: verifyPasswordInput // Include password for verification
+         };
          await api.put('/auth/profile', payload);
 
          await checkAuth(); // Refresh global auth state
@@ -92,14 +101,15 @@ const Profile = () => {
          setIsVerifyModalOpen(false);
          setVerifyPasswordInput('');
          await fetchProfile(); // Refresh local form
+         toast.success("Profile updated successfully!");
       } catch (error) {
          console.error("Failed to update profile", error);
-         // alert("Failed to update profile.");
+         toast.error("Failed to update profile.");
       }
    };
 
    const handleCancel = () => {
-      fetchProfile(); // Revert to server data
+      setFormData(initialData);
       setIsEditing(false);
    };
 
@@ -118,25 +128,29 @@ const Profile = () => {
          toast.success("Password changed successfully!");
       } catch (error) {
          console.error("Failed to change password", error);
-         toast.error("Failed to change password. Please check your current password.");
+         toast.error(error.response?.data?.message || "Failed to change password.");
       }
    };
 
-   return (
-      <div className="min-h-screen bg-gray-50/50 pb-24 p-6">
+   // Helper to verify if an image URL is valid/present
+   const hasImage = (url) => url && url.length > 10;
 
-         {/* --- HEADER --- */}
-         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+   return (
+      <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
+
+         {/* --- HEADER (Matching App Theme) --- */}
+         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
                <h1 className="text-2xl font-bold text-gray-800">Profile & Settings</h1>
-               <p className="text-sm text-gray-500 mt-1">Manage your business details</p>
+               <p className="text-sm text-gray-500 font-medium">Manage your business profile and preferences.</p>
             </div>
 
+            {/* Action Buttons */}
             <div>
                {!isEditing ? (
                   <button
                      onClick={() => setIsEditing(true)}
-                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-blue-200 transition-all"
+                     className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-gray-200 transition-all active:scale-[0.98]"
                   >
                      <Edit2 size={16} /> Edit Profile
                   </button>
@@ -144,13 +158,13 @@ const Profile = () => {
                   <div className="flex gap-3">
                      <button
                         onClick={handleCancel}
-                        className="px-6 py-2.5 text-gray-600 bg-white border border-gray-200 font-medium hover:bg-gray-50 rounded-xl transition-colors"
+                        className="px-6 py-2.5 text-gray-600 bg-white border border-gray-200 font-bold hover:bg-gray-50 rounded-xl transition-colors active:scale-[0.98]"
                      >
                         Cancel
                      </button>
                      <button
                         onClick={handleSaveAttempt}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-green-200 transition-all"
+                        className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-gray-200 transition-all active:scale-[0.98]"
                      >
                         <Save size={18} /> Save Changes
                      </button>
@@ -161,112 +175,121 @@ const Profile = () => {
 
          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 
-            {/* LEFT COLUMN (General & Bank) */}
-            <div className="xl:col-span-2 space-y-8">
+            {/* LEFT COLUMN (Profile Card) */}
+            <div className="xl:col-span-1 space-y-6">
 
-               {/* GENERAL INFO */}
-               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 relative overflow-hidden">
-                  {!isEditing && <div className="absolute top-0 left-0 w-full bg-gray-100"></div>}
+               {/* Profile Card */}
+               <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 flex flex-col items-center text-center relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-gray-50 to-gray-100"></div>
 
-                  <div className="flex items-center gap-3 mb-6">
-                     <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><User size={20} /></div>
-                     <h2 className="text-lg font-bold text-gray-800">General Information</h2>
+                  {/* Profile Picture */}
+                  <div className="relative group mb-4 z-10">
+                     <div className="w-32 h-32 rounded-full p-1 bg-white shadow-xl ring-4 ring-gray-50 relative overflow-hidden">
+                        {hasImage(formData.profilePicUrl) ? (
+                           <img src={formData.profilePicUrl} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                           <div className="w-full h-full bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                              <User size={48} />
+                           </div>
+                        )}
+                     </div>
+
+                     <button
+                        onClick={() => setUploadModalType('profile-photo')}
+                        className="absolute bottom-1 right-1 bg-gray-900 hover:bg-black text-white p-2.5 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95"
+                        title="Change Profile Photo"
+                     >
+                        <Edit2 size={14} />
+                     </button>
                   </div>
 
-                  <div className="flex flex-col md:flex-row gap-8 items-start mb-8 border-b border-gray-50 pb-8">
-                     {/* Photo Upload */}
-                     <div className={`flex-shrink-0 group relative ${isEditing ? 'cursor-pointer' : 'cursor-default'}`}>
-                        <div className={`w-28 h-28 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 transition-all ${isEditing ? 'border-2 border-dashed border-gray-300 hover:border-blue-400 hover:text-blue-500' : 'border border-gray-100'}`}>
-                           {isEditing ? <Upload size={24} /> : <User size={40} className="text-gray-300" />}
-                        </div>
-                        {isEditing && <span className="text-xs font-medium text-gray-500 mt-2 block text-center">Change</span>}
-                     </div>
+                  <h2 className="text-xl font-bold text-gray-800 mb-1 z-10">{formData.fullName || 'User Name'}</h2>
+                  <p className="text-gray-500 font-medium mb-6 text-sm z-10">{formData.businessName || 'Business Name'}</p>
 
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                        <div>
-                           <FormLabel text="Full Name" required={true} className="block text-sm font-medium text-gray-700 mb-1.5" />
-                           <input type="text" disabled={!isEditing} value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
-                        </div>
-                        <div>
-                           <FormLabel text="Phone Number" required={true} className="block text-sm font-medium text-gray-700 mb-1.5" />
-                           <input type="text" disabled={!isEditing} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
-                        </div>
-                        <div className="md:col-span-2">
-                           <FormLabel text="Email Address" required={true} className="block text-sm font-medium text-gray-700 mb-1.5" />
-                           <input type="email" disabled={!isEditing} value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
+                  <div className="w-full space-y-4 pt-4 border-t border-gray-50 z-10">
+                     <div className="flex items-center gap-3 text-gray-600 bg-gray-50/50 p-3 rounded-xl border border-gray-50">
+                        <div className="p-2 bg-white text-gray-600 rounded-lg shadow-sm"><Phone size={16} /></div>
+                        <div className="text-left flex-1">
+                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Phone</p>
+                           <input
+                              type="text"
+                              disabled={!isEditing}
+                              value={formData.phone || ''}
+                              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                              className={`w-full bg-transparent font-semibold text-sm outline-none text-gray-700 ${isEditing ? 'border-b border-gray-300 focus:border-blue-500' : ''}`}
+                              placeholder="Phone Number"
+                           />
                         </div>
                      </div>
-                  </div>
-
-                  {/* Business Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                     <div className="md:col-span-2">
-                        <FormLabel text="Business Name" className="block text-sm font-medium text-gray-700 mb-1.5" />
-                        <input type="text" disabled={!isEditing} value={formData.businessName} onChange={(e) => setFormData({ ...formData, businessName: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
-                     </div>
-
-                  </div>
-
-                  {/* Address */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="md:col-span-2">
-                        <FormLabel text="Street Address" className="block text-sm font-medium text-gray-700 mb-1.5" />
-                        <input type="text" disabled={!isEditing} value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
-                     </div>
-                     <div>
-                        <FormLabel text="City" className="block text-sm font-medium text-gray-700 mb-1.5" />
-                        <input type="text" disabled={!isEditing} value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                           <FormLabel text="State" className="block text-sm font-medium text-gray-700 mb-1.5" />
-                           <input type="text" disabled={!isEditing} value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
+                     <div className="flex items-center gap-3 text-gray-600 bg-gray-50/50 p-3 rounded-xl border border-gray-50">
+                        <div className="p-2 bg-white text-gray-600 rounded-lg shadow-sm"><Mail size={16} /></div>
+                        <div className="text-left flex-1">
+                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Email</p>
+                           <input
+                              type="email"
+                              disabled={!isEditing}
+                              value={formData.email || ''}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                              className={`w-full bg-transparent font-semibold text-sm outline-none text-gray-700 ${isEditing ? 'border-b border-gray-300 focus:border-blue-500' : ''}`}
+                              placeholder="Email Address"
+                           />
                         </div>
-                        <div>
-                           <FormLabel text="Pincode" className="block text-sm font-medium text-gray-700 mb-1.5" />
-                           <input type="text" disabled={!isEditing} value={formData.pincode} onChange={(e) => setFormData({ ...formData, pincode: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-blue-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
+                     </div>
+                     <div className="flex items-center gap-3 text-gray-600 bg-gray-50/50 p-3 rounded-xl border border-gray-50">
+                        <div className="p-2 bg-white text-gray-600 rounded-lg shadow-sm"><MapPin size={16} /></div>
+                        <div className="text-left flex-1">
+                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Location</p>
+                           <p className="text-sm font-semibold truncate text-gray-700">{formData.city || '-'}, {formData.state || '-'} - {formData.pincode}</p>
                         </div>
                      </div>
                   </div>
                </div>
 
-               {/* BANKING CARD */}
-               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
+               {/* Preferences */}
+               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 md:p-8">
                   <div className="flex items-center gap-3 mb-6">
-                     <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl"><CreditCard size={20} /></div>
-                     <h2 className="text-lg font-bold text-gray-800">Billing & Banking</h2>
+                     <div className="p-2 bg-gray-50 text-gray-600 rounded-xl"><Bell size={20} /></div>
+                     <h2 className="text-lg font-bold text-gray-800">Preferences</h2>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="space-y-6">
-                        <div>
-                           <label className="block text-sm font-medium text-gray-700 mb-1.5">GSTIN</label>
-                           <input type="text" disabled={!isEditing} value={formData.gstin} onChange={(e) => setFormData({ ...formData, gstin: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-purple-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
-                        </div>
-                        <div>
-                           <label className="block text-sm font-medium text-gray-700 mb-1.5">UPI ID (QR Code)</label>
-                           <input type="text" disabled={!isEditing} value={formData.upiId} onChange={(e) => setFormData({ ...formData, upiId: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-purple-100' : 'bg-gray-50 border-transparent text-gray-600'}`} />
+                  <div className="space-y-6">
+                     {/* Notifications */}
+                     <div>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notifications</h3>
+                        <div className="space-y-3">
+                           {['Sales Notifications', 'Payment Alerts', 'Low Stock Warnings'].map((label, index) => {
+                              const key = index === 0 ? 'sales' : index === 1 ? 'payments' : 'lowStock';
+                              const isOn = notifications[key];
+                              return (
+                                 <div key={key} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <span className="text-sm font-semibold text-gray-600">{label}</span>
+                                    <button
+                                       onClick={() => toggleNotification(key)}
+                                       className={`relative w-10 h-5 rounded-full transition-colors duration-200 ease-in-out flex items-center ${isOn ? 'bg-gray-800' : 'bg-gray-200'}`}
+                                    >
+                                       <span className={`inline-block w-3 h-3 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${isOn ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                 </div>
+                              );
+                           })}
                         </div>
                      </div>
 
-                     <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100">
-                        <h3 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                           <Landmark size={14} /> Bank Details
-                        </h3>
-                        <div className="space-y-4">
-                           <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Account Holder</label>
-                              <input type="text" disabled={!isEditing} value={formData.accountName} onChange={(e) => setFormData({ ...formData, accountName: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm text-gray-800 outline-none ${isEditing ? 'bg-white border border-purple-200' : 'bg-purple-50/50 border-transparent'}`} />
-                           </div>
-                           <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                 <label className="block text-xs font-medium text-gray-600 mb-1">Account No.</label>
-                                 <input type="text" disabled={!isEditing} value={formData.accountNumber} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm text-gray-800 outline-none ${isEditing ? 'bg-white border border-purple-200' : 'bg-purple-50/50 border-transparent'}`} />
-                              </div>
-                              <div>
-                                 <label className="block text-xs font-medium text-gray-600 mb-1">IFSC Code</label>
-                                 <input type="text" disabled={!isEditing} value={formData.ifsc} onChange={(e) => setFormData({ ...formData, ifsc: e.target.value })} className={`w-full px-3 py-2 rounded-lg text-sm text-gray-800 outline-none ${isEditing ? 'bg-white border border-purple-200' : 'bg-purple-50/50 border-transparent'}`} />
-                              </div>
+                     {/* Invoice Suffix */}
+                     <div className="pt-4 border-t border-gray-50">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Invoice Settings</h3>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                           <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Invoice Prefix</label>
+                           <div className="flex items-center gap-2">
+                              <FileText size={16} className="text-gray-400" />
+                              <input
+                                 type="text"
+                                 disabled={!isEditing}
+                                 value={formData.invoicePrefix || ''}
+                                 onChange={(e) => setFormData({ ...formData, invoicePrefix: e.target.value })}
+                                 className={`flex-1 bg-transparent font-bold text-gray-800 outline-none placeholder-gray-400 text-sm`}
+                                 placeholder="INV-"
+                              />
                            </div>
                         </div>
                      </div>
@@ -274,103 +297,220 @@ const Profile = () => {
                </div>
             </div>
 
-            {/* RIGHT COLUMN */}
-            <div className="xl:col-span-1 space-y-8">
 
-               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                     <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl"><Bell size={20} /></div>
-                     <h2 className="text-lg font-bold text-gray-800">Preferences</h2>
-                  </div>
+            {/* RIGHT COLUMN (Forms & Details) */}
+            <div className="xl:col-span-2 space-y-6">
 
-                  {/* Notifications */}
-                  <div className="mb-8">
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Notifications</h3>
-                     <div className="space-y-4">
-                        {['Sales Notifications', 'Payment Alerts', 'Low Stock Warnings'].map((label, index) => {
-                           const key = index === 0 ? 'sales' : index === 1 ? 'payments' : 'lowStock';
-                           const isOn = notifications[key];
-                           return (
-                              <div key={key} className="flex items-center justify-between">
-                                 <span className="text-sm font-medium text-gray-700">{label}</span>
-                                 <button
-                                    onClick={() => toggleNotification(key)}
-                                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out flex items-center ${isOn ? (key === 'lowStock' ? 'bg-orange-600' : 'bg-blue-600') : 'bg-gray-200'}`}
-                                 >
-                                    <span className={`inline-block w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${isOn ? 'translate-x-6' : 'translate-x-1'}`} />
-                                 </button>
-                              </div>
-                           );
-                        })}
-                     </div>
-                  </div>
-
-                  {/* Invoice Settings (ADDED HERE) */}
-                  <div className="mb-8">
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Invoice Settings</h3>
+               {/* Business Information Section */}
+               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-8">
+                  <div className="flex items-center gap-3 mb-8 border-b border-gray-100 pb-4">
+                     <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><Building size={22} /></div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Invoice Prefix</label>
-                        <input
-                           type="text"
-                           disabled={!isEditing}
-                           value={formData.invoicePrefix}
-                           onChange={(e) => setFormData({ ...formData, invoicePrefix: e.target.value })}
-                           className={`w-full px-4 py-2.5 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border border-gray-200 focus:ring-2 focus:ring-orange-100' : 'bg-gray-50 border-transparent text-gray-600'}`}
-                        />
-                        <p className="text-xs text-gray-400 mt-1.5">Ex: INV-2024-001</p>
+                        <h2 className="text-xl font-bold text-gray-800">Business Details</h2>
+                        <p className="text-sm text-gray-500 font-medium">Your official business information</p>
                      </div>
                   </div>
 
-                  {/* Security */}
-                  <div>
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Security</h3>
-                     <button
-                        onClick={() => setIsChangePassModalOpen(true)}
-                        className="w-full flex items-center justify-between p-4 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors group"
-                     >
-                        <div className="flex items-center gap-3">
-                           <Shield size={18} className="group-hover:scale-110 transition-transform" />
-                           <span className="text-sm font-semibold">Change Password</span>
-                        </div>
-                        <Lock size={16} className="opacity-50" />
-                     </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="md:col-span-2">
+                        <FormLabel text="Business Name" className="block text-sm font-bold text-gray-700 mb-1.5" />
+                        <input type="text" disabled={!isEditing} value={formData.businessName || ''} onChange={(e) => setFormData({ ...formData, businessName: e.target.value })} className={`w-full px-4 py-3 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border-2 border-gray-100 focus:border-blue-500 shadow-sm' : 'bg-gray-50 border-2 border-transparent text-gray-600'}`} placeholder="Enter your business name" />
+                     </div>
+                     <div className="md:col-span-2">
+                        <FormLabel text="GSTIN" className="block text-sm font-bold text-gray-700 mb-1.5" />
+                        <input type="text" disabled={!isEditing} value={formData.gstin || ''} onChange={(e) => setFormData({ ...formData, gstin: e.target.value })} className={`w-full px-4 py-3 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border-2 border-gray-100 focus:border-blue-500 shadow-sm' : 'bg-gray-50 border-2 border-transparent text-gray-600'}`} placeholder="GST Identification Number" />
+                     </div>
+                     <div className="md:col-span-2">
+                        <FormLabel text="Street Address" className="block text-sm font-bold text-gray-700 mb-1.5" />
+                        <textarea disabled={!isEditing} rows="2" value={formData.address || ''} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className={`w-full px-4 py-3 rounded-xl text-gray-800 font-medium outline-none transition-all resize-none ${isEditing ? 'bg-white border-2 border-gray-100 focus:border-blue-500 shadow-sm' : 'bg-gray-50 border-2 border-transparent text-gray-600'}`} placeholder="Full street address"></textarea>
+                     </div>
+                     <div>
+                        <FormLabel text="City" className="block text-sm font-bold text-gray-700 mb-1.5" />
+                        <input type="text" disabled={!isEditing} value={formData.city || ''} onChange={(e) => setFormData({ ...formData, city: e.target.value })} className={`w-full px-4 py-3 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border-2 border-gray-100 focus:border-blue-500 shadow-sm' : 'bg-gray-50 border-2 border-transparent text-gray-600'}`} />
+                     </div>
+                     <div>
+                        <FormLabel text="State" className="block text-sm font-bold text-gray-700 mb-1.5" />
+                        <input type="text" disabled={!isEditing} value={formData.state || ''} onChange={(e) => setFormData({ ...formData, state: e.target.value })} className={`w-full px-4 py-3 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border-2 border-gray-100 focus:border-blue-500 shadow-sm' : 'bg-gray-50 border-2 border-transparent text-gray-600'}`} />
+                     </div>
+                     <div>
+                        <FormLabel text="Pincode" className="block text-sm font-bold text-gray-700 mb-1.5" />
+                        <input type="text" disabled={!isEditing} value={formData.pincode || ''} onChange={(e) => setFormData({ ...formData, pincode: e.target.value })} className={`w-full px-4 py-3 rounded-xl text-gray-800 font-medium outline-none transition-all ${isEditing ? 'bg-white border-2 border-gray-100 focus:border-blue-500 shadow-sm' : 'bg-gray-50 border-2 border-transparent text-gray-600'}`} />
+                     </div>
                   </div>
                </div>
 
-               {/* DOCUMENTS SECTION (ADDED HERE) */}
-               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Documents</h3>
-                  <div className="space-y-4">
-                     {['Business Owner Signature', 'Business Stamp'].map((item) => (
-                        <div key={item} className={`border border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between transition-colors group ${isEditing ? 'hover:bg-blue-50 cursor-pointer border-blue-200' : 'opacity-70 cursor-not-allowed'}`}>
-                           <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-lg transition-colors ${isEditing ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
-                                 <FileText size={18} />
-                              </div>
-                              <span className="text-sm font-medium text-gray-700">{item}</span>
+               {/* Documents & Banking Grid */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                  {/* Documents (Originals & Signatures) */}
+                  <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-8">
+                     <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl"><FileCheck size={20} /></div>
+                        <h2 className="text-lg font-bold text-gray-800">Documents</h2>
+                     </div>
+
+                     <div className="space-y-6">
+                        {/* Signature */}
+                        <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 relative group transition-all hover:border-gray-200">
+                           <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Authorized Signature</h4>
+                              <button
+                                 onClick={() => setUploadModalType('signature')}
+                                 className="p-1.5 bg-white text-gray-600 rounded-lg shadow-sm border border-gray-100 hover:text-blue-600 hover:border-blue-100 transition-all"
+                                 title="Update Signature"
+                              >
+                                 <Edit2 size={14} />
+                              </button>
                            </div>
-                           {isEditing && <Upload size={16} className="text-gray-400 group-hover:text-blue-500" />}
+                           <div className="h-24 w-full bg-white rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+                              {hasImage(formData.signatureUrl) ? (
+                                 <img src={formData.signatureUrl} alt="Signature" className="h-full object-contain" />
+                              ) : (
+                                 <span className="text-xs text-gray-400 font-medium">No signature uploaded</span>
+                              )}
+                           </div>
                         </div>
-                     ))}
+
+                        {/* Stamp */}
+                        <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 relative group transition-all hover:border-gray-200">
+                           <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Business Stamp</h4>
+                              <button
+                                 onClick={() => setUploadModalType('stamp')}
+                                 className="p-1.5 bg-white text-gray-600 rounded-lg shadow-sm border border-gray-100 hover:text-blue-600 hover:border-blue-100 transition-all"
+                                 title="Update Stamp"
+                              >
+                                 <Edit2 size={14} />
+                              </button>
+                           </div>
+                           <div className="h-24 w-full bg-white rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+                              {hasImage(formData.stampUrl) ? (
+                                 <img src={formData.stampUrl} alt="Stamp" className="h-full object-contain" />
+                              ) : (
+                                 <span className="text-xs text-gray-400 font-medium">No stamp uploaded</span>
+                              )}
+                           </div>
+                        </div>
+                     </div>
                   </div>
+
+                  {/* Banking Details */}
+                  <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-8">
+                     <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl"><CreditCard size={20} /></div>
+                        <h2 className="text-lg font-bold text-gray-800">Banking</h2>
+                     </div>
+
+                     <div className="space-y-4">
+                        <div>
+                           <label className="block text-xs font-bold text-gray-500 uppercase mb-1">UPI ID</label>
+                           <div className="flex items-center bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
+                              <span className="flex-1 font-mono font-medium text-gray-800">{formData.upiId || 'Not Set'}</span>
+                           </div>
+                        </div>
+
+                        <div className="bg-gray-900 rounded-2xl p-6 text-white shadow-xl shadow-gray-300 mt-4 relative overflow-hidden">
+                           <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-2xl -mr-16 -mt-16"></div>
+                           <div className="flex justify-between items-start mb-6 relative z-10">
+                              <Landmark size={24} className="opacity-80" />
+                              <span className="text-[10px] bg-white/20 px-2 py-1 rounded-md font-bold uppercase tracking-wider">Primary</span>
+                           </div>
+                           <div className="space-y-4 relative z-10">
+                              <div>
+                                 <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Account Holder</p>
+                                 <input type="text" disabled={!isEditing} value={formData.accountName || ''} onChange={(e) => setFormData({ ...formData, accountName: e.target.value })} className="bg-transparent w-full text-white font-medium outline-none placeholder-gray-600" placeholder="Holder Name" />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div>
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Account No.</p>
+                                    <input type="text" disabled={!isEditing} value={formData.accountNumber || ''} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} className="bg-transparent w-full text-white font-mono outline-none placeholder-gray-600" placeholder="****" />
+                                 </div>
+                                 <div>
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">IFSC</p>
+                                    <input type="text" disabled={!isEditing} value={formData.ifsc || ''} onChange={(e) => setFormData({ ...formData, ifsc: e.target.value })} className="bg-transparent w-full text-white font-mono uppercase outline-none placeholder-gray-600" placeholder="CODE" />
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Security Card (Short) */}
+               <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 p-6 flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                     <div className="p-2.5 bg-red-50 text-red-600 rounded-xl"><Shield size={20} /></div>
+                     <div>
+                        <h3 className="text-sm font-bold text-gray-800">Account Security</h3>
+                        <p className="text-xs text-gray-500 font-medium">Protect your account with a strong password.</p>
+                     </div>
+                  </div>
+                  <button
+                     onClick={() => setIsChangePassModalOpen(true)}
+                     className="px-5 py-2.5 bg-red-50 text-red-700 font-bold rounded-xl hover:bg-red-100 transition-colors text-sm"
+                  >
+                     Change Password
+                  </button>
                </div>
 
             </div>
          </div>
 
+
+         {/* --- UPLOAD MODAL --- */}
+         {uploadModalType && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+               <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+                  <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                     <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">
+                        Update {uploadModalType === 'profile-photo' ? 'Photo' : uploadModalType}
+                     </h3>
+                     <button onClick={() => setUploadModalType(null)} className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                     </button>
+                  </div>
+
+                  <div className="p-8">
+                     <ImageUploader
+                        imageType={uploadModalType}
+                        currentImageUrl={
+                           uploadModalType === 'profile-photo' ? formData.profilePicUrl :
+                              uploadModalType === 'signature' ? formData.signatureUrl :
+                                 formData.stampUrl
+                        }
+                        onUploadSuccess={(data) => {
+                           setFormData(prev => ({
+                              ...prev,
+                              profilePicUrl: data.profilePicUrl || prev.profilePicUrl,
+                              signatureUrl: data.signatureUrl || prev.signatureUrl,
+                              stampUrl: data.stampUrl || prev.stampUrl
+                           }));
+                           toast.success('Image updated successfully!');
+                           setUploadModalType(null);
+                        }}
+                        onUploadError={(error) => toast.error(error)}
+                     />
+                  </div>
+               </div>
+            </div>
+         )}
+
+
          {/* --- VERIFY PASSWORD MODAL --- */}
          {isVerifyModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-               <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 p-6">
-                  <div className="flex items-center gap-3 text-orange-600 mb-4">
-                     <div className="p-2 bg-orange-100 rounded-full"><AlertTriangle size={24} /></div>
-                     <h3 className="text-lg font-bold text-gray-800">Security Check</h3>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+               <div className="bg-white rounded-[32px] w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200 p-8">
+                  <div className="flex justify-center mb-6">
+                     <div className="p-4 bg-orange-50 text-orange-600 rounded-2xl"><AlertTriangle size={32} /></div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-6">You are changing sensitive information. Please enter your password to confirm.</p>
-                  <input type="password" value={verifyPasswordInput} onChange={(e) => setVerifyPasswordInput(e.target.value)} className="w-full px-4 py-3 mb-6 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 outline-none focus:ring-2 focus:ring-blue-100" placeholder="Enter password" />
+                  <h3 className="text-xl font-bold text-gray-800 text-center mb-2">Security Check</h3>
+                  <p className="text-sm text-gray-500 font-medium text-center mb-8">Please enter your password to confirm these changes.</p>
+
+                  <input type="password" value={verifyPasswordInput} onChange={(e) => setVerifyPasswordInput(e.target.value)} className="w-full px-5 py-4 mb-6 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl text-gray-800 font-bold outline-none transition-all" placeholder="Enter your password" />
+
                   <div className="flex gap-3">
-                     <button onClick={() => setIsVerifyModalOpen(false)} className="flex-1 py-2.5 text-gray-600 font-medium hover:bg-gray-50 rounded-xl">Cancel</button>
-                     <button onClick={commitSave} className="flex-1 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700">Confirm</button>
+                     <button onClick={() => setIsVerifyModalOpen(false)} className="flex-1 py-3.5 text-gray-600 font-bold hover:bg-gray-50 rounded-xl transition-all">Cancel</button>
+                     <button onClick={commitSave} className="flex-1 py-3.5 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-200">Confirm & Save</button>
                   </div>
                </div>
             </div>
@@ -378,20 +518,20 @@ const Profile = () => {
 
          {/* --- CHANGE PASSWORD MODAL --- */}
          {isChangePassModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-               <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                     <h3 className="text-lg font-bold text-gray-800">Change Password</h3>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+               <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+                  <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                     <h3 className="font-bold text-gray-800 uppercase text-xs tracking-widest">Change Password</h3>
                      <button onClick={() => setIsChangePassModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
                   </div>
-                  <div className="p-6 space-y-4">
-                     <input type="password" placeholder="Current Password" value={passData.current} onChange={e => setPassData({ ...passData, current: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none" />
-                     <input type="password" placeholder="New Password" value={passData.new} onChange={e => setPassData({ ...passData, new: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none" />
-                     <input type="password" placeholder="Confirm New Password" value={passData.confirm} onChange={e => setPassData({ ...passData, confirm: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none" />
+                  <div className="p-8 space-y-4">
+                     <input type="password" placeholder="Current Password" value={passData.current} onChange={e => setPassData({ ...passData, current: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-gray-200 rounded-xl outline-none font-medium text-gray-800 transition-all" />
+                     <input type="password" placeholder="New Password" value={passData.new} onChange={e => setPassData({ ...passData, new: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-gray-200 rounded-xl outline-none font-medium text-gray-800 transition-all" />
+                     <input type="password" placeholder="Confirm New Password" value={passData.confirm} onChange={e => setPassData({ ...passData, confirm: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-gray-200 rounded-xl outline-none font-medium text-gray-800 transition-all" />
                   </div>
-                  <div className="p-6 pt-2 flex gap-3">
-                     <button onClick={() => setIsChangePassModalOpen(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl">Cancel</button>
-                     <button onClick={handleChangePassword} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl">Update</button>
+                  <div className="p-8 pt-0 flex gap-3">
+                     <button onClick={() => setIsChangePassModalOpen(false)} className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all">Cancel</button>
+                     <button onClick={handleChangePassword} className="flex-1 py-3.5 bg-black hover:bg-gray-800 text-white font-bold rounded-xl transition-all shadow-lg">Update Password</button>
                   </div>
                </div>
             </div>
