@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Plus, Edit2, Check, X,
   Package, ShoppingBag, Star, Coffee, Zap, Heart, Box, Tag, Sun, Smile,
-  Ruler
+  Ruler, Trash2, GitMerge
 } from 'lucide-react';
 import TabsBar from '../../components/common/TabsBar';
 import SearchBar from '../../components/common/SearchBar';
@@ -11,6 +11,7 @@ import api from '../../src/api';
 import { toast } from 'react-toastify';
 // Import the new reusable modal
 import AddPropertyModal from '../../components/common/AddPropertyModal';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 // Icon Map (Ideally should be shared or imported if used in Modal too, but keeping local for rendering grid)
 const ICON_MAP = {
@@ -44,6 +45,13 @@ const Properties = () => {
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [editShort, setEditShort] = useState('');
+
+  // Merge Mode
+  const [mergeSource, setMergeSource] = useState(null);
+  const [mergeTargetId, setMergeTargetId] = useState('');
+
+  // Delete Confirmation
+  const [deleteConfig, setDeleteConfig] = useState(null);
 
   // --- FETCH DATA ---
   useEffect(() => {
@@ -102,10 +110,75 @@ const Properties = () => {
 
   const saveEdit = async (type) => {
     try {
-      toast.info("Edit feature coming soon (Backend Update Endpoint Required)");
+      if (type === 'category') {
+        const cat = categories.find(c => c.id === editingId);
+        await api.put(`/trading/categories/${editingId}`, {
+          name: editValue,
+          styleId: cat.styleId
+        });
+        toast.success("Category updated successfully");
+      } else {
+        await api.put(`/trading/units/${editingId}`, {
+          name: editValue,
+          symbol: editShort
+        });
+        toast.success("Unit updated successfully");
+      }
       setEditingId(null);
+      fetchMetadata();
     } catch (e) {
       console.error(e);
+      toast.error(e.response?.data?.message || "Failed to update");
+    }
+  };
+
+  const handleDelete = (id, type) => {
+    const itemCount = type === 'category' ? getProductCount(id) : products.filter(p => p.unitId === id).length;
+
+    if (itemCount > 0) {
+      const moveTarget = type === 'category' ? 'category' : 'unit';
+      toast.warning(`first move products from this ${moveTarget} to another ${moveTarget}`);
+      return;
+    }
+
+    setDeleteConfig({ id, type });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfig) return;
+    const { id, type } = deleteConfig;
+
+    try {
+      if (type === 'category') {
+        await api.delete(`/trading/categories/${id}`);
+      } else {
+        await api.delete(`/trading/units/${id}`);
+      }
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully`);
+      fetchMetadata();
+      setDeleteConfig(null);
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || `Failed to delete ${type}`);
+    }
+  };
+
+  const handleMerge = async () => {
+    if (!mergeTargetId) {
+      toast.error("Please select a target category");
+      return;
+    }
+
+    try {
+      await api.post(`/trading/categories/${mergeSource.id}/merge/${mergeTargetId}`);
+      toast.success("Categories merged successfully");
+      setMergeSource(null);
+      setMergeTargetId('');
+      fetchMetadata();
+      fetchProducts(); // Refresh product counts
+    } catch (e) {
+      console.error(e);
+      toast.error(e.response?.data?.message || "Failed to merge categories");
     }
   };
 
@@ -163,7 +236,9 @@ const Properties = () => {
                       </>
                     ) : (
                       <>
-                        <button onClick={() => startEdit(cat, 'category')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button>
+                        <button onClick={() => setMergeSource(cat)} className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg" title="Merge Category"><GitMerge size={16} /></button>
+                        <button onClick={() => startEdit(cat, 'category')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit Category"><Edit2 size={16} /></button>
+                        <button onClick={() => handleDelete(cat.id, 'category')} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete Category"><Trash2 size={16} /></button>
                       </>
                     )}
                   </div>
@@ -220,7 +295,8 @@ const Properties = () => {
                     </>
                   ) : (
                     <>
-                      <button onClick={() => startEdit(unit, 'unit')} className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button>
+                      <button onClick={() => startEdit(unit, 'unit')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit Unit"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDelete(unit.id, 'unit')} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete Unit"><Trash2 size={16} /></button>
                     </>
                   )}
                 </div>
@@ -289,6 +365,68 @@ const Properties = () => {
           </div>
         </div>
       )}
+
+      {/* --- MERGE CATEGORY MODAL --- */}
+      {mergeSource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
+                  <GitMerge size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Merge Category</h3>
+                  <p className="text-xs text-gray-500">Move products from "{mergeSource.name}" to...</p>
+                </div>
+              </div>
+              <button onClick={() => setMergeSource(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100">
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  <strong>Note:</strong> All products currently in <b>{mergeSource.name}</b> will be moved to the selected category, and <b>{mergeSource.name}</b> will be deleted.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Target Category</label>
+                <select
+                  value={mergeTargetId}
+                  onChange={(e) => setMergeTargetId(e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm appearance-none cursor-pointer"
+                >
+                  <option value="">Select Target Category</option>
+                  {categories.filter(c => c.id !== mergeSource.id).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-3xl flex gap-3">
+              <button onClick={() => setMergeSource(null)} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50">Cancel</button>
+              <button
+                onClick={handleMerge}
+                className="flex-1 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200"
+              >
+                Confirm Merge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* --- DELETE CONFIRMATION MODAL --- */}
+      <ConfirmationModal
+        isOpen={!!deleteConfig}
+        onClose={() => setDeleteConfig(null)}
+        onConfirm={confirmDelete}
+        title={`Delete ${deleteConfig?.type}`}
+        message={`Are you sure you want to delete this ${deleteConfig?.type}? This action cannot be undone.`}
+        type="delete"
+        confirmText="Yes, Delete"
+      />
 
     </div>
   );
