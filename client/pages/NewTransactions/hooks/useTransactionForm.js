@@ -21,6 +21,8 @@ export const useTransactionForm = (type) => {
         { id: Date.now(), name: '', qty: 1, price: '', amount: 0, isFree: false, manual: false }
     ]);
     const [paidAmount, setPaidAmount] = useState('');
+    const [paymentMode, setPaymentMode] = useState('CASH');
+    const [notes, setNotes] = useState('');
 
     // Show notification helper using react-toastify
     const showNotify = (type, message) => {
@@ -52,6 +54,10 @@ export const useTransactionForm = (type) => {
         setProducts,
         paidAmount,
         setPaidAmount,
+        paymentMode,
+        setPaymentMode,
+        notes,
+        setNotes,
 
         // Notifications
         showNotify,

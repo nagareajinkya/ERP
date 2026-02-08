@@ -186,6 +186,8 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
             }));
             formData.setProducts(mappedProducts);
             formData.setPaidAmount(t.paidAmount);
+            formData.setPaymentMode(t.paymentMode || 'CASH');
+            formData.setNotes(t.notes || '');
         }
     }, [state]);
 
@@ -207,6 +209,8 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
                 filledProducts: validation.filledProducts,
                 totals: calculationData.totals,
                 paidAmount: formData.paidAmount,
+                paymentMode: formData.paymentMode,
+                notes: formData.notes,
                 appliedOffers: calculationData.appliedOffers,
             });
 

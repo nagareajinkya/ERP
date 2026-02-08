@@ -12,6 +12,8 @@ export const buildTransactionPayload = ({
     filledProducts,
     totals,
     paidAmount,
+    paymentMode,
+    notes,
     appliedOffers
 }) => {
     return {
@@ -35,6 +37,8 @@ export const buildTransactionPayload = ({
         discount: totals.disc,
         totalAmount: totals.total,
         paidAmount: Number(paidAmount) || 0,
+        paymentMode,
+        notes,
         appliedOffers: (appliedOffers || []).map(o => ({
             offerId: o.id,
             offerName: o.name,
