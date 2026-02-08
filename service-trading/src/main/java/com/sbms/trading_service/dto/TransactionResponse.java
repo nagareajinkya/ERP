@@ -25,7 +25,7 @@ public class TransactionResponse {
     private String notes;
     private BigDecimal subTotal;
     private BigDecimal discount;
-    private java.util.List<OfferDto> appliedOffers;
+    private List<OfferDto> appliedOffers;
     
     // Details for Modal
     private List<DetailDto> details;

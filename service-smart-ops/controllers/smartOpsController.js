@@ -36,7 +36,6 @@ const calculate = async (req, res) => {
         res.json(result);
 
     } catch (error) {
-        console.error('Calculation Error:', error);
         res.status(500).json({ message: 'Server Error during calculation' });
     }
 };

@@ -1,4 +1,9 @@
 @import "tailwindcss";
+
+:root {
+  font-family: 'Inter', sans-serif;
+}
+
 /* Hide scrollbar for Chrome, Safari and Edge */
 /* Scrollbar hidden */
 .scrollbar-hover::-webkit-scrollbar {

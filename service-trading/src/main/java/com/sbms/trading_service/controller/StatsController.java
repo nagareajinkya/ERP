@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.sbms.trading_service.dto.PartyStatsDto;
 import com.sbms.trading_service.service.PartyService;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,16 +24,20 @@ public class StatsController {
     }
 
     @GetMapping("/top-spenders")
-    public ResponseEntity<java.util.List<PartyStatsDto>> getTopSpenders(
+    public ResponseEntity<List<PartyStatsDto>> getTopSpenders(
             @RequestAttribute("businessId") UUID businessId,
-            @RequestParam(defaultValue = "5") int limit) {
-        return ResponseEntity.ok(partyService.getTopSpenders(businessId, limit));
+            @RequestParam(defaultValue = "5") int limit,
+            @RequestParam(defaultValue = "1") int duration,
+            @RequestParam(defaultValue = "Years") String unit) {
+        return ResponseEntity.ok(partyService.getTopSpenders(businessId, limit, duration, unit));
     }
 
     @GetMapping("/frequent-visitors")
-    public ResponseEntity<java.util.List<PartyStatsDto>> getFrequentVisitors(
+    public ResponseEntity<List<PartyStatsDto>> getFrequentVisitors(
             @RequestAttribute("businessId") UUID businessId,
-            @RequestParam(defaultValue = "5") int limit) {
-        return ResponseEntity.ok(partyService.getFrequentVisitors(businessId, limit));
+            @RequestParam(defaultValue = "5") int limit,
+            @RequestParam(defaultValue = "30") int duration,
+            @RequestParam(defaultValue = "5") int minVisits) {
+        return ResponseEntity.ok(partyService.getFrequentVisitors(businessId, limit, duration, minVisits));
     }
 }

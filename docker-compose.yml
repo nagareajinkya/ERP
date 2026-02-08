@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # 1. Databases
+  db-auth:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: sbms_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-manager}
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - sbms-network
+
+  db-trading:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: trading_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-manager}
+    volumes:
+      - trading_db_data:/var/lib/postgresql/data
+    networks:
+      - sbms-network
+
+  db-parties:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: trading_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-manager}
+    volumes:
+      - parties_db_data:/var/lib/postgresql/data
+    networks:
+      - sbms-network
+
+  db-smartops:
+    image: mongo:6.0
+    volumes:
+      - smartops_db_data:/data/db
+    networks:
+      - sbms-network
+
+  # 2. Main Services
+  auth-service:
+    image: ${DOCKER_HUB_USERNAME}/auth-service:latest
+    environment:
+      - DB_URL=jdbc:postgresql://db-auth:5432/sbms_db
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-manager}
+      - JWT_SECRET=${JWT_SECRET}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - DDL_AUTO=update
+    depends_on:
+      - db-auth
+    networks:
+      - sbms-network
+
+  trading-service:
+    image: ${DOCKER_HUB_USERNAME}/trading-service:latest
+    environment:
+      - DB_URL=jdbc:postgresql://db-trading:5432/trading_db
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-manager}
+      - JWT_SECRET=${JWT_SECRET}
+      - DDL_AUTO=update
+    depends_on:
+      - db-trading
+    networks:
+      - sbms-network
+
+  parties-service:
+    image: ${DOCKER_HUB_USERNAME}/parties-service:latest
+    environment:
+      - DB_HOST=db-parties
+      - DB_PORT=5432
+      - DB_NAME=trading_db
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-manager}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - db-parties
+    networks:
+      - sbms-network
+
+  smart-ops-service:
+    image: ${DOCKER_HUB_USERNAME}/smart-ops-service:latest
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - MONGODB_URI=mongodb://db-smartops:27017/smart_ops_db
+    depends_on:
+      - db-smartops
+    networks:
+      - sbms-network
+
+  # 3. API Gateway
+  api-gateway:
+    image: ${DOCKER_HUB_USERNAME}/api-gateway:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - TRADING_SERVICE_URL=http://trading-service:8082
+      - PARTIES_SERVICE_URL=http://parties-service:5000
+      - SMARTOPS_SERVICE_URL=http://smart-ops-service:5002
+    depends_on:
+      - auth-service
+      - trading-service
+      - parties-service
+      - smart-ops-service
+    networks:
+      - sbms-network
+
+  # 4. Frontend (Served by Nginx)
+  frontend:
+    image: ${DOCKER_HUB_USERNAME}/frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - sbms-network
+
+networks:
+  sbms-network:
+    driver: bridge
+
+volumes:
+  auth_db_data:
+  trading_db_data:
+  parties_db_data:
+  smartops_db_data:

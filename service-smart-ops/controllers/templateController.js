@@ -101,3 +101,153 @@ exports.deleteTemplate = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// @desc    Generate personalized messages for broadcasting
+// @route   POST /api/smart-ops/templates/generate-messages
+// @access  Private
+exports.generateMessages = async (req, res) => {
+    const { templateId, customerIds, parties, businessProfile } = req.body;
+
+    try {
+        // Validate inputs
+        if (!templateId || !customerIds || customerIds.length === 0) {
+            return res.status(400).json({ msg: 'Template ID and customer IDs are required' });
+        }
+
+        if (!parties || parties.length === 0) {
+            return res.status(400).json({ msg: 'Parties data is required' });
+        }
+
+        // 1. Fetch template with populated offer data
+        const template = await Template.findById(templateId).populate('offerId');
+        if (!template) {
+            return res.status(404).json({ msg: 'Template not found' });
+        }
+
+        // Verify ownership
+        if (template.businessId.toString() !== req.businessId) {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+
+        // Filter only selected customers
+        const selectedParties = parties.filter(p => customerIds.includes(p.id || p._id));
+
+        if (selectedParties.length === 0) {
+            return res.status(404).json({ msg: 'No matching customers found' });
+        }
+
+        // 4. Generate personalized messages
+        const messages = selectedParties.map(customer => {
+            // Personalize message for this customer
+            const personalizedText = personalizeMessage(template.text, customer, businessProfile, template);
+
+            // Format phone number for WhatsApp
+            const formattedPhone = formatPhoneNumber(customer.phoneNumber);
+
+            // Generate WhatsApp link
+            const whatsappLink = formattedPhone
+                ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(personalizedText)}`
+                : null;
+
+            return {
+                customerId: customer.id || customer._id,
+                customerName: customer.name,
+                phone: customer.phoneNumber,
+                personalizedMessage: personalizedText,
+                whatsappLink: whatsappLink,
+                hasValidPhone: !!formattedPhone
+            };
+        });
+
+        res.json({ messages });
+
+    } catch (err) {
+        console.error('Error generating messages:', err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Helper function to personalize message
+function personalizeMessage(templateText, customer, businessProfile, template) {
+    let text = templateText;
+
+    // Customer variables
+    text = text.replace(/{customer_name}/g, customer.name || '[Customer Name]');
+    text = text.replace(/{pending_amount}/g, customer.currentBalance || '0');
+
+    // Business variables
+    if (businessProfile) {
+        text = text.replace(/{business_name}/g, businessProfile.businessName || '');
+        text = text.replace(/{business_address}/g,
+            businessProfile.address && businessProfile.city
+                ? `${businessProfile.address}, ${businessProfile.city}`
+                : '');
+        text = text.replace(/{business_mobile}/g, businessProfile.phone || '');
+    } else {
+        text = text.replace(/{business_name}/g, '');
+        text = text.replace(/{business_address}/g, '');
+        text = text.replace(/{business_mobile}/g, '');
+    }
+
+    // Date variables
+    const currentDate = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+    text = text.replace(/{current_date}/g, currentDate);
+
+    // Offer variables (if applicable)
+    if (template.category === 'Offer' && template.offerId) {
+        const offer = template.offerId;
+        text = text.replace(/{offer_name}/g, offer.name || '[Offer Name]');
+        text = text.replace(/{offer_discount}/g, offer.description || offer.ruleType || '[Offer Details]');
+
+        if (offer.startDate) {
+            const startDate = new Date(offer.startDate).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short'
+            });
+            text = text.replace(/{offer_start_date}/g, startDate);
+        } else {
+            text = text.replace(/{offer_start_date}/g, '[Start Date]');
+        }
+
+        if (offer.endDate) {
+            const endDate = new Date(offer.endDate).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short'
+            });
+            text = text.replace(/{offer_end_date}/g, endDate);
+        } else {
+            text = text.replace(/{offer_end_date}/g, 'Ongoing');
+        }
+    }
+
+    return text;
+}
+
+// Helper function to format phone number for WhatsApp
+function formatPhoneNumber(phone) {
+    if (!phone) return null;
+
+    // Remove all non-digit characters
+    let cleaned = phone.toString().replace(/\D/g, '');
+
+    // If number starts with 0, remove it (Indian numbers)
+    if (cleaned.startsWith('0')) {
+        cleaned = cleaned.substring(1);
+    }
+
+    // If doesn't start with country code, add 91 (India)
+    if (!cleaned.startsWith('91') && cleaned.length === 10) {
+        cleaned = '91' + cleaned;
+    }
+
+    // Validate length (should be 12 digits for Indian numbers: 91 + 10 digits)
+    if (cleaned.length < 10 || cleaned.length > 15) {
+        return null;
+    }
+
+    return cleaned;
+}

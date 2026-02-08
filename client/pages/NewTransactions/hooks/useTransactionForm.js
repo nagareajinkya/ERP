@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { formatDateForInput } from '../utils/formatters';
 
 /**
  * Hook for transaction form state management
+ * Optimized with memoized callbacks to prevent downstream re-renders
  */
 export const useTransactionForm = (type) => {
     const { state } = useLocation();
@@ -23,9 +24,12 @@ export const useTransactionForm = (type) => {
     const [paidAmount, setPaidAmount] = useState('');
     const [paymentMode, setPaymentMode] = useState('CASH');
     const [notes, setNotes] = useState('');
+    const [loading, setLoading] = useState(false);
+
 
     // Show notification helper using react-toastify
-    const showNotify = (type, message) => {
+    // Memoized to prevent children using this from re-rendering
+    const showNotify = useCallback((type, message) => {
         if (type === 'error') {
             toast.error(message);
         } else if (type === 'success') {
@@ -33,7 +37,7 @@ export const useTransactionForm = (type) => {
         } else {
             toast.info(message);
         }
-    };
+    }, []);
 
     return {
         // Edit mode
@@ -58,6 +62,8 @@ export const useTransactionForm = (type) => {
         setPaymentMode,
         notes,
         setNotes,
+        loading,
+        setLoading,
 
         // Notifications
         showNotify,

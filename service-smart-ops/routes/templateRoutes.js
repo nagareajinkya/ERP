@@ -23,4 +23,9 @@ router.put('/:id', auth, templateController.updateTemplate);
 // @access  Private
 router.delete('/:id', auth, templateController.deleteTemplate);
 
+// @route   POST /api/smart-ops/templates/generate-messages
+// @desc    Generate personalized messages for broadcasting
+// @access  Private
+router.post('/generate-messages', auth, templateController.generateMessages);
+
 module.exports = router;

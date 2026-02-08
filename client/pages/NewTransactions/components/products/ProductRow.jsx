@@ -16,7 +16,7 @@ const ProductRow = ({
 }) => {
     return (
         <div
-            className={`product-row grid grid-cols-12 gap-3 items-center px-2 py-1.5 rounded-lg transition-colors border border-transparent ${product.isFree ? 'bg-amber-50 border-amber-200' : 'hover:bg-gray-50'
+            className={`product-row grid grid-cols-12 gap-3 items-center px-4 py-1.5 rounded-lg transition-colors border border-transparent ${product.isFree ? 'bg-amber-50 border-amber-200' : 'hover:bg-gray-50'
                 }`}
         >
             {/* Product Name */}

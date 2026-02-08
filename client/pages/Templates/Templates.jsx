@@ -10,6 +10,7 @@ import api from '../../src/api';
 import { toast } from 'react-toastify';
 import FormLabel from '../../components/common/FormLabel';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import BroadcastModal from '../../components/templates/BroadcastModal';
 
 // --- CUSTOM WHATSAPP ICON COMPONENT ---
 const WhatsAppIcon = ({ size = 20, className = "" }) => (
@@ -38,10 +39,12 @@ const Templates = () => {
   const [selectedForBroadcast, setSelectedForBroadcast] = useState(null);
   const [checkedParties, setCheckedParties] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastMessages, setBroadcastMessages] = useState([]);
 
   // --- EDITOR STATE ---
   const [tempName, setTempName] = useState('');
-  const [tempCategory, setTempCategory] = useState('Order');
+  const [tempCategory, setTempCategory] = useState('Payment');
   const [tempOfferId, setTempOfferId] = useState(''); // For Offer templates
   const [messageText, setMessageText] = useState('');
   const textAreaRef = useRef(null);
@@ -229,7 +232,7 @@ const Templates = () => {
     setEditingTemplate(null);
     setTempName('');
     setMessageText('');
-    setTempCategory('Order');
+    setTempCategory('Payment');
     setTempOfferId('');
     setIsEditorOpen(true);
   };
@@ -258,6 +261,11 @@ const Templates = () => {
         // In Offer Schema: selectedCustomers: [{ type: String }] // Array of Customer IDs
         if (selectedForBroadcast.offerId.targetType === 'all') return parties;
         return parties.filter(p => allowedIds.includes(p.id.toString())); // Verify ID type (string vs number)
+
+      case 'Payment':
+        // For payment reminders, only show customers with outstanding balance
+        return parties.filter(p => p.currentBalance > 0);
+
       case 'Marketing':
       case 'Order':
       default:
@@ -272,6 +280,25 @@ const Templates = () => {
       setCheckedParties([]);
     } else {
       setCheckedParties(filteredParties.map(p => p.id));
+    }
+  };
+
+  const handleBroadcastClick = async () => {
+    if (!selectedForBroadcast || checkedParties.length === 0) return;
+
+    try {
+      const response = await api.post('/smart-ops/templates/generate-messages', {
+        templateId: selectedForBroadcast.id,
+        customerIds: checkedParties,
+        parties: parties, // Send parties data that we already have
+        businessProfile: businessProfile // Send business profile that we already have
+      });
+
+      setBroadcastMessages(response.data.messages);
+      setShowBroadcastModal(true);
+    } catch (err) {
+      console.error('Error generating messages:', err);
+      toast.error('Failed to generate messages. Please try again.');
     }
   };
 
@@ -339,7 +366,7 @@ const Templates = () => {
                     <div>
                       <FormLabel text="Category" className="text-[10px] font-black text-gray-400 uppercase ml-1" />
                       <select value={tempCategory} onChange={e => setTempCategory(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm outline-none mt-1">
-                        <option>Order</option><option>Marketing</option><option>Offer</option>
+                        <option>Payment</option><option>Order</option><option>Marketing</option><option>Offer</option>
                       </select>
                     </div>
                   </div>
@@ -464,10 +491,23 @@ const Templates = () => {
             )}
           </div>
 
-          <button className="w-full py-5 bg-green-600 text-white rounded-2xl font-black shadow-xl shadow-green-200 transition-all flex items-center justify-center gap-3 disabled:opacity-30" disabled={!selectedForBroadcast || checkedParties.length === 0}>
+          <button
+            onClick={handleBroadcastClick}
+            className="w-full py-5 bg-green-600 text-white rounded-2xl font-black shadow-xl shadow-green-200 transition-all flex items-center justify-center gap-3 disabled:opacity-30 hover:bg-green-700 hover:shadow-2xl disabled:hover:bg-green-600"
+            disabled={!selectedForBroadcast || checkedParties.length === 0}
+          >
             <WhatsAppIcon size={24} /> SEND TO {checkedParties.length} CUSTOMERS
           </button>
         </div>
+      )}
+
+      {/* BROADCAST MODAL */}
+      {showBroadcastModal && (
+        <BroadcastModal
+          messages={broadcastMessages}
+          templateName={selectedForBroadcast?.name || 'Template'}
+          onClose={() => setShowBroadcastModal(false)}
+        />
       )}
 
     </div>

@@ -43,16 +43,10 @@ public class Business extends BaseEntity {
     private String signatureUrl;
 	@Column(name = "business_stamp_url")
     private String stampUrl;
-	@Column(name = "invoice_prefix")
+    @Column(name = "invoice_prefix")
     private String invoicePrefix; // e.g., "INV-2026-"
 
     // --- Preferences ---
-    @Column(name = "notify_sales", nullable = false)
-    private boolean notifySales = true;
-
-    @Column(name = "notify_payments", nullable = false)
-    private boolean notifyPayments = true;
-
-    @Column(name = "notify_low_stock", nullable = false)
-    private boolean notifyLowStock = true;
+    @Column(name = "always_show_payment_qr", nullable = false, columnDefinition = "boolean default false")
+    private boolean alwaysShowPaymentQr = false;
 }

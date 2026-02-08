@@ -65,10 +65,31 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                     </p>
                 </div>
 
-                {/* Top Right Balance Card */}
-                <div className={`ml-auto px-6 py-3 rounded-2xl border ${party.currentBalance > 0 ? 'bg-green-50 border-green-100 text-green-700' : party.currentBalance < 0 ? 'bg-red-50 border-red-100 text-red-700' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Current Balance</p>
-                    <p className="text-2xl font-black">₹{Math.abs(party.currentBalance).toLocaleString()}</p>
+                {/* Header Actions */}
+                <div className="ml-auto flex items-center gap-3">
+                    {/* Management Actions Group */}
+                    <div className="flex gap-1 bg-white p-1 rounded-2xl border border-gray-200 shadow-sm">
+                        <button
+                            onClick={(e) => onEdit(party, e)}
+                            className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                            title="Edit Profile"
+                        >
+                            <Edit2 size={20} />
+                        </button>
+                        <button
+                            onClick={() => onDelete(party.id)}
+                            className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                            title="Delete Party"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    </div>
+
+                    {/* Balance Card */}
+                    <div className={`px-6 py-3 rounded-2xl border ${party.currentBalance > 0 ? 'bg-green-50 border-green-100 text-green-700' : party.currentBalance < 0 ? 'bg-red-50 border-red-100 text-red-700' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Current Balance</p>
+                        <p className="text-2xl font-black">₹{Math.abs(party.currentBalance).toLocaleString()}</p>
+                    </div>
                 </div>
             </div>
 
@@ -85,8 +106,9 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                     </div>
 
                     {/* Table Header */}
-                    <div className="grid grid-cols-5 px-6 py-3 bg-gray-50 border-b border-gray-100 text-[11px] font-black text-gray-400 uppercase tracking-wider">
+                    <div className="grid grid-cols-6 px-6 py-3 bg-gray-50 border-b border-gray-100 text-[11px] font-black text-gray-400 uppercase tracking-wider">
                         <div>Date</div>
+                        <div>Type</div>
                         <div className="col-span-2">Details</div>
                         <div className="text-right">Amount</div>
                         <div className="text-right">Status</div>
@@ -101,10 +123,18 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                         ) : transactions.length > 0 ? (
                             <div className="divide-y divide-gray-100">
                                 {transactions.map((t) => (
-                                    <div key={t.id} className="grid grid-cols-5 px-6 py-4 hover:bg-gray-50 transition-colors items-center text-sm">
+                                    <div key={t.id} className="grid grid-cols-6 px-6 py-4 hover:bg-gray-50 transition-colors items-center text-sm">
                                         <div className="font-bold text-gray-600">
                                             {t.date}
                                             <span className="block text-[10px] text-gray-400 font-normal">{t.time}</span>
+                                        </div>
+                                        <div>
+                                            <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${t.type?.toUpperCase() === 'SALE' ? 'bg-green-50 text-green-700' :
+                                                    t.type?.toUpperCase() === 'PURCHASE' ? 'bg-red-50 text-red-700' :
+                                                        'bg-gray-50 text-gray-700'
+                                                }`}>
+                                                {t.type}
+                                            </span>
                                         </div>
                                         <div className="col-span-2">
                                             <p className="font-bold text-gray-800">{t.products} Items</p>
@@ -194,24 +224,34 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                     <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Communication</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => toast.info('WhatsApp')} className="p-4 bg-green-50 text-green-700 font-bold rounded-xl hover:bg-green-100 transition-colors flex flex-col items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (!party.phoneNumber) {
+                                        toast.error("No phone number available");
+                                        return;
+                                    }
+                                    // Basic formatting for WhatsApp
+                                    let phone = party.phoneNumber.toString().replace(/\D/g, '');
+                                    if (phone.length === 10) phone = '91' + phone;
+
+                                    window.open(`https://wa.me/${phone}`, '_blank');
+                                }}
+                                className="col-span-2 p-4 bg-green-50 text-green-700 font-bold rounded-xl hover:bg-green-100 transition-colors flex flex-col items-center gap-2"
+                            >
                                 <MessageCircle size={24} /> <span className="text-xs">WhatsApp</span>
-                            </button>
-                            <button className="p-4 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition-colors flex flex-col items-center gap-2">
-                                <Phone size={24} /> <span className="text-xs">Call</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Management Card */}
-                    <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
-                        <button onClick={(e) => onEdit(party, e)} className="w-full py-3 mb-2 flex items-center gap-3 text-gray-600 font-bold hover:bg-gray-50 rounded-xl px-4 transition-colors">
-                            <Edit2 size={18} /> Edit Profile
-                        </button>
-                        <button onClick={() => onDelete(party.id)} className="w-full py-3 flex items-center gap-3 text-red-500 font-bold hover:bg-red-50 rounded-xl px-4 transition-colors">
-                            <Trash2 size={18} /> Delete Party
-                        </button>
-                    </div>
+                    {/* Notes Card */}
+                    {party.notes && (
+                        <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Notes</h3>
+                            <p className="text-sm text-gray-600 leading-relaxed italic">
+                                "{party.notes}"
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -220,7 +260,7 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                 isOpen={!!showSettlementModal}
                 onClose={() => setShowSettlementModal(null)}
                 party={party}
-                initialMode={showSettlementModal === 'receipt' ? 'receipt' : 'payment'} // Default if just true is passed, but we use string now
+                initialMode={showSettlementModal === 'receipt' ? 'receipt' : 'payment'}
                 onSuccess={handleSettlementSuccess}
             />
         </div>

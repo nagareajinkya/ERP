@@ -36,12 +36,8 @@ const Profile = () => {
       stampUrl: '',
    });
 
-   // Notifications (Auto-Save Independent of Edit Mode)
-   const [notifications, setNotifications] = useState({
-      sales: true,
-      payments: true,
-      lowStock: false
-   });
+   // Preferences
+   const [alwaysShowPaymentQr, setAlwaysShowPaymentQr] = useState(false);
 
    const { checkAuth } = useAuth();
 
@@ -55,11 +51,7 @@ const Profile = () => {
          const { data } = await api.get('/auth/profile');
          setFormData(data);
          setInitialData(data);
-         setNotifications({
-            sales: data.notifySales,
-            payments: data.notifyPayments,
-            lowStock: data.notifyLowStock
-         });
+         setAlwaysShowPaymentQr(data.alwaysShowPaymentQr);
       } catch (error) {
          console.error("Failed to fetch profile", error);
          toast.error("Failed to load profile data.");
@@ -67,8 +59,8 @@ const Profile = () => {
    };
 
    // --- LOGIC ---
-   const toggleNotification = (key) => {
-      setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+   const togglePaymentQr = () => {
+      setAlwaysShowPaymentQr(prev => !prev);
    };
 
    const handleSaveAttempt = () => {
@@ -88,9 +80,7 @@ const Profile = () => {
       try {
          const payload = {
             ...formData,
-            notifySales: notifications.sales,
-            notifyPayments: notifications.payments,
-            notifyLowStock: notifications.lowStock,
+            alwaysShowPaymentQr: alwaysShowPaymentQr,
             verificationPassword: verifyPasswordInput // Include password for verification
          };
          await api.put('/auth/profile', payload);
@@ -254,30 +244,22 @@ const Profile = () => {
 
                   <div className="space-y-6">
                      {/* Notifications */}
+                     {/* Payment QR Toggle */}
                      <div>
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notifications</h3>
-                        <div className="space-y-3">
-                           {['Sales Notifications', 'Payment Alerts', 'Low Stock Warnings'].map((label, index) => {
-                              const key = index === 0 ? 'sales' : index === 1 ? 'payments' : 'lowStock';
-                              const isOn = notifications[key];
-                              return (
-                                 <div key={key} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <span className="text-sm font-semibold text-gray-600">{label}</span>
-                                    <button
-                                       onClick={() => toggleNotification(key)}
-                                       className={`relative w-10 h-5 rounded-full transition-colors duration-200 ease-in-out flex items-center ${isOn ? 'bg-gray-800' : 'bg-gray-200'}`}
-                                    >
-                                       <span className={`inline-block w-3 h-3 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${isOn ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                 </div>
-                              );
-                           })}
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Invoice Settings</h3>
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                           <span className="text-sm font-semibold text-gray-600">Always Show Payment QR</span>
+                           <button
+                              onClick={togglePaymentQr}
+                              disabled={!isEditing}
+                              className={`relative w-10 h-5 rounded-full transition-colors duration-200 ease-in-out flex items-center ${alwaysShowPaymentQr ? 'bg-gray-800' : 'bg-gray-200'} ${!isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                           >
+                              <span className={`inline-block w-3 h-3 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${alwaysShowPaymentQr ? 'translate-x-6' : 'translate-x-1'}`} />
+                           </button>
                         </div>
                      </div>
 
-                     {/* Invoice Suffix */}
                      <div className="pt-4 border-t border-gray-50">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Invoice Settings</h3>
                         <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Invoice Prefix</label>
                            <div className="flex items-center gap-2">
@@ -405,7 +387,14 @@ const Profile = () => {
                         <div>
                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">UPI ID</label>
                            <div className="flex items-center bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
-                              <span className="flex-1 font-mono font-medium text-gray-800">{formData.upiId || 'Not Set'}</span>
+                              <input
+                                 type="text"
+                                 disabled={!isEditing}
+                                 value={formData.upiId || ''}
+                                 onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
+                                 className={`flex-1 bg-transparent font-mono font-medium text-gray-800 outline-none ${isEditing ? 'border-b border-gray-300 focus:border-blue-500' : ''}`}
+                                 placeholder="Enter UPI ID"
+                              />
                            </div>
                         </div>
 
@@ -418,16 +407,16 @@ const Profile = () => {
                            <div className="space-y-4 relative z-10">
                               <div>
                                  <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Account Holder</p>
-                                 <input type="text" disabled={!isEditing} value={formData.accountName || ''} onChange={(e) => setFormData({ ...formData, accountName: e.target.value })} className="bg-transparent w-full text-white font-medium outline-none placeholder-gray-600" placeholder="Holder Name" />
+                                 <input type="text" disabled={!isEditing} value={formData.accountName || ''} onChange={(e) => setFormData({ ...formData, accountName: e.target.value })} className={`bg-transparent w-full text-white font-medium outline-none placeholder-gray-600 ${isEditing ? 'border-b border-gray-600 focus:border-blue-400' : ''}`} placeholder="Holder Name" />
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                  <div>
                                     <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Account No.</p>
-                                    <input type="text" disabled={!isEditing} value={formData.accountNumber || ''} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} className="bg-transparent w-full text-white font-mono outline-none placeholder-gray-600" placeholder="****" />
+                                    <input type="text" disabled={!isEditing} value={formData.accountNumber || ''} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} className={`bg-transparent w-full text-white font-mono outline-none placeholder-gray-600 ${isEditing ? 'border-b border-gray-600 focus:border-blue-400' : ''}`} placeholder="****" />
                                  </div>
                                  <div>
                                     <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">IFSC</p>
-                                    <input type="text" disabled={!isEditing} value={formData.ifsc || ''} onChange={(e) => setFormData({ ...formData, ifsc: e.target.value })} className="bg-transparent w-full text-white font-mono uppercase outline-none placeholder-gray-600" placeholder="CODE" />
+                                    <input type="text" disabled={!isEditing} value={formData.ifsc || ''} onChange={(e) => setFormData({ ...formData, ifsc: e.target.value })} className={`bg-transparent w-full text-white font-mono uppercase outline-none placeholder-gray-600 ${isEditing ? 'border-b border-gray-600 focus:border-blue-400' : ''}`} placeholder="CODE" />
                                  </div>
                               </div>
                            </div>

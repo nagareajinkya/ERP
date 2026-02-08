@@ -1,4 +1,4 @@
 module.exports = {
-    jwtSecret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
-    jwtExpire: "30d"
+    jwtSecret: process.env.JWT_SECRET,
+    jwtExpire: process.env.JWT_EXPIRE || "30d"
 };

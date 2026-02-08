@@ -49,7 +49,13 @@ const BillPreview = () => {
             addressPincode: profileRes.data.pincode,
             phoneNumber: profileRes.data.phone,
             gstin: profileRes.data.gstin,
-            invoicePrefix: profileRes.data.invoicePrefix
+            invoicePrefix: profileRes.data.invoicePrefix,
+            profilePicUrl: profileRes.data.profilePicUrl,
+            signatureUrl: profileRes.data.signatureUrl,
+            signatureUrl: profileRes.data.signatureUrl,
+            stampUrl: profileRes.data.stampUrl,
+            alwaysShowPaymentQr: profileRes.data.alwaysShowPaymentQr,
+            upiId: profileRes.data.upiId
           };
           setBusinessProfile(profile);
         }
@@ -263,7 +269,7 @@ const BillPreview = () => {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/transactions')}
+            onClick={() => navigate('/new-sale')}
             className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-sm"
           >
             <ChevronLeft size={18} />
@@ -284,7 +290,7 @@ const BillPreview = () => {
             {printing ? 'PRINTING...' : 'PRINT'}
           </button>
           <button
-            onClick={() => navigate('/transactions')}
+            onClick={() => navigate('/new-sale')}
             className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold shadow-lg shadow-green-200 hover:bg-green-700 transition-all active:scale-95"
           >
             Done
@@ -297,16 +303,20 @@ const BillPreview = () => {
         <div
           className={`bg-white shadow-2xl overflow-hidden transition-all duration-500 relative
              ${printFormat === 'thermal'
-            ? 'w-[320px] rounded-sm min-h-[600px] p-6 text-[10px] border-t-[10px] border-gray-800'
-            : 'w-full max-w-4xl rounded-2xl min-h-[600px] p-10 text-[11px] border border-gray-200'
-          }`}
+              ? 'w-[320px] rounded-sm min-h-[600px] p-6 text-[10px] border-t-[10px] border-gray-800'
+              : 'w-full max-w-4xl rounded-2xl min-h-[600px] p-10 text-[11px] border border-gray-200'
+            }`}
         >
           {/* Header */}
           <div className="flex flex-col mb-6 items-center text-center">
             {layout?.showLogo && (
-              <div className={`w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center border-2 border-dashed border-gray-200 font-bold text-gray-300 uppercase mb-3 ${printFormat === 'standard' ? 'w-16 h-16' : ''}`}>
-                Logo
-              </div>
+              businessProfile?.profilePicUrl ? (
+                <img src={businessProfile.profilePicUrl} alt="Logo" className={`w-12 h-12 object-contain mb-3 ${printFormat === 'standard' ? 'w-16 h-16' : ''}`} />
+              ) : (
+                <div className={`w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center border-2 border-dashed border-gray-200 font-bold text-gray-300 uppercase mb-3 ${printFormat === 'standard' ? 'w-16 h-16' : ''}`}>
+                  Logo
+                </div>
+              )
             )}
             <h2 className={`${printFormat === 'standard' ? 'text-xl' : 'text-xs'} font-black uppercase text-gray-800`}>
               {businessProfile?.businessName || 'Business Name'}
@@ -411,7 +421,13 @@ const BillPreview = () => {
             <p className="text-[8px] italic leading-relaxed text-gray-400">Note: {layout?.terms || 'Goods once sold will not be taken back.'}</p>
 
             {layout?.showSignature && (
-              <div className="mt-12 pt-2 border-t border-gray-200 text-center">
+              <div className="mt-12 pt-2 border-t border-gray-200 text-center relative">
+                {businessProfile?.stampUrl && (
+                  <img src={businessProfile.stampUrl} alt="Stamp" className="absolute -top-10 right-0 w-24 h-24 object-contain opacity-80" />
+                )}
+                {businessProfile?.signatureUrl && (
+                  <img src={businessProfile.signatureUrl} alt="Signature" className="h-12 mx-auto object-contain mb-2" />
+                )}
                 <p className="font-bold uppercase text-[9px] text-gray-800">Authorized Signatory</p>
               </div>
             )}
@@ -429,6 +445,19 @@ const BillPreview = () => {
                     <Instagram size={10} /> {layout.instagramHandle}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Payment QR Code */}
+            {businessProfile?.alwaysShowPaymentQr && businessProfile?.upiId && (
+              <div className="mt-8 pt-4 border-t border-dashed border-gray-200 flex flex-col items-center">
+                <p className="text-[9px] font-bold uppercase text-gray-500 mb-2">Scan to Pay</p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`upi://pay?pa=${businessProfile.upiId}&pn=${businessProfile.businessName}&tn=InvoicePayment&am=${totals.grandTotal}&cu=INR`)}&size=120x120`}
+                  alt="Payment QR"
+                  className="w-20 h-20 mix-blend-multiply"
+                />
+                <p className="text-[8px] font-mono mt-1 text-gray-400">{businessProfile.upiId}</p>
               </div>
             )}
           </div>

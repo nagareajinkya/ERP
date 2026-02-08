@@ -30,9 +30,7 @@ public class ProfileDto {
     
     // Preferences
     private String invoicePrefix;
-    private boolean notifySales;
-    private boolean notifyPayments;
-    private boolean notifyLowStock;
+    private boolean alwaysShowPaymentQr;
     
     // Verification
     private String verificationPassword;

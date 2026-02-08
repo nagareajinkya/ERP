@@ -10,7 +10,7 @@ const printerRoutes = require('./routes/printerRoutes');
 
 
 const app = express();
-const PORT = 5002;
+const PORT = process.env.PORT || 5002;
 
 // Middleware
 //app.use(cors());

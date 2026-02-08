@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SBMS.Parties.Data;
 using SBMS.Parties.Entity;
-using System.IdentityModel.Tokens.Jwt;
-
 
 namespace SBMS.Parties.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class PartiesController : ControllerBase
@@ -18,23 +18,12 @@ namespace SBMS.Parties.Controllers
             _context = context;
         }
 
-        // We use this to extract ID from JWT
+        // We use this to extract ID from Verified User Claims
         private Guid GetBusinessId()
         {
             try
             {
-                var authHeader = Request.Headers["Authorization"].ToString();
-                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                    return Guid.Empty;
-
-                // Remove "Bearer " and any accidental spaces
-                var token = authHeader.Substring("Bearer ".Length).Trim();
-
-                var handler = new JwtSecurityTokenHandler();
-                var jwtToken = handler.ReadJwtToken(token);
-
-                var claim = jwtToken.Claims.FirstOrDefault(c => c.Type == "businessId");
-
+                var claim = User.FindFirst("businessId");
                 return claim != null ? Guid.Parse(claim.Value) : Guid.Empty;
             }
             catch

@@ -14,7 +14,7 @@ const Parties = () => {
     parties,
     loading,
     financialSummary,
-    fetchParties,
+    refreshParties,
     addParty,
     updateParty,
     deleteParty
@@ -35,10 +35,6 @@ const Parties = () => {
     initialData: null,
     editingId: null
   });
-
-  useEffect(() => {
-    fetchParties();
-  }, [fetchParties]);
 
   // Update selected party object when parties list changes (to keep detail view in sync)
   useEffect(() => {
@@ -210,11 +206,27 @@ const Parties = () => {
                       <div className="flex items-center gap-4 text-xs font-bold text-gray-400">{party.phoneNumber && <span className="flex items-center gap-1.5"><Phone size={14} /> {party.phoneNumber}</span>}{party.city && <span className="flex items-center gap-1.5"><MapPin size={14} /> {party.city}</span>}</div>
                       <div className="mt-6 flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
                         <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Balance</p><p className={`text-2xl font-black ${balanceType === 'receive' ? 'text-green-600' : balanceType === 'pay' ? 'text-red-600' : 'text-gray-400'}`}>₹{Math.abs(bal).toLocaleString()}</p></div>
-                        {bal !== 0 && (<button onClick={(e) => { e.stopPropagation(); toast.info(`Opening WhatsApp...`); }} className="w-10 h-10 flex items-center justify-center bg-[#25D366] text-white rounded-xl shadow-md hover:scale-110 transition-transform"><MessageCircle size={20} /></button>)}
+                        {bal !== 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!party.phoneNumber) {
+                                toast.error("No phone number available");
+                                return;
+                              }
+                              let phone = party.phoneNumber.toString().replace(/\D/g, '');
+                              if (phone.length === 10) phone = '91' + phone;
+                              window.open(`https://wa.me/${phone}`, '_blank');
+                            }}
+                            className="w-10 h-10 flex items-center justify-center bg-[#25D366] text-white rounded-xl shadow-md hover:scale-110 transition-transform"
+                          >
+                            <MessageCircle size={20} />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
-                      <div className="flex gap-2 text-[10px] text-gray-400 font-bold uppercase">{party.notes ? party.notes.substring(0, 15) + (party.notes.length > 15 ? '...' : '') : ''}</div>
+                      <div className="flex gap-2 text-[10px] text-gray-400 font-bold uppercase" title={party.notes}>{party.notes ? party.notes.substring(0, 15) + (party.notes.length > 15 ? '...' : '') : ''}</div>
                       <div className="flex gap-1">
                         <button onClick={(e) => handleEditParty(party, e)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"><Edit2 size={16} /></button>
                         <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(party.id); }} className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-xl transition-all shadow-sm"><Trash2 size={16} /></button>

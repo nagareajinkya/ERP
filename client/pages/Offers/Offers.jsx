@@ -161,14 +161,17 @@ const Offers = () => {
       const results = await searchParties({
         targetType: formData.targetType,
         topSpenderCount: formData.topSpenderCount,
+        topSpenderDuration: formData.topSpenderDuration,
+        topSpenderUnit: formData.topSpenderUnit,
         minVisits: formData.minVisits,
+        frequentDuration: formData.frequentDuration,
         customerSearch
       });
       setSearchedCustomers(results);
     };
     const debounce = setTimeout(performSearch, 500);
     return () => clearTimeout(debounce);
-  }, [customerSearch, formData.targetType, formData.topSpenderCount, formData.minVisits, searchParties]);
+  }, [customerSearch, formData.targetType, formData.topSpenderCount, formData.topSpenderDuration, formData.topSpenderUnit, formData.minVisits, formData.frequentDuration, searchParties]);
 
   const getEligibleCustomers = () => searchedCustomers;
 

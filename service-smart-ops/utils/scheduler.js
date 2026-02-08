@@ -23,7 +23,7 @@ const initScheduler = () => {
             );
 
             if (offersToActivate.modifiedCount > 0) {
-                console.log(`[Scheduler] Activated ${offersToActivate.modifiedCount} offers.`);
+                // Activated offers
             }
 
             // 2. Expire Active/Paused Offers
@@ -39,11 +39,11 @@ const initScheduler = () => {
             );
 
             if (offersToExpire.modifiedCount > 0) {
-                console.log(`[Scheduler] Expired ${offersToExpire.modifiedCount} offers.`);
+                // Expired offers
             }
 
         } catch (err) {
-            console.error('[Scheduler] Error in status check:', err);
+            // Error in status check
         }
     });
 };

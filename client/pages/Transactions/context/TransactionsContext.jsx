@@ -28,10 +28,7 @@ export const TransactionsProvider = ({ children }) => {
     const [transactionToDelete, setTransactionToDelete] = useState(null);
 
     // Delete transaction handler
-    const { deleteTransaction, isDeleting, deletingId } = useDeleteTransaction(() => {
-        // Refresh transactions after successful delete
-        transactionsData.refreshTransactions();
-    });
+    const { deleteTransaction, isDeleting, deletingId } = useDeleteTransaction();
 
     // Export handlers
     const handleExportCSV = useCallback(() => {
@@ -87,6 +84,11 @@ export const TransactionsProvider = ({ children }) => {
         navigate(path, { state: { mode: 'edit', transaction } });
     }, [navigate]);
 
+    // Print transaction handler
+    const handlePrint = useCallback((transaction) => {
+        navigate('/bill-preview', { state: { transaction } });
+    }, [navigate]);
+
     // Delete transaction handler - Opens Modal
     const handleDelete = useCallback((transaction) => {
         setTransactionToDelete(transaction);
@@ -130,6 +132,7 @@ export const TransactionsProvider = ({ children }) => {
         handleExportPDF,
         handleView,
         handleEdit,
+        handlePrint,
         handleDelete,
         handleCloseModal,
 

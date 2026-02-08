@@ -30,17 +30,6 @@ const calculateOffers = (products, activeOffers, customerId, excludedOfferIds = 
     // 2. Filter Active Offers (Targeting Check)
     // We only process offers relevant to this customer.
     // NOTE: We do NOT exclude manual removals here because we want them to show up in "Available Offers"
-    const relevantOffers = activeOffers.filter(offer => {
-        // Targeting Check
-        if (offer.targetType === 'specific') {
-            const match = offer.selectedCustomers && offer.selectedCustomers.includes(customerId);
-            return match;
-        }
-        return true;
-    });
-
-    console.log(`[OfferEngine] Relevant Offers: ${relevantOffers.length}`);
-
     // 3. Iterate Relevant Offers
     relevantOffers.forEach(offer => {
         // Excluded Check: If manually excluded, skip APPLICATION but it remains in 'relevantOffers'

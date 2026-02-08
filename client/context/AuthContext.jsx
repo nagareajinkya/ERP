@@ -57,7 +57,6 @@ export const AuthProvider = ({ children }) => {
                 setUser(res.data);
             }
         } catch (error) {
-            console.error('Failed to fetch user:', error);
             // Fallback to stored user or token decoding if API fails but token exists
             const stored = localStorage.getItem('user');
             if (stored) {

@@ -1,13 +1,15 @@
 import React from 'react';
-import { ShieldCheck } from 'lucide-react';
+import logo from '../../../../src/assets/logo.svg';
 
 const BrandHeader = () => {
     return (
-        <div className="relative z-10 flex items-center gap-3 mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(22,163,74,0.4)]">
-                <ShieldCheck size={28} className="text-white" />
+        <div className="relative z-10 flex items-center gap-4 mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl overflow-hidden group hover:scale-105 transition-transform duration-300">
+                <img src={logo} alt="S-BMS Logo" className="w-full h-full p-1.5 object-contain scale-110" />
             </div>
-            <h1 className="text-4xl font-extrabold text-white tracking-tight">S-BMS.</h1>
+            <h1 className="text-4xl font-black text-white tracking-widest flex items-baseline">
+                S<span className="text-2xl font-bold opacity-90 leading-none ml-1">BMS</span>
+            </h1>
         </div>
     );
 };

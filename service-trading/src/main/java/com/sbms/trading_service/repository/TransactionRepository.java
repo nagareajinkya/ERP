@@ -16,11 +16,11 @@ import org.springframework.data.repository.query.Param;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
-    @Query("SELECT t.partyId, SUM(t.totalAmount) FROM Transaction t WHERE t.businessId = :businessId AND t.type = TransactionType.SALE GROUP BY t.partyId ORDER BY SUM(t.totalAmount) DESC")
-    List<Object[]> findTopSpenders(@Param("businessId") UUID businessId);
+    @Query("SELECT t.partyId, SUM(t.totalAmount) FROM Transaction t WHERE t.businessId = :businessId AND t.partyId IS NOT NULL AND t.type = TransactionType.SALE AND t.date >= :since GROUP BY t.partyId ORDER BY SUM(t.totalAmount) DESC")
+    List<Object[]> findTopSpenders(@Param("businessId") UUID businessId, @Param("since") LocalDate since);
 
-    @Query("SELECT t.partyId, COUNT(t) FROM Transaction t WHERE t.businessId = :businessId GROUP BY t.partyId ORDER BY COUNT(t) DESC")
-    List<Object[]> findFrequentVisitors(@Param("businessId") UUID businessId);
+    @Query("SELECT t.partyId, COUNT(t) FROM Transaction t WHERE t.businessId = :businessId AND t.partyId IS NOT NULL AND t.date >= :since GROUP BY t.partyId ORDER BY COUNT(t) DESC")
+    List<Object[]> findFrequentVisitors(@Param("businessId") UUID businessId, @Param("since") LocalDate since);
 
     // standard method for "All" types
     List<Transaction> findByBusinessIdAndPartyNameContainingIgnoreCaseAndDateBetweenOrderByDateDesc(

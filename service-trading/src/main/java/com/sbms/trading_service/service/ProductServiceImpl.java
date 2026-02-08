@@ -22,6 +22,8 @@ import com.sbms.trading_service.entity.Category;
 import com.sbms.trading_service.entity.Product;
 import com.sbms.trading_service.entity.Transaction;
 import com.sbms.trading_service.entity.Unit;
+import com.sbms.trading_service.dto.BulkProductRequest;
+import com.sbms.trading_service.dto.ProductImportDto;
 import com.sbms.trading_service.enums.TransactionType;
 import com.sbms.trading_service.repository.CategoryRepository;
 import com.sbms.trading_service.repository.ProductRepository;
@@ -31,7 +33,6 @@ import com.sbms.trading_service.repository.UnitRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
@@ -42,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
     private final ModelMapper modelMapper;
 
     @Override
+    @Transactional
     public ProductResponse addProduct(ProductRequest request, UUID businessId) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + request.getCategoryId()));
@@ -71,6 +73,74 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public List<ProductResponse> bulkAddProducts(List<ProductImportDto> products, UUID businessId) {
+        List<ProductResponse> successfulImports = new ArrayList<>();
+        
+        for (ProductImportDto importDto : products) {
+            try {
+                // 1. Validation: Skip if mandatory fields are missing
+                if (!isValid(importDto)) {
+                    continue; 
+                }
+
+                // 2. Get or create Category
+                Category category = categoryRepository.findByNameAndBusinessId(importDto.getCategoryName(), businessId)
+                        .orElseGet(() -> {
+                            Category newCat = new Category();
+                            newCat.setName(importDto.getCategoryName());
+                            newCat.setBusinessId(businessId);
+                            return categoryRepository.save(newCat);
+                        });
+
+                // 3. Get or create Unit
+                Unit unit = unitRepository.findByNameAndBusinessId(importDto.getUnitName(), businessId)
+                        .orElseGet(() -> {
+                            Unit newUnit = new Unit();
+                            newUnit.setName(importDto.getUnitName());
+                            newUnit.setSymbol(importDto.getUnitName()); 
+                            newUnit.setBusinessId(businessId);
+                            return unitRepository.save(newUnit);
+                        });
+
+                // 4. Map and save product
+                Product product = modelMapper.map(importDto, Product.class);
+                product.setBusinessId(businessId);
+                product.setCategory(category);
+                product.setUnit(unit);
+                product.setCurrentStock(importDto.getQty());
+                product.setMinStock(importDto.getMinStock());
+
+                Product savedProduct = productRepository.saveAndFlush(product);
+
+                // 5. Map to response
+                ProductResponse response = modelMapper.map(savedProduct, ProductResponse.class);
+                response.setCategoryId(savedProduct.getCategory().getId());
+                response.setUnitId(savedProduct.getUnit().getId());
+                response.setCategoryName(savedProduct.getCategory().getName());
+                response.setUnitName(savedProduct.getUnit().getName());
+                response.setUnitSymbol(savedProduct.getUnit().getSymbol());
+                
+                successfulImports.add(response);
+            } catch (Exception e) {
+                System.err.println("Error importing product " + importDto.getName() + ": " + e.getMessage());
+            }
+        }
+        
+        return successfulImports;
+    }
+
+    private boolean isValid(ProductImportDto dto) {
+        return dto.getName() != null && !dto.getName().trim().isEmpty() &&
+               dto.getCategoryName() != null && !dto.getCategoryName().trim().isEmpty() &&
+               dto.getUnitName() != null && !dto.getUnitName().trim().isEmpty() &&
+               dto.getBuyPrice() != null &&
+               dto.getQty() != null &&
+               dto.getMinStock() != null &&
+               dto.getGstRate() != null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ProductResponse> getMyProducts(UUID businessId, String search) {
         List<Product> products;
         
@@ -94,6 +164,7 @@ public class ProductServiceImpl implements ProductService {
     }
     
     @Override
+    @Transactional
     public ProductResponse updateProduct(Long productId, ProductRequest request, UUID businessId) {
         // 1. Find the existing product
         Product product = productRepository.findById(productId)
@@ -136,6 +207,7 @@ public class ProductServiceImpl implements ProductService {
     }
     
     @Override
+    @Transactional
     public String deleteProduct(Long productId, UUID businessId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -168,10 +240,7 @@ public class ProductServiceImpl implements ProductService {
         List<Transaction> purchaseTransactions = transactionRepository
                 .findTransactionsByProductAndType(productId, TransactionType.PURCHASE, businessId);
 
-        // Convert to DTOs and limit to last 5
-        // Build sales history by iterating transactions and their products,
-        // collecting up to 5 product-level entries that have valid prices
-        // (non-null and not ₹0.01). This stops early to avoid scanning all transactions.
+        
         List<TransactionHistoryDto> sales = new ArrayList<>();
         salesLoop:
         for (Transaction transaction : salesTransactions) {

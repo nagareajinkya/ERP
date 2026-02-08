@@ -1,101 +1,93 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../src/api';
 import { toast } from 'react-toastify';
 
+/**
+ * Custom hook for managing parties data with React Query
+ */
 export const useParties = () => {
-    const [parties, setParties] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const queryClient = useQueryClient();
 
-    // Financial Summary State
-    const [financialSummary, setFinancialSummary] = useState({
-        totalToReceive: 0,
-        totalToPay: 0,
-        netBalance: 0
+    // Fetch parties using React Query
+    const {
+        data: parties = [],
+        isLoading: loading,
+        error
+    } = useQuery({
+        queryKey: ['parties'],
+        queryFn: async () => {
+            const { data } = await api.get('/parties');
+            return data || [];
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
-    const calculateFinancialSummary = useCallback((data) => {
+    // Calculate Financial Summary (Memoized)
+    const financialSummary = useMemo(() => {
         let toReceive = 0;
         let toPay = 0;
 
-        data.forEach(p => {
+        parties.forEach(p => {
             const bal = p.currentBalance || 0;
             if (bal > 0) toReceive += bal;
             else toPay += Math.abs(bal);
         });
 
-        setFinancialSummary({
+        return {
             totalToReceive: toReceive,
             totalToPay: toPay,
             netBalance: toReceive - toPay
-        });
-    }, []);
+        };
+    }, [parties]);
 
-    const fetchParties = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const { data } = await api.get('/parties');
-            const partyList = data || [];
-            setParties(partyList);
-            calculateFinancialSummary(partyList);
-        } catch (err) {
-            console.error('Error fetching parties:', err);
-            setError(err);
-            toast.error('Failed to load parties.');
-        } finally {
-            setLoading(false);
-        }
-    }, [calculateFinancialSummary]);
-
-    const addParty = async (partyData) => {
-        try {
+    // Mutations
+    const addMutation = useMutation({
+        mutationFn: async (partyData) => {
             const res = await api.post('/parties', partyData);
-            const newParty = res.data; // Assuming API returns created party
-            // Optimistic update or fetch again
-            fetchParties();
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
             toast.success('Party added successfully');
-            return newParty;
-        } catch (err) {
-            console.error('Error adding party:', err);
-            toast.error('Failed to add party');
-            throw err;
-        }
-    };
+        },
+        onError: () => toast.error('Failed to add party')
+    });
 
-    const updateParty = async (id, partyData) => {
-        try {
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, partyData }) => {
             await api.put(`/parties/${id}`, partyData);
-            fetchParties();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
             toast.success('Party updated successfully');
-        } catch (err) {
-            console.error('Error updating party:', err);
-            toast.error('Failed to update party');
-            throw err;
-        }
-    };
+        },
+        onError: () => toast.error('Failed to update party')
+    });
 
-    const deleteParty = async (id) => {
-        try {
+    const deleteMutation = useMutation({
+        mutationFn: async (id) => {
             await api.delete(`/parties/${id}`);
-            fetchParties();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
             toast.success('Party deleted successfully');
-        } catch (err) {
-            console.error('Error deleting party:', err);
-            toast.error('Failed to delete party');
-            throw err;
-        }
-    };
+        },
+        onError: () => toast.error('Failed to delete party')
+    });
 
     return {
         parties,
         loading,
         error,
         financialSummary,
-        fetchParties,
-        addParty,
-        updateParty,
-        deleteParty
+        refreshParties: () => queryClient.invalidateQueries({ queryKey: ['parties'] }),
+        addParty: addMutation.mutateAsync,
+        updateParty: (id, partyData) => updateMutation.mutateAsync({ id, partyData }),
+        deleteParty: deleteMutation.mutateAsync,
+        isAdding: addMutation.isPending,
+        isUpdating: updateMutation.isPending,
+        isDeleting: deleteMutation.isPending
     };
 };
 

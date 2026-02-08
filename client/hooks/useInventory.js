@@ -1,123 +1,132 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../src/api';
 import { toast } from 'react-toastify';
 
+/**
+ * Custom hook for managing inventory data with React Query
+ */
 export const useInventory = () => {
-    const [products, setProducts] = useState([]);
-    const [categoriesList, setCategoriesList] = useState([]);
-    const [unitsList, setUnitsList] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const queryClient = useQueryClient();
 
-    // Initial fetch of metadata
-    const fetchMetadata = useCallback(async () => {
-        try {
-            const [catRes, unitRes] = await Promise.all([
-                api.get('/trading/categories'), // Gateway routes
-                api.get('/trading/units')
-            ]);
-            setCategoriesList(catRes.data || []);
-            setUnitsList(unitRes.data || []);
-        } catch (err) {
-            console.error('Error fetching metadata:', err);
-            // toast.error('Failed to load categories/units');
-        }
-    }, []);
+    // 1. Fetch Categories
+    const categoriesQuery = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+            const { data } = await api.get('/trading/categories');
+            return data || [];
+        },
+        staleTime: 1000 * 60 * 30, // 30 minutes
+    });
 
-    const fetchProducts = useCallback(async (filters = {}) => {
-        const { searchQuery = '', selectedCategory = 'All' } = filters;
-        setLoading(true);
-        setError(null);
-        try {
-            // Fetch all products first (Client-side filtering for now as per plan/backend limits)
+    // 2. Fetch Units
+    const unitsQuery = useQuery({
+        queryKey: ['units'],
+        queryFn: async () => {
+            const { data } = await api.get('/trading/units');
+            return data || [];
+        },
+        staleTime: 1000 * 60 * 30, // 30 minutes
+    });
+
+    // 3. Fetch Products
+    const productsQuery = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
             const { data } = await api.get('/trading/products');
-
             // Map Backend DTO to Frontend Structure
-            const mappedProducts = (data || []).map(p => ({
+            return (data || []).map(p => ({
                 ...p,
-                category: p.categoryName || '', // Map name for UI
-                unit: p.unitName || '',         // Map name for UI
+                category: p.categoryName || '',
+                unit: p.unitName || '',
                 qty: p.currentStock || 0
             }));
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
 
-            // Client-side filtering
-            let filtered = mappedProducts;
-            if (selectedCategory !== 'All') {
-                filtered = filtered.filter(p => p.category === selectedCategory);
-            }
-            if (searchQuery) {
-                const q = searchQuery.toLowerCase();
-                filtered = filtered.filter(p =>
-                    p.name?.toLowerCase().includes(q) ||
-                    p.sku?.toLowerCase().includes(q) ||
-                    p.hsn?.includes(q)
-                );
-            }
+    // Fetch Products with client-side filtering (internal to context usually, 
+    // but here we provide a way to get filtered products)
+    const getFilteredProducts = (filters = {}) => {
+        const { searchQuery = '', selectedCategory = 'All' } = filters;
+        const allProducts = productsQuery.data || [];
 
-            setProducts(filtered);
-        } catch (err) {
-            console.error('Error fetching products:', err);
-            setError(err);
-            setProducts([]);
-            toast.error('Failed to load products');
-        } finally {
-            setLoading(false);
+        let filtered = allProducts;
+        if (selectedCategory !== 'All') {
+            filtered = filtered.filter(p => p.category === selectedCategory);
         }
-    }, []);
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            filtered = filtered.filter(p =>
+                p.name?.toLowerCase().includes(q) ||
+                p.sku?.toLowerCase().includes(q) ||
+                p.hsn?.includes(q)
+            );
+        }
+        return filtered;
+    };
 
-    const addProduct = async (productData) => {
-        try {
+    // Mutations
+    const addProductMutation = useMutation({
+        mutationFn: async (productData) => {
             await api.post('/trading/products', productData);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
             toast.success('Product added successfully');
-            return true;
-        } catch (err) {
-            console.error('Error adding product:', err);
-            toast.error('Failed to add product');
-            throw err;
-        }
-    };
+        },
+        onError: () => toast.error('Failed to add product')
+    });
 
-    const updateProduct = async (id, productData) => {
-        try {
+    const updateProductMutation = useMutation({
+        mutationFn: async ({ id, productData }) => {
             await api.put(`/trading/products/${id}`, productData);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
             toast.success('Product updated successfully');
-            return true;
-        } catch (err) {
-            console.error('Error updating product:', err);
-            toast.error('Failed to update product');
-            throw err;
-        }
-    };
+        },
+        onError: () => toast.error('Failed to update product')
+    });
 
-    const deleteProduct = async (id) => {
-        try {
+    const deleteProductMutation = useMutation({
+        mutationFn: async (id) => {
             await api.delete(`/trading/products/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
             toast.success('Product deleted successfully');
-            // Optimistic update could happen here, but we usually refetch in component
-            return true;
-        } catch (err) {
-            console.error('Error deleting product:', err);
-            toast.error('Failed to delete product');
-            throw err;
-        }
-    };
+        },
+        onError: () => toast.error('Failed to delete product')
+    });
 
-    // Initial Load
-    useEffect(() => {
-        fetchMetadata();
-    }, [fetchMetadata]);
+    const importProductsMutation = useMutation({
+        mutationFn: async (products) => {
+            const response = await api.post('/trading/products/bulk', { products });
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+        },
+        onError: () => toast.error('Failed to import products')
+    });
 
     return {
-        products,
-        categoriesList,
-        unitsList,
-        loading,
-        error,
-        fetchProducts,
-        fetchMetadata,
-        addProduct,
-        updateProduct,
-        deleteProduct
+        products: productsQuery.data || [],
+        categoriesList: categoriesQuery.data || [],
+        unitsList: unitsQuery.data || [],
+        loading: productsQuery.isLoading || categoriesQuery.isLoading || unitsQuery.isLoading,
+        error: productsQuery.error || categoriesQuery.error || unitsQuery.error,
+        getFilteredProducts,
+        fetchProducts: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+        fetchMetadata: () => {
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            queryClient.invalidateQueries({ queryKey: ['units'] });
+        },
+        addProduct: addProductMutation.mutateAsync,
+        updateProduct: (id, productData) => updateProductMutation.mutateAsync({ id, productData }),
+        deleteProduct: deleteProductMutation.mutateAsync,
+        importProducts: importProductsMutation.mutateAsync
     };
 };
 

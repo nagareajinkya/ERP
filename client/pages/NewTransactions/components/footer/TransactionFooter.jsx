@@ -10,7 +10,8 @@ const TransactionFooter = () => {
         paidAmount, setPaidAmount,
         paymentMode, setPaymentMode,
         notes, setNotes,
-        theme
+        theme,
+        handleShowQR
     } = useNewTransactionContext();
 
     const balanceDue = Math.round(totals.total - (Number(paidAmount) || 0));
@@ -44,8 +45,13 @@ const TransactionFooter = () => {
                             <span className="absolute left-2 top-1.5 text-gray-400 text-xs">₹</span>
                             <input
                                 type="number"
+                                min="0"
                                 value={paidAmount}
-                                onChange={e => setPaidAmount(e.target.value)}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (val < 0) return;
+                                    setPaidAmount(val);
+                                }}
                                 className={`w-28 pl-5 pr-2 py-1 bg-gray-50 border border-gray-200 rounded text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-opacity-20 ${theme.borderFocus} focus:ring-current`}
                                 placeholder="0"
                             />
@@ -61,14 +67,22 @@ const TransactionFooter = () => {
                                     key={mode.id}
                                     onClick={() => setPaymentMode(mode.id)}
                                     className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${paymentMode === mode.id
-                                                ? `${theme.primary} text-white shadow-sm`
-                                                : 'text-gray-400 hover:text-gray-600 hover:bg-white'
-                                            }`}
+                                        ? `${theme.primary} text-white shadow-sm`
+                                        : 'text-gray-400 hover:text-gray-600 hover:bg-white'
+                                        }`}
                                 >
                                     {mode.label}
                                 </button>
                             ))}
                         </div>
+                        {paymentMode === 'UPI' && useNewTransactionContext().isSale && (
+                            <button
+                                onClick={handleShowQR}
+                                className="mt-1 text-[10px] font-bold text-blue-600 hover:underline text-right"
+                            >
+                                Show QR
+                            </button>
+                        )}
                     </div>
 
                     {/* Notes Field */}

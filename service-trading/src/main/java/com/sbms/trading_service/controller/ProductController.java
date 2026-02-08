@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sbms.trading_service.dto.BulkProductRequest;
 import com.sbms.trading_service.dto.ProductHistoryResponse;
+import com.sbms.trading_service.dto.ProductImportDto;
 import com.sbms.trading_service.dto.ProductRequest;
 import com.sbms.trading_service.dto.ProductResponse;
 import com.sbms.trading_service.service.ProductService;
@@ -39,6 +41,13 @@ public class ProductController {
                 productService.addProduct(request, businessId), 
                 HttpStatus.CREATED
         );
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<ProductResponse>> bulkAddProducts(
+            @RequestAttribute("businessId") UUID businessId,
+            @RequestBody BulkProductRequest request) {
+        return ResponseEntity.ok(productService.bulkAddProducts(request.getProducts(), businessId));
     }
 
     @GetMapping

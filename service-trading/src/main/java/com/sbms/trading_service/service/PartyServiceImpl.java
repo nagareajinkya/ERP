@@ -9,6 +9,7 @@ import com.sbms.trading_service.entity.Party;
 import com.sbms.trading_service.repository.TransactionRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,15 +40,40 @@ public class PartyServiceImpl implements PartyService {
     }
 
     @Override
-    public List<PartyStatsDto> getTopSpenders(UUID businessId, int limit) {
-        List<Object[]> results = transactionRepository.findTopSpenders(businessId);
+    public List<PartyStatsDto> getTopSpenders(UUID businessId, int limit, int duration, String unit) {
+        LocalDate since = calculateSinceDate(duration, unit);
+        List<Object[]> results = transactionRepository.findTopSpenders(businessId, since);
         return mapToDto(results, businessId, "Top Spender", limit);
     }
 
     @Override
-    public List<PartyStatsDto> getFrequentVisitors(UUID businessId, int limit) {
-        List<Object[]> results = transactionRepository.findFrequentVisitors(businessId);
-        return mapToDto(results, businessId, "Frequent Visitor", limit);
+    public List<PartyStatsDto> getFrequentVisitors(UUID businessId, int limit, int duration, int minVisits) {
+        LocalDate since = LocalDate.now().minusDays(duration);
+        List<Object[]> results = transactionRepository.findFrequentVisitors(businessId, since);
+
+        // Filter by minVisits
+        List<Object[]> filteredResults = new ArrayList<>();
+        for (Object[] row : results) {
+            Long count = (Long) row[1];
+            if (count >= minVisits) {
+                filteredResults.add(row);
+            }
+        }
+
+        return mapToDto(filteredResults, businessId, "Frequent Visitor", limit);
+    }
+
+    private LocalDate calculateSinceDate(int duration, String unit) {
+        LocalDate now = LocalDate.now();
+        if (unit == null) return now.minusYears(1);
+        
+        return switch (unit.toLowerCase()) {
+            case "days" -> now.minusDays(duration);
+            case "weeks" -> now.minusWeeks(duration);
+            case "months" -> now.minusMonths(duration);
+            case "years" -> now.minusYears(duration);
+            default -> now.minusYears(1);
+        };
     }
 
     private List<PartyStatsDto> mapToDto(List<Object[]> results, UUID businessId, String type, int limit) {

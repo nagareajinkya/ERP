@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.sbms.auth_service.dto.AuthResponse;
 import com.sbms.auth_service.dto.ChangePasswordRequest;
@@ -75,21 +77,21 @@ public class AuthController {
     @PostMapping("/upload/profile-photo")
     public ResponseEntity<ProfileDto> uploadProfilePhoto(
             Principal principal,
-            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+            @RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(authService.uploadProfilePhoto(principal.getName(), file));
     }
 
     @PostMapping("/upload/signature")
     public ResponseEntity<ProfileDto> uploadSignature(
             Principal principal,
-            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+            @RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(authService.uploadSignature(principal.getName(), file));
     }
 
     @PostMapping("/upload/stamp")
     public ResponseEntity<ProfileDto> uploadStamp(
             Principal principal,
-            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+            @RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(authService.uploadStamp(principal.getName(), file));
     }
 }

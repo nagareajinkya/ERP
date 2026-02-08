@@ -10,7 +10,7 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOrigins: 
-              - "http://localhost:5173"
+              - "${ALLOWED_ORIGINS:http://localhost:5173}"
             allowedMethods:
               - GET
               - POST
@@ -24,24 +24,24 @@ spring:
       # ROUTES
       routes:
         - id: parties-service
-          uri: http://localhost:5000 
+          uri: ${PARTIES_SERVICE_URL:http://localhost:5000}
           predicates:
             - Path=/api/parties/**
 
         # Route for Java Trading Service
         - id: trading-service
-          uri: http://localhost:8082
+          uri: ${TRADING_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/trading/**
 
         # Route for Java Auth Service
         - id: auth-service
-          uri: http://localhost:8081
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/auth/**
 
         # Route for Node.js Smart Ops
         - id: smart-ops-service
-          uri: http://localhost:5002
+          uri: ${SMARTOPS_SERVICE_URL:http://localhost:5002}
           predicates:
             - Path=/api/smart-ops/**

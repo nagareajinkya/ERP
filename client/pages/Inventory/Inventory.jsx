@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Search, Plus, Package, AlertTriangle, Edit2, Trash2, X,
   CheckCircle2, Filter, Tag, ChevronDown, UploadCloud,
-  RefreshCw, AlertCircle, ArrowRight
+  RefreshCw, AlertCircle, ArrowRight, Download
 } from 'lucide-react';
 import { GST_PRESETS, ADJUSTMENT_REASONS } from './../../src/data/inventoryData';
 import api from '../../src/api';
@@ -14,24 +14,36 @@ import FormLabel from '../../components/common/FormLabel';
 // IMPORT REUSABLE COMPONENT
 import AddPropertyModal from '../../components/common/AddPropertyModal';
 import useInventory from '../../hooks/useInventory';
+import { useDebounce } from '../../hooks/useDebounce';
 
 const Inventory = () => {
   // --- STATE ---
   const {
-    products,
+    products: allProducts,
     categoriesList,
     unitsList,
     loading,
+    getFilteredProducts,
     fetchProducts,
     fetchMetadata,
     addProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    importProducts
   } = useInventory();
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // Debounce search query
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Get filtered products for the table
+  const products = getFilteredProducts({
+    searchQuery: debouncedSearchQuery,
+    selectedCategory
+  });
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,18 +65,13 @@ const Inventory = () => {
   const initialFormState = { id: '', sku: '', name: '', category: '', qty: '', unit: '', buyPrice: '', sellPrice: '', mrp: '', minStock: '', gstRate: 0, hsn: '' };
   const [formData, setFormData] = useState(initialFormState);
 
+  const fileInputRef = useRef(null);
+
   // Adjust Stock Form State
   const [adjustData, setAdjustData] = useState({ qty: '', reason: 'Loss', note: '' });
 
   // Errors
   const [formErrors, setFormErrors] = useState({});
-
-  // --- FETCH DATA FROM API ---
-  // Metadata fetched by hook on mount
-
-  useEffect(() => {
-    fetchProducts({ searchQuery, selectedCategory });
-  }, [searchQuery, selectedCategory, fetchProducts]);
 
   // --- EFFECT: Click Outside to Close Dropdowns ---
   useEffect(() => {
@@ -252,9 +259,95 @@ const Inventory = () => {
       setFormData({ ...formData, qty: newQty }); // Update open form
       setIsAdjustModalOpen(false);
     } catch (error) {
-      console.error("Error adjusting stock:", error);
       toast.error("Failed to adjust stock");
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    toast.info("Please fill all mandatory fields marked with *");
+    const headers = ["Product Name*", "SKU", "Category*", "Unit*", "Qty*", "Min Stock*", "Buy Price*", "Sell Price", "MRP", "GST Rate*", "HSN"];
+    const csvContent = headers.join(",") + "\n";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inventory_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target.result;
+      const lines = text.split('\n');
+      const productsToImport = [];
+      let skippedRows = 0;
+
+      // Skip the first row (headers)
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = line.split(',').map(v => v.trim());
+
+        // Expected order: Product Name, SKU, Category, Unit, Qty, Min Stock, Buy Price, Sell Price, MRP, GST Rate, HSN
+        const product = {
+          name: values[0],
+          sku: values[1],
+          categoryName: values[2],
+          unitName: values[3],
+          qty: values[4],
+          minStock: values[5],
+          buyPrice: values[6],
+          sellPrice: values[7],
+          mrp: values[8],
+          gstRate: values[9],
+          hsn: values[10]
+        };
+
+        // Front-side validation check
+        if (!product.name || !product.categoryName || !product.unitName || !product.qty || !product.minStock || !product.buyPrice || !product.gstRate) {
+          skippedRows++;
+          continue;
+        }
+
+        productsToImport.push(product);
+      }
+
+      if (productsToImport.length === 0) {
+        toast.warn(`No valid products found to import. ${skippedRows} rows skipped.`);
+        return;
+      }
+
+      const toastId = toast.loading("Importing products...");
+      try {
+        const imported = await importProducts(productsToImport);
+        const newlyAdded = imported.length;
+        const totalSkipped = skippedRows + (productsToImport.length - newlyAdded);
+
+        toast.update(toastId, {
+          render: `Successfully imported ${newlyAdded} products. ${totalSkipped} rows skipped.`,
+          type: "success",
+          isLoading: false,
+          autoClose: 5000
+        });
+
+        fetchProducts({ searchQuery, selectedCategory });
+      } catch (error) {
+        toast.update(toastId, {
+          render: "Import failed. Please check CSV format.",
+          type: "error",
+          isLoading: false,
+          autoClose: 5000
+        });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
   };
 
   return (
@@ -267,7 +360,11 @@ const Inventory = () => {
           <p className="text-sm text-gray-500 font-medium">Manage stock, pricing, and GST details.</p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm">
+          <button onClick={handleDownloadTemplate} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm">
+            <Download size={18} /> Template
+          </button>
+          <input type="file" ref={fileInputRef} onChange={handleImportCSV} accept=".csv" className="hidden" />
+          <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm">
             <UploadCloud size={18} /> Import CSV
           </button>
           <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-600/20 transition-all active:scale-[0.98]">

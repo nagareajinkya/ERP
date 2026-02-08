@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useRef, useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../src/api';
 import { getTheme } from '../config/theme';
@@ -11,6 +11,7 @@ import { useClickOutside } from '../hooks/useClickOutside';
 import { validateTransaction } from '../utils/validators';
 import { buildTransactionPayload } from '../utils/payloadMapper';
 import { useUI } from '../../../context/UIContext';
+import { useAuth } from '../../../context/AuthContext';
 
 /**
  * Context for NewTransaction page
@@ -22,6 +23,15 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
     const navigate = useNavigate();
     const { state } = useLocation();
     const { refreshStats } = useUI();
+    const { user, checkAuth } = useAuth();
+
+    // Fetch latest user data on mount to ensure UPI ID is up to date
+    useEffect(() => {
+        checkAuth();
+    }, []);
+
+    // QR Modal State
+    const [showQRModal, setShowQRModal] = useState(false);
 
     // Core hooks
     const formData = useTransactionForm(type);
@@ -198,15 +208,38 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
         }
     }, [state]);
 
+    // ===== Auto-QR Popup Logic =====
+    useEffect(() => {
+        if (!user?.alwaysShowPaymentQr || !formData.isSale) return;
+        if (formData.paymentMode !== 'UPI') return;
+
+        const paid = Number(formData.paidAmount) || 0;
+        if (paid <= 0) return;
+
+        // Start 1.5s timer
+        const timer = setTimeout(() => {
+            // Re-verify conditions after delay
+            if (formData.paymentMode === 'UPI' && (Number(formData.paidAmount) || 0) > 0 && user?.upiId) {
+                setShowQRModal(true);
+            }
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [formData.paidAmount, formData.paymentMode, user?.alwaysShowPaymentQr, user?.upiId]);
+
     // ===== Save Handler =====
 
     const handleSave = useCallback(async () => {
+        if (formData.loading) return;
+
         const validation = validateTransaction(customersData.selectedCustomer, formData.products);
 
         if (!validation.valid) {
             formData.showNotify('error', validation.error);
             return;
         }
+
+        formData.setLoading(true);
 
         try {
             const payload = buildTransactionPayload({
@@ -234,17 +267,48 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
 
             refreshStats(); // Update Sidebar Stats
 
-            // Navigate to bill preview with transaction data
+            // Navigate based on transaction type
             setTimeout(() => {
-                navigate('/bill-preview', {
-                    state: { transaction: savedTransaction }
-                });
+                if (formData.isSale) {
+                    navigate('/bill-preview', {
+                        state: { transaction: savedTransaction }
+                    });
+                } else {
+                    // For purchase, stay on new-purchase page but reload (or clear form)
+                    // We can just navigate back to the same route to reset the context state
+                    navigate('/new-purchase', { replace: true, state: null });
+                    window.location.reload();
+                }
             }, 1000);
         } catch (err) {
             console.error(err);
             formData.showNotify('error', err.response?.data?.error || 'Failed to save');
+        } finally {
+            formData.setLoading(false);
         }
     }, [formData, customersData, calculationData, navigate]);
+
+    // ===== QR Code Handler =====
+    const handleShowQR = useCallback(() => {
+        if (formData.paymentMode !== 'UPI') {
+            formData.showNotify('info', 'Please select UPI payment mode first');
+            return;
+        }
+        if (calculationData.totals.total <= 0) {
+            formData.showNotify('error', 'Total amount must be greater than 0');
+            return;
+        }
+        if (!formData.paidAmount || Number(formData.paidAmount) <= 0) {
+            formData.showNotify('error', 'Please enter a Paid Amount greater than 0');
+            return;
+        }
+        if (!user?.upiId) {
+            console.error("User object missing UPI ID:", user);
+            formData.showNotify('error', `Please configure your UPI ID in Profile settings first. Found: ${user?.upiId || 'None'}`);
+            return;
+        }
+        setShowQRModal(true);
+    }, [formData, calculationData, user]);
 
     // ===== Context Value =====
 
@@ -274,6 +338,12 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
         handleUpdateProduct,
         handleProductSelect,
         handleSave,
+
+        // QR Modal
+        showQRModal,
+        setShowQRModal,
+        handleShowQR,
+        userProfile: user
     };
 
     return (

@@ -21,7 +21,7 @@ const ProductsTable = () => {
     return (
         <div className="bg-white border border-gray-200 rounded-2xl flex flex-col shadow-sm overflow-hidden h-full">
             {/* Table Header */}
-            <div className="grid grid-cols-12 px-4 py-3 border-b border-gray-100 bg-gray-50/50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-3 px-6 py-3 border-b border-gray-100 bg-gray-50/50 text-xs font-bold text-gray-500 uppercase tracking-wider">
                 <div className="col-span-5">Product Name</div>
                 <div className="col-span-2 text-right">Qty</div>
                 <div className="col-span-2 text-right">Price</div>

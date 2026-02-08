@@ -114,12 +114,12 @@ export const useOffers = () => {
 
     // --- HELPERS ---
     const searchParties = async (params) => {
-        const { targetType, topSpenderCount, minVisits, customerSearch } = params;
+        const { targetType, topSpenderCount, topSpenderDuration, topSpenderUnit, minVisits, frequentDuration, customerSearch } = params;
         let endpoint = '';
         if (targetType === 'top_spenders') {
-            endpoint = `/trading/stats/top-spenders?limit=${topSpenderCount || 10}`;
+            endpoint = `/trading/stats/top-spenders?limit=${topSpenderCount || 10}&duration=${topSpenderDuration || 1}&unit=${topSpenderUnit || 'Years'}`;
         } else if (targetType === 'frequent') {
-            endpoint = `/trading/stats/frequent-visitors?limit=${minVisits || 10}`;
+            endpoint = `/trading/stats/frequent-visitors?limit=100&duration=${frequentDuration || 30}&minVisits=${minVisits || 5}`;
         } else if (targetType === 'specific') {
             endpoint = `/parties?search=${customerSearch}`;
         }

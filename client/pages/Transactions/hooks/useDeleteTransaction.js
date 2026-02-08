@@ -1,57 +1,58 @@
-import { useState, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../src/api';
 import { toast } from 'react-toastify';
 import { useUI } from '../../../context/UIContext';
 
 /**
- * Custom hook for deleting transactions with optimistic updates
+ * Custom hook for deleting transactions with React Query Mutations
+ * Features optimistic updates for instantaneous UI response
  */
-export const useDeleteTransaction = (onSuccess) => {
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [deletingId, setDeletingId] = useState(null);
+export const useDeleteTransaction = () => {
+    const queryClient = useQueryClient();
     const { refreshStats } = useUI();
 
-    const deleteTransaction = useCallback(async (transaction, onLocalUpdate) => {
-        setIsDeleting(true);
-        const idToDelete = transaction._id || transaction.id;
-        setDeletingId(idToDelete);
-
-        // Optimistic update - remove from UI immediately
-        if (onLocalUpdate) {
-            onLocalUpdate(transaction._id || transaction.id);
-        }
-
-        console.log('Deleting transaction with ID:', idToDelete);
-
-        try {
-            // API call to delete
+    const mutation = useMutation({
+        mutationFn: async (transaction) => {
+            const idToDelete = transaction._id || transaction.id;
             await api.delete(`/trading/transactions/${idToDelete}`);
+            return transaction;
+        },
+        // When mutate is called:
+        onMutate: async (deletedTransaction) => {
+            // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+            await queryClient.cancelQueries({ queryKey: ['transactions'] });
 
-            // Success callback (if provided)
-            if (onSuccess) {
-                onSuccess(transaction);
-            }
+            // Snapshot the previous value
+            const previousTransactions = queryClient.getQueryData(['transactions']);
 
-            refreshStats(); // Update Sidebar Stats
+            // Optimistically update to the new value by filtering out the deleted item
+            queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
+                if (!old) return [];
+                return old.filter(t => (t._id || t.id) !== (deletedTransaction._id || deletedTransaction.id));
+            });
 
-            return true;
-        } catch (error) {
-            console.error('Failed to delete transaction:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to delete transaction';
+            // Return a context object with the snapshotted value
+            return { previousTransactions };
+        },
+        // If the mutation fails, use the context returned from onMutate to roll back
+        onError: (err, deletedTransaction, context) => {
+            queryClient.setQueriesData({ queryKey: ['transactions'] }, context.previousTransactions);
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to delete transaction';
             toast.error(errorMessage);
-
-            // Rollback optimistic update on error
-            // The parent component should handle re-fetching or restoring the transaction
-            return false;
-        } finally {
-            setIsDeleting(false);
-            setDeletingId(null);
+        },
+        // Always refetch after error or success to ensure we are in sync with the server
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            refreshStats(); // Update Sidebar Stats
+        },
+        onSuccess: () => {
+            toast.success('Transaction deleted successfully');
         }
-    }, [onSuccess, refreshStats]);
+    });
 
     return {
-        deleteTransaction,
-        isDeleting,
-        deletingId
+        deleteTransaction: mutation.mutateAsync,
+        isDeleting: mutation.isPending || mutation.isLoading, // Match previous API names
+        deletingId: mutation.variables?.id || mutation.variables?._id
     };
 };

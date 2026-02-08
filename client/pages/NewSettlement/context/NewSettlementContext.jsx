@@ -87,6 +87,8 @@ export const NewSettlementProvider = ({ type = 'receipt', children }) => {
 
     // Save Handler
     const handleSave = useCallback(async () => {
+        if (formData.loading) return;
+
         if (!partiesData.selectedParty) {
             showNotify('error', 'Please select a party');
             return;

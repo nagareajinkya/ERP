@@ -7,6 +7,7 @@ import OffersPanel from './components/offers/OffersPanel';
 import TransactionFooter from './components/footer/TransactionFooter';
 import WalkInModal from './components/modals/WalkInModal';
 import ProductHistoryModal from './components/modals/ProductHistoryModal';
+import PaymentQRModal from './components/modals/PaymentQRModal';
 
 /**
  * NewTransaction Page - Refactored Version
@@ -23,6 +24,12 @@ const NewTransactionContent = () => {
     productHistorySales,
     productHistoryPurchases,
     historyLoading,
+    // QR Modal
+    showQRModal,
+    setShowQRModal,
+    totals,
+    paidAmount,
+    userProfile
   } = useNewTransactionContext();
 
   return (
@@ -63,6 +70,13 @@ const NewTransactionContent = () => {
         sales={productHistorySales}
         purchases={productHistoryPurchases}
         loading={historyLoading}
+      />
+      <PaymentQRModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        amount={paidAmount || 0}
+        upiId={userProfile?.upiId}
+        payeeName={userProfile?.businessName || userProfile?.fullName || 'Merchant'}
       />
     </div>
   );

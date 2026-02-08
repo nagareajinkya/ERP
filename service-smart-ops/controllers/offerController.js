@@ -50,7 +50,6 @@ exports.getOffers = async (req, res) => {
         const offers = await Offer.find(query).sort({ createdAt: -1 });
         res.json(offers);
     } catch (err) {
-        console.error(err.message);
         res.status(500).send('Server Error');
     }
 };
@@ -147,7 +146,6 @@ exports.createOffer = async (req, res) => {
         res.json({ ...offer.toObject(), ...derived }); // Return derived fields even if not in schema for immediate UI use? 
         // Better to add to Schema.
     } catch (err) {
-        console.error(err.message);
         res.status(500).send('Server Error');
     }
 };
@@ -215,7 +213,6 @@ exports.updateOffer = async (req, res) => {
         await offer.save();
         res.json(offer);
     } catch (err) {
-        console.error(err.message);
         res.status(500).send('Server Error');
     }
 };
@@ -233,7 +230,6 @@ exports.deleteOffer = async (req, res) => {
 
         res.json({ msg: 'Offer removed' });
     } catch (err) {
-        console.error(err.message);
         res.status(500).send('Server Error');
     }
 };
@@ -263,7 +259,6 @@ exports.toggleStatus = async (req, res) => {
         await offer.save();
         res.json(offer);
     } catch (err) {
-        console.error(err.message);
         res.status(500).send('Server Error');
     }
 };
@@ -291,7 +286,6 @@ exports.recordRedemption = async (req, res) => {
 
         res.status(201).json({ msg: 'Redemption recorded' });
     } catch (err) {
-        console.error("Error recording redemption:", err);
         res.status(500).send('Server Error');
     }
 };
@@ -320,7 +314,6 @@ exports.rollbackRedemption = async (req, res) => {
         }
 
     } catch (err) {
-        console.error("Error rolling back redemption:", err);
         res.status(500).send('Server Error');
     }
 };
@@ -338,7 +331,6 @@ exports.getOfferRedemptions = async (req, res) => {
 
         res.json(redemptions);
     } catch (err) {
-        console.error(err.message);
         res.status(500).send('Server Error');
     }
 };

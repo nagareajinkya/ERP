@@ -87,8 +87,6 @@ const Printer = () => {
             addressPincode: profileRes.data.pincode,
             phoneNumber: profileRes.data.phone,
             gstin: profileRes.data.gstin,
-            gstin: profileRes.data.gstin,
-            gstin: profileRes.data.gstin,
             invoicePrefix: profileRes.data.invoicePrefix,
             profilePicUrl: profileRes.data.profilePicUrl,
             signatureUrl: profileRes.data.signatureUrl,

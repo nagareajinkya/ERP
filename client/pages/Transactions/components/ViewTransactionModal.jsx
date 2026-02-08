@@ -121,14 +121,7 @@ const ViewTransactionModal = () => {
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex gap-3">
-                        <button className="flex-1 flex items-center justify-center gap-2 py-3 border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all">
-                            <Download size={18} /> PDF
-                        </button>
-                        <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-600/20 transition-all">
-                            <Printer size={18} /> Print Bill
-                        </button>
-                    </div>
+                    {/* Footer Actions - Removed as requested */}
                 </div>
             </div>
         </div>

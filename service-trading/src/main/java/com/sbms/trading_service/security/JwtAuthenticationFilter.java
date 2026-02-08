@@ -51,9 +51,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 request.setAttribute("businessId", businessId);
 
             } catch (Exception e) {
-            	System.out.println("JWT Verification Failed: " + e.getMessage());
-                e.printStackTrace(); // <-- Add this line temporarily
-                
                 SecurityContextHolder.clearContext();
             }
         }

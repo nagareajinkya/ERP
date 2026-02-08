@@ -91,6 +91,8 @@ public class AuthServiceImpl implements AuthService {
 		response.setBusinessName(user.getBusiness().getBusinessName());
 		response.setBusinessId(user.getBusiness().getId());
 		response.setUserId(user.getId());
+		response.setUpiId(user.getBusiness().getUpiId());
+		response.setAlwaysShowPaymentQr(user.getBusiness().isAlwaysShowPaymentQr());
 		
 		return response;
 	}
@@ -141,9 +143,7 @@ public class AuthServiceImpl implements AuthService {
 			dto.setIfsc(biz.getBankIfsc());
 			
 			dto.setInvoicePrefix(biz.getInvoicePrefix());
-			dto.setNotifySales(biz.isNotifySales());
-			dto.setNotifyPayments(biz.isNotifyPayments());
-			dto.setNotifyLowStock(biz.isNotifyLowStock());
+			dto.setAlwaysShowPaymentQr(biz.isAlwaysShowPaymentQr());
 		}
 		
 		return dto;
@@ -205,9 +205,7 @@ public class AuthServiceImpl implements AuthService {
 		biz.setBankIfsc(dto.getIfsc());
 		
 		biz.setInvoicePrefix(dto.getInvoicePrefix());
-		biz.setNotifySales(dto.isNotifySales());
-		biz.setNotifyPayments(dto.isNotifyPayments());
-		biz.setNotifyLowStock(dto.isNotifyLowStock());
+		biz.setAlwaysShowPaymentQr(dto.isAlwaysShowPaymentQr());
 		
 		user.setBusiness(biz);
 		userRepository.save(user);

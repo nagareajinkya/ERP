@@ -9,6 +9,8 @@ public class SidebarDto {
     private String businessName;
     private UUID userId;
     private UUID businessId;
+    private String upiId;
+    private boolean alwaysShowPaymentQr;
     
     private Double toReceive;
     private Double toPay;

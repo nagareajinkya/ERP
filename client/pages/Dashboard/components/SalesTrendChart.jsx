@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line
@@ -30,7 +30,7 @@ const SalesTrendChart = ({
     const [chartType, setChartType] = useState('area'); // area | line | bar
 
     // Calculate insights from chartData
-    const insights = React.useMemo(() => {
+    const insights = useMemo(() => {
         if (!chartData || chartData.length === 0) {
             return { peak: 0, average: 0, peakTime: '-' };
         }
@@ -153,8 +153,8 @@ const SalesTrendChart = ({
                         <button
                             onClick={() => setChartType('area')}
                             className={`p-1.5 rounded transition-all ${chartType === 'area'
-                                    ? 'bg-white text-green-600 shadow-sm'
-                                    : 'text-gray-400 hover:text-gray-600'
+                                ? 'bg-white text-green-600 shadow-sm'
+                                : 'text-gray-400 hover:text-gray-600'
                                 }`}
                             title="Area Chart"
                         >
@@ -163,8 +163,8 @@ const SalesTrendChart = ({
                         <button
                             onClick={() => setChartType('line')}
                             className={`p-1.5 rounded transition-all ${chartType === 'line'
-                                    ? 'bg-white text-green-600 shadow-sm'
-                                    : 'text-gray-400 hover:text-gray-600'
+                                ? 'bg-white text-green-600 shadow-sm'
+                                : 'text-gray-400 hover:text-gray-600'
                                 }`}
                             title="Line Chart"
                         >
@@ -173,8 +173,8 @@ const SalesTrendChart = ({
                         <button
                             onClick={() => setChartType('bar')}
                             className={`p-1.5 rounded transition-all ${chartType === 'bar'
-                                    ? 'bg-white text-green-600 shadow-sm'
-                                    : 'text-gray-400 hover:text-gray-600'
+                                ? 'bg-white text-green-600 shadow-sm'
+                                : 'text-gray-400 hover:text-gray-600'
                                 }`}
                             title="Bar Chart"
                         >
@@ -221,7 +221,7 @@ const SalesTrendChart = ({
             </div>
 
             {/* Chart */}
-            <div className="flex-1 min-h-[300px] w-full">
+            <div className="h-[350px] w-full">
                 {chartData && chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                         {renderChart()}

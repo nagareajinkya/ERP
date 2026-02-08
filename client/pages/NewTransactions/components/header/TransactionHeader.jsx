@@ -10,7 +10,7 @@ import PartySearch from './PartySearch';
  */
 const TransactionHeader = () => {
     const navigate = useNavigate();
-    const { date, setDate, editMode, handleSave, theme, selectedCustomer } = useNewTransactionContext();
+    const { date, setDate, editMode, handleSave, theme, selectedCustomer, loading } = useNewTransactionContext();
 
     const getSaveLabel = () => {
         if (editMode) return 'Update';
@@ -61,9 +61,10 @@ const TransactionHeader = () => {
                 </button>
                 <button
                     onClick={handleSave}
-                    className={`flex items-center gap-2 px-6 py-2.5 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-95 font-medium ${theme.primary} ${theme.primaryHover}`}
+                    disabled={loading}
+                    className={`flex items-center gap-2 px-6 py-2.5 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-95 font-medium disabled:opacity-50 disabled:cursor-not-allowed ${theme.primary} ${theme.primaryHover}`}
                 >
-                    <Save size={18} /> {getSaveLabel()}
+                    <Save size={18} /> {loading ? 'Saving...' : getSaveLabel()}
                 </button>
             </div>
         </div>

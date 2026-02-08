@@ -2,10 +2,9 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect('mongodb://localhost:27017/smart_ops_db');
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
+        const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart_ops_db';
+        await mongoose.connect(uri);
     } catch (error) {
-        console.error(`Error: ${error.message}`);
         process.exit(1);
     }
 };
