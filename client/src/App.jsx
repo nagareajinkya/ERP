@@ -9,7 +9,7 @@ import Parties from '../pages/Parties/Parties';
 import NewTransaction from '../pages/NewTransactions/NewTransactions';
 import NewSettlement from '../pages/NewSettlement/NewSettlement';
 import Inventory from '../pages/Inventory/Inventory';
-import Reports from '../pages/Reports/Reports';
+
 import Profile from '../pages/Profile/Profile';
 import Properties from '../pages/Properties/Properties';
 import Offers from '../pages/Offers/Offers';
@@ -45,7 +45,7 @@ function App() {
             <Route path="/new-purchase" element={<NewTransaction type="purchase" />} />
             <Route path="/new-receipt" element={<NewSettlement type="receipt" />} />
             <Route path="/new-payment" element={<NewSettlement type="payment" />} />
-            <Route path="/reports" element={<Reports />} />
+
             <Route path="/profile" element={<Profile />} />
             <Route path="/properties" element={<Properties />} />
             <Route path="/offers" element={<Offers />} />
