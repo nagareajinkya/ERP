@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Eye, Edit, Trash2 } from 'lucide-react';
+import { Eye, Edit, Trash2, Printer } from 'lucide-react';
 import { useTransactionsContext } from '../context/TransactionsContext';
 import { getTypeIcon, getStatusBadge, formatCurrency, calculateDueAmount, getTypeColorClass } from '../utils/formatters';
 
@@ -64,6 +64,14 @@ const TransactionRow = memo(({ transaction }) => {
                     disabled={isCurrentlyDeleting}
                 >
                     <Eye size={18} />
+                </button>
+                <button
+                    onClick={() => window.alert('Print functionality coming soon')}
+                    className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                    disabled={isCurrentlyDeleting}
+                    title="Print Invoice"
+                >
+                    <Printer size={18} />
                 </button>
                 <button
                     onClick={() => handleEdit(transaction)}

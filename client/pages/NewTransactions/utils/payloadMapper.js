@@ -41,8 +41,8 @@ export const buildTransactionPayload = ({
         notes,
         appliedOffers: (appliedOffers || []).map(o => ({
             offerId: o.id,
-            offerName: o.name,
-            discountAmount: o.discountAmount || 0
+            offerName: o.desc || o.name || 'Offer',
+            discountAmount: o.value || o.discountAmount || 0
         }))
     };
 };

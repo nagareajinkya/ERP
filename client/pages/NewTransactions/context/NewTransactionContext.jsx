@@ -214,17 +214,25 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
                 appliedOffers: calculationData.appliedOffers,
             });
 
+            let savedTransaction;
             if (formData.editMode) {
-                await api.put(`/trading/transactions/${formData.editingId}`, payload);
+                const response = await api.put(`/trading/transactions/${formData.editingId}`, payload);
+                savedTransaction = response.data.data;
                 formData.showNotify('success', 'Transaction Updated!');
             } else {
-                await api.post('/trading/transactions', payload);
+                const response = await api.post('/trading/transactions', payload);
+                savedTransaction = response.data.data;
                 formData.showNotify('success', 'Transaction Saved!');
             }
 
             refreshStats(); // Update Sidebar Stats
 
-            setTimeout(() => navigate('/transactions'), 1000);
+            // Navigate to bill preview with transaction data
+            setTimeout(() => {
+                navigate('/bill-preview', {
+                    state: { transaction: savedTransaction }
+                });
+            }, 1000);
         } catch (err) {
             console.error(err);
             formData.showNotify('error', err.response?.data?.error || 'Failed to save');

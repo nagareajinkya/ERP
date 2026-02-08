@@ -48,6 +48,7 @@ const Printer = () => {
     showCurrencySymbol: true,
     showBillDiscount: false, // New Field
     showSignature: true,
+    showStamp: true,
     terms: 'Goods once sold will not be taken back.',
     showWebsite: false,
     websiteUrl: '',
@@ -86,7 +87,12 @@ const Printer = () => {
             addressPincode: profileRes.data.pincode,
             phoneNumber: profileRes.data.phone,
             gstin: profileRes.data.gstin,
-            invoicePrefix: profileRes.data.invoicePrefix
+            gstin: profileRes.data.gstin,
+            gstin: profileRes.data.gstin,
+            invoicePrefix: profileRes.data.invoicePrefix,
+            profilePicUrl: profileRes.data.profilePicUrl,
+            signatureUrl: profileRes.data.signatureUrl,
+            stampUrl: profileRes.data.stampUrl
           };
           setBusinessProfile(profile);
 
@@ -95,7 +101,10 @@ const Printer = () => {
             ...prev,
             showHeaderGST: profile.gstin ? prev.showHeaderGST : false,
             showHeaderAddress: (profile.addressStreet || profile.addressCity) ? prev.showHeaderAddress : false,
-            showHeaderPhone: profile.phoneNumber ? prev.showHeaderPhone : false
+            showHeaderPhone: profile.phoneNumber ? prev.showHeaderPhone : false,
+            showLogo: profile.profilePicUrl ? prev.showLogo : false,
+            showSignature: profile.signatureUrl ? prev.showSignature : false,
+            showStamp: profile.stampUrl ? prev.showStamp : false
           }));
         }
 
@@ -171,13 +180,23 @@ const Printer = () => {
     // Content from Preview (Simplified for Print)
     const content = `
       <div class="container">
-        <div class="text-center mb-4">
-             ${layout.showLogo ? '<div style="font-weight:900; font-size:12px; margin-bottom:5px;">[LOGO]</div>' : ''}
-             <div class="title">${businessProfile?.businessName || 'Business Name'}</div>
-             <div class="text-xs">
-                 ${layout.showHeaderAddress ? (businessProfile?.addressStreet || businessProfile?.addressCity ? [businessProfile?.addressStreet, businessProfile?.addressCity].filter(Boolean).join(', ') : '') : ''}<br/>
-                 ${layout.showHeaderPhone && businessProfile?.phoneNumber ? `Mobile: ${businessProfile.phoneNumber}<br/>` : ''}
-                 ${layout.showHeaderGST && businessProfile?.gstin ? `GSTIN: ${businessProfile.gstin}` : ''}
+        <div class="header-container" style="display: flex; align-items: center; justify-content: ${layout.logoPosition === 'modern' ? 'space-between' : (layout.logoPosition === 'center' ? 'center' : 'flex-start')}; text-align: ${layout.logoPosition === 'center' ? 'center' : 'left'}; margin-bottom: 16px;">
+             ${layout.showLogo && layout.logoPosition === 'modern' && businessProfile?.profilePicUrl ?
+        `<img src="${businessProfile.profilePicUrl}" style="max-height: 50px; margin-right: 10px;" />`
+        : ''
+      }
+             
+             <div style="flex: 1;">
+                 ${layout.showLogo && layout.logoPosition !== 'modern' && businessProfile?.profilePicUrl ?
+        `<img src="${businessProfile.profilePicUrl}" style="max-height: 50px; margin-bottom: 5px; display: block; margin-left: ${layout.logoPosition === 'center' ? 'auto' : '0'}; margin-right: ${layout.logoPosition === 'center' ? 'auto' : '0'};" />`
+        : ''
+      }
+                 <div class="title">${businessProfile?.businessName || 'Business Name'}</div>
+                 <div class="text-xs">
+                     ${layout.showHeaderAddress ? (businessProfile?.addressStreet || businessProfile?.addressCity ? [businessProfile?.addressStreet, businessProfile?.addressCity].filter(Boolean).join(', ') : '') : ''}<br/>
+                     ${layout.showHeaderPhone && businessProfile?.phoneNumber ? `Mobile: ${businessProfile.phoneNumber}<br/>` : ''}
+                     ${layout.showHeaderGST && businessProfile?.gstin ? `GSTIN: ${businessProfile.gstin}` : ''}
+                 </div>
              </div>
         </div>
 
@@ -194,6 +213,19 @@ const Printer = () => {
         <div class="border-t py-2 text-center text-xs">
             ${layout.terms}
         </div>
+        
+        ${layout.showSignature && businessProfile?.signatureUrl ? `
+        <div style="margin-top: 48px; padding-top: 8px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <img src="${businessProfile.signatureUrl}" style="max-height: 40px; max-width: 150px; margin: 0 auto 8px;" />
+          <p style="font-weight: 700; text-transform: uppercase; font-size: 9px;">Authorized Signatory</p>
+        </div>
+        ` : ''}
+        
+        ${layout.showStamp && businessProfile?.stampUrl ? `
+        <div style="margin-top: 32px; text-align: center;">
+          <img src="${businessProfile.stampUrl}" style="max-height: 60px; max-width: 150px; margin: 0 auto;" />
+        </div>
+        ` : ''}
       </div>
     `;
 
@@ -243,7 +275,11 @@ const Printer = () => {
     if (!businessProfile) return false;
     if (key === 'showHeaderGST') return !businessProfile.gstin;
     if (key === 'showHeaderAddress') return !businessProfile.addressStreet && !businessProfile.addressCity;
+
     if (key === 'showHeaderPhone') return !businessProfile.phoneNumber;
+    if (key === 'showLogo') return !businessProfile.profilePicUrl;
+    if (key === 'showSignature') return !businessProfile.signatureUrl;
+    if (key === 'showStamp') return !businessProfile.stampUrl;
     return false;
   };
 
@@ -332,10 +368,11 @@ const Printer = () => {
                     <input type="text" value={layout.invoiceTitle} onChange={e => setLayout({ ...layout, invoiceTitle: e.target.value })} className="w-full mt-1.5 p-3.5 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-500 rounded-xl font-bold outline-none" />
                   </div>
                   <div>
-                    <FormLabel text="Logo Placement" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1" />
-                    <div className="grid grid-cols-2 gap-2 mt-1.5">
+                    <FormLabel text="Header Layout" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1" />
+                    <div className="grid grid-cols-3 gap-2 mt-1.5">
                       <button onClick={() => setLayout({ ...layout, logoPosition: 'left' })} className={`py-3 rounded-xl font-bold text-xs ${layout.logoPosition === 'left' ? 'bg-gray-800 text-white shadow-lg shadow-gray-200' : 'bg-gray-50 text-gray-400'}`}>Left</button>
                       <button onClick={() => setLayout({ ...layout, logoPosition: 'center' })} className={`py-3 rounded-xl font-bold text-xs ${layout.logoPosition === 'center' ? 'bg-gray-800 text-white shadow-lg shadow-gray-200' : 'bg-gray-50 text-gray-400'}`}>Center</button>
+                      <button onClick={() => setLayout({ ...layout, logoPosition: 'modern' })} className={`py-3 rounded-xl font-bold text-xs ${layout.logoPosition === 'modern' ? 'bg-gray-800 text-white shadow-lg shadow-gray-200' : 'bg-gray-50 text-gray-400'}`}>Modern</button>
                     </div>
                   </div>
                 </div>
@@ -346,7 +383,9 @@ const Printer = () => {
                       { l: 'Store Logo', k: 'showLogo' },
                       { l: 'Print GSTIN', k: 'showHeaderGST' },
                       { l: 'Show Phone No', k: 'showHeaderPhone' },
-                      { l: 'Store Address', k: 'showHeaderAddress' }
+                      { l: 'Store Address', k: 'showHeaderAddress' },
+                      { l: 'Authorized Signature', k: 'showSignature' },
+                      { l: 'Business Stamp', k: 'showStamp' }
                     ].map(i => {
                       const missing = isDataMissing(i.k);
                       return (
@@ -377,10 +416,6 @@ const Printer = () => {
                     <div>
                       <FormLabel text="T&C / Footer Note" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1" />
                       <textarea value={layout.terms} onChange={e => setLayout({ ...layout, terms: e.target.value })} className="w-full mt-1.5 p-4 bg-gray-50 rounded-xl font-bold text-xs h-28 resize-none outline-none focus:bg-white focus:border-blue-500 border-2 border-transparent" />
-                    </div>
-                    <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl">
-                      <span className="text-sm font-bold text-gray-700">Signature Area</span>
-                      <button onClick={() => setLayout({ ...layout, showSignature: !layout.showSignature })} className={`w-10 h-5 rounded-full relative transition-all ${layout.showSignature ? 'bg-green-500' : 'bg-gray-300'}`}><div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-all ${layout.showSignature ? 'translate-x-5' : ''}`} /></button>
                     </div>
 
                     {/* FOOTER ICONS CUSTOMIZATION */}
@@ -460,13 +495,27 @@ const Printer = () => {
            `}>
 
             {/* Header */}
-            <div className={`flex flex-col mb-6 ${layout.logoPosition === 'center' ? 'items-center text-center' : 'items-start text-left'}`}>
-              {layout.showLogo && <div className={`w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center border-2 border-dashed border-gray-200 font-bold text-gray-300 uppercase mb-3 ${printFormat === 'standard' ? 'w-16 h-16' : ''}`}>Logo</div>}
-              <h2 className={`${printFormat === 'standard' ? 'text-xl' : 'text-xs'} font-black uppercase text-gray-800`}>{businessProfile?.businessName || 'Your Business Name'}</h2>
-              <div className="opacity-70 leading-tight">
-                {layout.showHeaderAddress && (businessProfile?.addressStreet || businessProfile?.addressCity) && <p>{[businessProfile?.addressStreet, businessProfile?.addressCity, businessProfile?.addressState, businessProfile?.addressPincode].filter(Boolean).join(', ')}</p>}
-                {layout.showHeaderPhone && businessProfile?.phoneNumber && <p>Mobile: {businessProfile.phoneNumber}</p>}
-                {layout.showHeaderGST && businessProfile?.gstin && <p className="font-bold mt-1 text-gray-800">GSTIN: {businessProfile.gstin}</p>}
+            <div className={`flex mb-6 ${layout.logoPosition === 'modern' ? 'flex-row items-center justify-between text-right' : 'flex-col'} ${layout.logoPosition === 'center' ? 'items-center text-center' : (layout.logoPosition === 'left' ? 'items-start text-left' : '')}`}>
+
+              {/* Logo Logic */}
+              {layout.showLogo && businessProfile?.profilePicUrl && (
+                <div className={`${layout.logoPosition === 'modern' ? 'mr-4 order-1' : 'mb-3 order-1'}`}>
+                  <img
+                    src={businessProfile.profilePicUrl}
+                    alt="Logo"
+                    className={`object-contain ${printFormat === 'standard' ? 'h-16' : 'h-12'}`}
+                  />
+                </div>
+              )}
+
+              {/* Text Logic */}
+              <div className={`flex flex-col ${layout.logoPosition === 'modern' ? 'flex-1 items-end order-2' : 'order-2'}`}>
+                <h2 className={`${printFormat === 'standard' ? 'text-xl' : 'text-xs'} font-black uppercase text-gray-800`}>{businessProfile?.businessName || 'Your Business Name'}</h2>
+                <div className="opacity-70 leading-tight">
+                  {layout.showHeaderAddress && (businessProfile?.addressStreet || businessProfile?.addressCity) && <p>{[businessProfile?.addressStreet, businessProfile?.addressCity, businessProfile?.addressState, businessProfile?.addressPincode].filter(Boolean).join(', ')}</p>}
+                  {layout.showHeaderPhone && businessProfile?.phoneNumber && <p>Mobile: {businessProfile.phoneNumber}</p>}
+                  {layout.showHeaderGST && businessProfile?.gstin && <p className="font-bold mt-1 text-gray-800">GSTIN: {businessProfile.gstin}</p>}
+                </div>
               </div>
             </div>
 
@@ -531,9 +580,16 @@ const Printer = () => {
             <div className="space-y-4">
               <p className="text-[8px] italic leading-relaxed text-gray-400">Note: {layout.terms}</p>
 
-              {layout.showSignature && (
+              {layout.showSignature && businessProfile?.signatureUrl && (
                 <div className="mt-12 pt-2 border-t border-gray-200 text-center">
+                  <img src={businessProfile.signatureUrl} alt="Signature" className="mx-auto mb-2" style={{ maxHeight: '40px', maxWidth: '150px' }} />
                   <p className="font-bold uppercase text-[9px] text-gray-800">Authorized Signatory</p>
+                </div>
+              )}
+
+              {layout.showStamp && businessProfile?.stampUrl && (
+                <div className="mt-8 text-center">
+                  <img src={businessProfile.stampUrl} alt="Business Stamp" className="mx-auto" style={{ maxHeight: '60px', maxWidth: '150px' }} />
                 </div>
               )}
 
