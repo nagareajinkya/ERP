@@ -191,6 +191,13 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
         }
     }, [state]);
 
+    // If navigated here with a preselected party (from Party detail view), set it
+    useEffect(() => {
+        if (state && state.partyId && !(state.mode === 'edit')) {
+            customersData.setSelectedCustomer({ id: state.partyId, name: state.partyName || state.party });
+        }
+    }, [state]);
+
     // ===== Save Handler =====
 
     const handleSave = useCallback(async () => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../src/api';
 import SettlementModal from './SettlementModal';
 import {
@@ -8,6 +9,7 @@ import {
 import { toast } from 'react-toastify';
 
 const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
+    const navigate = useNavigate();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -171,9 +173,20 @@ const PartyDetailView = ({ party, onBack, onEdit, onDelete }) => {
                                     <span>Record Payment</span>
                                 </button>
                             </div>
-                            <button className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                                <Receipt size={20} /> Create New {party.type === 0 ? 'Sale' : 'Purchase'}
-                            </button>
+                            <div className="grid grid-cols-1 gap-2">
+                                <button
+                                    onClick={() => navigate('/new-sale', { state: { partyId: party.id, partyName: party.name } })}
+                                    className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                                >
+                                    <Receipt size={18} /> Create New Sale
+                                </button>
+                                <button
+                                    onClick={() => navigate('/new-purchase', { state: { partyId: party.id, partyName: party.name } })}
+                                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                                >
+                                    <Receipt size={18} /> Create New Purchase
+                                </button>
+                            </div>
                         </div>
                     </div>
 
