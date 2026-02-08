@@ -173,7 +173,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private void recordOfferUsage(String offerId, String transactionsId, Long partyId, String partyName, BigDecimal discountAmount) {
         try {
-            String url = "http://localhost:8080/api/smart-ops/offers/redemption";
+            String url = "http://localhost:5002/api/smart-ops/offers/redemption";
             
             // Body
             Map<String, Object> body = Map.of(
@@ -513,7 +513,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private void rollbackRedemption(String offerId, String transactionId) {
         try {
-            String url = "http://localhost:8080/api/smart-ops/offers/redemption/rollback";
+            String url = "http://localhost:5002/api/smart-ops/offers/redemption/rollback";
              
              // Body
             Map<String, Object> body = Map.of(

@@ -32,8 +32,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProductRepository productRepository;
     private final RestTemplate restTemplate;
 
-    @Value("${smart-ops.service.url:http://localhost:5002}")
-    private String smartOpsServiceUrl;
+    private final String smartOpsServiceUrl = "http://localhost:5002";
 
     @Override
     public DashboardSummaryDto getDashboardSummary(UUID businessId, String period) {
@@ -53,16 +52,12 @@ public class DashboardServiceImpl implements DashboardService {
         // Generate chart data
         List<ChartDataPointDto> chartData = generateChartData(transactions, period);
 
-        // Generate recent transactions (top 5)
-        List<RecentTransactionDto> recentTransactions = generateRecentTransactions(transactions);
-
         // Get low stock items
         List<LowStockItemDto> lowStockItems = getLowStockItems(businessId);
 
         return DashboardSummaryDto.builder()
                 .stats(stats)
                 .chartData(chartData)
-                .recentTransactions(recentTransactions)
                 .lowStockItems(lowStockItems)
                 .build();
     }
@@ -301,20 +296,6 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         return chartData;
-    }
-
-    private List<RecentTransactionDto> generateRecentTransactions(List<Transaction> transactions) {
-        return transactions.stream()
-                .limit(10) // Get top 10 most recent
-                .map(t -> RecentTransactionDto.builder()
-                        .id("#TRX-" + t.getId())
-                        .customer(t.getPartyName() != null ? t.getPartyName() : "Walk-in Customer")
-                        .type(t.getType() == TransactionType.SALE ? "Sale" : "Purchase")
-                        .time(formatTimeAgo(t.getCreatedAt()))
-                        .status(determineStatus(t))
-                        .amount(t.getTotalAmount())
-                        .build())
-                .collect(Collectors.toList());
     }
 
     private String formatTimeAgo(LocalDateTime dateTime) {
