@@ -39,8 +39,8 @@ const ProductMasterList = () => {
                             className="group px-3 py-2.5 mb-1 rounded-xl text-sm hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-all border border-transparent hover:border-blue-100"
                         >
                             <span className="text-gray-700 font-medium group-hover:text-blue-700">{p.name}</span>
-                            <span className="text-xs font-bold text-gray-400 group-hover:text-blue-600 bg-gray-50 group-hover:bg-white px-2 py-1 rounded-md">
-                                ₹{p.price}
+                            <span className="text-[10px] font-semibold text-gray-400 group-hover:text-blue-600 bg-gray-50 group-hover:bg-white px-2 py-1 rounded-md">
+                                {p.categoryName}/{p.unitName}
                             </span>
                         </div>
                     ))
