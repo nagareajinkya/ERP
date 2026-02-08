@@ -6,7 +6,6 @@ export const useDashboard = (initialPeriod = 'today') => {
     const [dashboardData, setDashboardData] = useState({
         stats: { todaysSales: 0, salesTrend: '0%', totalBills: 0, dailyAverage: 0, lowStockItems: 0, activeOffers: 0 },
         chartData: [],
-        recentTransactions: [],
         lowStockItems: []
     });
     const [loading, setLoading] = useState(false);
