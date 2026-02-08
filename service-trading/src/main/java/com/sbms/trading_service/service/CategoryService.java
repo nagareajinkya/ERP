@@ -9,4 +9,7 @@ import com.sbms.trading_service.entity.Category;
 public interface CategoryService {
 	public List<CategoryDto> getAllCategories(UUID businessId);
 	public CategoryDto createCategory(String name, Integer styleId, UUID businessId);
+	public CategoryDto updateCategory(Long id, String name, Integer styleId, UUID businessId);
+	public void deleteCategory(Long id, UUID businessId);
+	public void mergeCategories(Long sourceId, Long targetId, UUID businessId);
 }
