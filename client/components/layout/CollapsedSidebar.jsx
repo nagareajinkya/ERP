@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Users, ShoppingCart, ShoppingBag, Package,
-    BarChart3, User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
+    User, Settings, SwatchBook, Tag, FileText, Printer, LogOut,
     ChevronRight, History, ArrowDownLeft, ArrowUpRight
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
@@ -53,7 +53,6 @@ const CollapsedSidebar = ({ toggle }) => {
         { id: 6, icon: ArrowDownLeft, label: 'New Receipt', path: '/new-receipt' },
         { id: 7, icon: ArrowUpRight, label: 'New Payment', path: '/new-payment' },
         { id: 8, icon: Package, label: 'Inventory', path: '/inventory' },
-        { id: 9, icon: BarChart3, label: 'Reports', path: '/reports' },
     ];
 
     const settingsItems = [
