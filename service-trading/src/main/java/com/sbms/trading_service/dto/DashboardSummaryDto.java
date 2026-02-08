@@ -14,6 +14,5 @@ import java.util.List;
 public class DashboardSummaryDto {
     private DashboardStatsDto stats;
     private List<ChartDataPointDto> chartData;
-    private List<RecentTransactionDto> recentTransactions;
     private List<LowStockItemDto> lowStockItems;
 }
