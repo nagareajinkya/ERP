@@ -42,6 +42,7 @@ export const buildTransactionPayload = ({
         appliedOffers: (appliedOffers || []).map(o => ({
             offerId: o.id,
             offerName: o.name,
+            description: o.description || o.ruleType,
             discountAmount: o.discountAmount || 0
         }))
     };

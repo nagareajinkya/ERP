@@ -60,6 +60,25 @@ const ViewTransactionModal = () => {
                         </div>
                     </div>
 
+                    {/* Meta: Payment Mode & Notes */}
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-4">
+                            <div>
+                                <p className="text-xs text-gray-400 font-bold uppercase">Payment Mode</p>
+                                <p className="font-bold text-gray-800">{selectedTransaction.paymentMode || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-400 font-bold uppercase">Paid Amount</p>
+                                <p className="font-bold text-gray-800">{formatCurrency(selectedTransaction.paidAmount || 0)}</p>
+                            </div>
+                        </div>
+
+                        <div className="text-right">
+                            <p className="text-xs text-gray-400 font-bold uppercase">Notes</p>
+                            <p className="text-sm text-gray-600 max-w-md">{selectedTransaction.notes || '-'}</p>
+                        </div>
+                    </div>
+
                     {/* Items List */}
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Products Purchased</h4>
                     <div className="border rounded-xl overflow-hidden border-gray-100 mb-6">
@@ -68,6 +87,7 @@ const ViewTransactionModal = () => {
                                 <tr>
                                     <th className="px-4 py-2">Product</th>
                                     <th className="px-4 py-2 text-center">Qty</th>
+                                    <th className="px-4 py-2 text-right">Price</th>
                                     <th className="px-4 py-2 text-right">Total</th>
                                 </tr>
                             </thead>
@@ -75,14 +95,51 @@ const ViewTransactionModal = () => {
                                 {selectedTransaction.details?.map((item, idx) => (
                                     <tr key={idx}>
                                         <td className="px-4 py-2.5 font-medium text-gray-700">
-                                            {item.name} <span className="text-xs text-gray-400 font-normal">(@ {formatCurrency(item.rate)})</span>
+                                            <div className="flex items-center gap-2">
+                                                <span>{item.name}</span>
+                                                {item.isFree && (
+                                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-bold">FREE</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-4 py-2.5 text-center text-gray-600">{item.qty}</td>
+                                        <td className="px-4 py-2.5 text-right text-gray-700">{formatCurrency(item.rate)}</td>
                                         <td className="px-4 py-2.5 text-right font-bold text-gray-800">{formatCurrency(item.total)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                    {/* Applied Offers */}
+                    {selectedTransaction.appliedOffers && selectedTransaction.appliedOffers.length > 0 && (
+                        <div className="mb-4">
+                            <h5 className="text-xs text-gray-400 font-bold uppercase mb-2">Applied Offers</h5>
+                            <div className="flex flex-wrap gap-2">
+                                {selectedTransaction.appliedOffers.map((o, i) => (
+                                    <div key={i} className="px-3 py-1 bg-green-50 text-green-700 rounded-xl border border-green-100 text-xs shadow-sm">
+                                        <div className="font-bold flex items-center gap-1.5 mb-0.5">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                            {o.offerName}
+                                        </div>
+                                        <div className="text-[10px] opacity-70">
+                                            {o.description} • Save {formatCurrency(o.discountAmount || 0)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Totals & Meta */}
+                    <div className="flex justify-end gap-6 items-center mb-6">
+                        <div className="text-right">
+                            <p className="text-xs text-gray-400 font-bold uppercase">Subtotal</p>
+                            <p className="font-bold text-gray-800">{formatCurrency(selectedTransaction.subTotal || selectedTransaction.amount)}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-gray-400 font-bold uppercase">Discount</p>
+                            <p className="font-bold text-red-500">- {formatCurrency(selectedTransaction.discount || 0)}</p>
+                        </div>
                     </div>
 
                     {/* Footer Actions */}
