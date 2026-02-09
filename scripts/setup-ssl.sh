@@ -53,6 +53,20 @@ echo -e "${YELLOW}Domain:${NC} $FULL_DOMAIN"
 echo -e "${YELLOW}Email:${NC} $SSL_EMAIL"
 echo ""
 
+# Function to check for docker compose or docker-compose
+if docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+elif docker-compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker-compose"
+else
+    echo -e "${RED}Error: Neither 'docker compose' nor 'docker-compose' found.${NC}"
+    echo "Please install Docker Compose first."
+    exit 1
+fi
+
+echo -e "${YELLOW}Using command:${NC} $DOCKER_COMPOSE"
+echo ""
+
 # Create necessary directories
 echo -e "${GREEN}[1/6] Creating directories...${NC}"
 mkdir -p certbot/conf
@@ -74,7 +88,7 @@ echo ""
 
 # Start nginx-proxy without SSL first (for ACME challenge)
 echo -e "${GREEN}[3/6] Starting nginx-proxy for ACME challenge...${NC}"
-docker compose up -d nginx-proxy
+$DOCKER_COMPOSE up -d nginx-proxy
 sleep 5
 echo "✓ Nginx proxy started"
 echo ""
@@ -82,7 +96,7 @@ echo ""
 # Obtain SSL certificate
 echo -e "${GREEN}[4/6] Requesting SSL certificate from Let's Encrypt...${NC}"
 echo "This may take a minute..."
-docker compose run --rm certbot certonly \
+$DOCKER_COMPOSE run --rm certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email $SSL_EMAIL \
@@ -104,14 +118,14 @@ echo ""
 
 # Restart nginx-proxy to load SSL certificates
 echo -e "${GREEN}[5/6] Restarting nginx-proxy with SSL...${NC}"
-docker compose restart nginx-proxy
+$DOCKER_COMPOSE restart nginx-proxy
 sleep 3
 echo "✓ Nginx restarted with SSL"
 echo ""
 
 # Start all services
 echo -e "${GREEN}[6/6] Starting all services...${NC}"
-docker compose up -d
+$DOCKER_COMPOSE up -d
 echo "✓ All services started"
 echo ""
 
@@ -125,9 +139,9 @@ echo ""
 echo "SSL certificate will auto-renew every 60 days."
 echo ""
 echo "To check certificate status:"
-echo "  docker compose exec certbot certbot certificates"
+echo "  $DOCKER_COMPOSE exec certbot certbot certificates"
 echo ""
 echo "To manually force renewal:"
-echo "  docker compose exec certbot certbot renew"
-echo "  docker compose restart nginx-proxy"
+echo "  $DOCKER_COMPOSE exec certbot certbot renew"
+echo "  $DOCKER_COMPOSE restart nginx-proxy"
 echo ""
