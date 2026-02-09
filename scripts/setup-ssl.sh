@@ -1,155 +1,79 @@
 #!/bin/bash
 
-################################################################################
-# SSL Certificate Setup Script
-################################################################################
-# This script sets up HTTPS/SSL for your ERP application using Let's Encrypt
-# Prerequisites:
-#   - DuckDNS domain configured and pointing to this server's IP
-#   - Port 80 and 443 open in EC2 security group
-#   - .env file with DOMAIN_NAME and SSL_EMAIL configured
-################################################################################
+# SSL Certificate Setup Script for ERP
+# Prerequisites: .env file with DOMAIN_NAME and SSL_EMAIL
 
-set -e  # Exit on any error
+set -e
 
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}SSL Certificate Setup for ERP${NC}"
-echo -e "${GREEN}========================================${NC}"
-echo ""
+log_info() { echo -e "${GREEN}[INFO] $1${NC}"; }
+log_warn() { echo -e "${YELLOW}[WARN] $1${NC}"; }
+log_error() { echo -e "${RED}[ERROR] $1${NC}"; }
 
-# Check if .env file exists
+# Check .env
 if [ ! -f .env ]; then
-    echo -e "${RED}Error: .env file not found!${NC}"
-    echo "Please create .env file with required variables:"
-    echo "  - DOMAIN_NAME"
-    echo "  - SSL_EMAIL"
+    log_error ".env file not found!"
     exit 1
 fi
 
-# Load environment variables
 source .env
 
-# Validate required variables
-if [ -z "$DOMAIN_NAME" ]; then
-    echo -e "${RED}Error: DOMAIN_NAME not set in .env${NC}"
+if [ -z "$DOMAIN_NAME" ] || [ -z "$SSL_EMAIL" ]; then
+    log_error "DOMAIN_NAME or SSL_EMAIL not set in .env"
     exit 1
 fi
 
-if [ -z "$SSL_EMAIL" ]; then
-    echo -e "${RED}Error: SSL_EMAIL not set in .env${NC}"
-    exit 1
-fi
-
-# Construct full domain
 FULL_DOMAIN="${DOMAIN_NAME}.duckdns.org"
+log_info "Setting up SSL for: $FULL_DOMAIN ($SSL_EMAIL)"
 
-echo -e "${YELLOW}Domain:${NC} $FULL_DOMAIN"
-echo -e "${YELLOW}Email:${NC} $SSL_EMAIL"
-echo ""
+# Create directories
+log_info "Creating directories..."
+mkdir -p certbot/conf certbot/www nginx/conf.d
 
-# Function to check for docker compose or docker-compose
-# We try several methods because 'sudo' often has a restricted PATH
-if sudo docker compose version >/dev/null 2>&1 || docker compose version >/dev/null 2>&1; then
-    DOCKER_COMPOSE="docker compose"
-elif sudo docker-compose version >/dev/null 2>&1 || docker-compose version >/dev/null 2>&1; then
-    DOCKER_COMPOSE="docker-compose"
-else
-    # Fallback: try to find the absolute path of docker
-    DOCKER_PATH=$(which docker || command -v docker || echo "/usr/bin/docker")
-    if $DOCKER_PATH compose version >/dev/null 2>&1; then
-        DOCKER_COMPOSE="$DOCKER_PATH compose"
-    else
-        echo -e "${RED}Error: Neither 'docker compose' nor 'docker-compose' found even with absolute paths.${NC}"
-        echo "Please ensure docker-compose-plugin is installed."
-        echo "Try: sudo apt-get update && sudo apt-get install -y docker-compose-plugin"
-        exit 1
-    fi
-fi
-
-echo -e "${YELLOW}Using command:${NC} $DOCKER_COMPOSE"
-echo ""
-
-# Create necessary directories
-echo -e "${GREEN}[1/6] Creating directories...${NC}"
-mkdir -p certbot/conf
-mkdir -p certbot/www
-mkdir -p nginx/conf.d
-echo "✓ Directories created"
-echo ""
-
-# Update nginx config with actual domain name
-echo -e "${GREEN}[2/6] Configuring nginx with domain...${NC}"
+# Configure Nginx
+log_info "Configuring Nginx..."
 if [ -f nginx/conf.d/default.conf ]; then
     sed -i "s/DOMAIN_PLACEHOLDER/$FULL_DOMAIN/g" nginx/conf.d/default.conf
-    echo "✓ Nginx configuration updated"
 else
-    echo -e "${RED}Error: nginx/conf.d/default.conf not found${NC}"
+    log_error "nginx/conf.d/default.conf not found"
     exit 1
 fi
-echo ""
 
-# Start nginx-proxy without SSL first (for ACME challenge)
-echo -e "${GREEN}[3/6] Starting nginx-proxy for ACME challenge...${NC}"
-$DOCKER_COMPOSE up -d nginx-proxy
+# Start Proxy
+log_info "Starting nginx-proxy..."
+docker compose up -d nginx-proxy
 sleep 5
-echo "✓ Nginx proxy started"
-echo ""
 
-# Obtain SSL certificate
-echo -e "${GREEN}[4/6] Requesting SSL certificate from Let's Encrypt...${NC}"
-echo "This may take a minute..."
-$DOCKER_COMPOSE run --rm certbot certonly \
+# Request Certificate
+log_info "Requesting SSL certificate..."
+docker compose run --rm certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
-    --email $SSL_EMAIL \
+    --email "$SSL_EMAIL" \
     --agree-tos \
     --no-eff-email \
-    -d $FULL_DOMAIN
+    -d "$FULL_DOMAIN"
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ SSL certificate obtained successfully!${NC}"
+    log_info "SSL certificate obtained successfully."
 else
-    echo -e "${RED}Error: Failed to obtain SSL certificate${NC}"
-    echo "Please check:"
-    echo "  1. Domain $FULL_DOMAIN resolves to this server's IP"
-    echo "  2. Port 80 is accessible from the internet"
-    echo "  3. You haven't exceeded Let's Encrypt rate limits"
+    log_error "Failed to obtain SSL certificate."
     exit 1
 fi
-echo ""
 
-# Restart nginx-proxy to load SSL certificates
-echo -e "${GREEN}[5/6] Restarting nginx-proxy with SSL...${NC}"
-$DOCKER_COMPOSE restart nginx-proxy
+# Restart Proxy
+log_info "Restarting nginx-proxy..."
+docker compose restart nginx-proxy
 sleep 3
-echo "✓ Nginx restarted with SSL"
-echo ""
 
-# Start all services
-echo -e "${GREEN}[6/6] Starting all services...${NC}"
-$DOCKER_COMPOSE up -d
-echo "✓ All services started"
-echo ""
+# Start Services
+log_info "Starting all services..."
+docker compose up -d
 
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}✓ SSL Setup Complete!${NC}"
-echo -e "${GREEN}========================================${NC}"
-echo ""
-echo -e "Your application is now available at:"
-echo -e "${GREEN}https://$FULL_DOMAIN${NC}"
-echo ""
-echo "SSL certificate will auto-renew every 60 days."
-echo ""
-echo "To check certificate status:"
-echo "  $DOCKER_COMPOSE exec certbot certbot certificates"
-echo ""
-echo "To manually force renewal:"
-echo "  $DOCKER_COMPOSE exec certbot certbot renew"
-echo "  $DOCKER_COMPOSE restart nginx-proxy"
-echo ""
+log_info "SSL Setup Complete! Application available at https://$FULL_DOMAIN"
+
