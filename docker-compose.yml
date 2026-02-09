@@ -66,6 +66,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-manager}
       - JWT_SECRET=${JWT_SECRET}
       - DDL_AUTO=update
+      - SERVICE_PARTIES_URL=http://parties-service:5000
+      - SERVICE_SMARTOPS_URL=http://smart-ops-service:5002
     depends_on:
       - db-trading
     networks:

@@ -32,6 +32,7 @@ import java.util.Map;
 import com.sbms.trading_service.dto.TransactionResponse;
 import org.springframework.web.client.RestTemplate;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +43,12 @@ public class TransactionServiceImpl implements TransactionService {
     private final ProductRepository productRepository;
     private final RestTemplate restTemplate;
 
+    @Value("${service.parties.url}")
+    private String partiesServiceUrl;
+
+    @Value("${service.smartops.url}")
+    private String smartOpsServiceUrl;
+
     @Override
     @Transactional
     public Long createTransaction(TransactionRequest request, UUID businessId) {
@@ -50,10 +57,10 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setPartyId(request.getPartyId());
         transaction.setPartyName(request.getPartyName());
         transaction.setDate(request.getDate());
-        
+
         TransactionType type = TransactionType.valueOf(request.getType().toUpperCase());
-        transaction.setType(type); 
-        
+        transaction.setType(type);
+
         transaction.setSubTotal(request.getSubTotal());
         transaction.setDiscount(request.getDiscount());
         transaction.setTotalAmount(request.getTotalAmount());
@@ -84,54 +91,58 @@ public class TransactionServiceImpl implements TransactionService {
                     adjustment = transaction.getPaidAmount().negate(); // Negative reduces receivable
                 } else if (TransactionType.PAYMENT.equals(type)) {
                     // PAYMENT: You pay supplier, reduces what you owe
-                    adjustment = transaction.getPaidAmount(); // Positive reduces payable (increases balance towards zero)
+                    adjustment = transaction.getPaidAmount(); // Positive reduces payable (increases balance towards
+                                                              // zero)
                 }
-                
-                if (adjustment.compareTo(BigDecimal.ZERO) != 0) {
-                     String url = "http://localhost:5000/api/Parties/" + request.getPartyId() + "/balance";
-                     
-                     // Create Body
-                     Map<String, BigDecimal> body = Collections.singletonMap("amount", adjustment);
-                     
-                     // Get Token
-                     String token = null;
-                     // Get Token from Request Header directly
-                     ServletRequestAttributes attributes = 
-                         (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-                     
-                     if (attributes != null) {
-                         String authHeader = attributes.getRequest().getHeader("Authorization");
-                         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                             token = authHeader.substring(7);
-                         }
-                     }
 
-                     HttpHeaders headers = new HttpHeaders();
-                     if (token != null) headers.setBearerAuth(token);
-                     
-                     HttpEntity<Map<String, BigDecimal>> entity = new HttpEntity<>(body, headers);
-                     
-                     restTemplate.postForEntity(url, entity, Void.class);
+                if (adjustment.compareTo(BigDecimal.ZERO) != 0) {
+                    String url = partiesServiceUrl + "/api/Parties/" + request.getPartyId() + "/balance";
+
+                    // Create Body
+                    Map<String, BigDecimal> body = Collections.singletonMap("amount", adjustment);
+
+                    // Get Token
+                    String token = null;
+                    // Get Token from Request Header directly
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                            .getRequestAttributes();
+
+                    if (attributes != null) {
+                        String authHeader = attributes.getRequest().getHeader("Authorization");
+                        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                            token = authHeader.substring(7);
+                        }
+                    }
+
+                    HttpHeaders headers = new HttpHeaders();
+                    if (token != null)
+                        headers.setBearerAuth(token);
+
+                    HttpEntity<Map<String, BigDecimal>> entity = new HttpEntity<>(body, headers);
+
+                    restTemplate.postForEntity(url, entity, Void.class);
                 }
 
             } catch (Exception e) {
                 // Log error but assume transaction success? Or Fail?
-                // For now, let's just print stack trace. Ideally implementation should be robust (Saga pattern or retry)
+                // For now, let's just print stack trace. Ideally implementation should be
+                // robust (Saga pattern or retry)
                 e.printStackTrace();
                 throw new RuntimeException("Failed to update party balance: " + e.getMessage());
             }
         }
 
         // Process Products (only for SALE/PURCHASE, not for RECEIPT/PAYMENT)
-        if (request.getProducts() != null && (TransactionType.SALE.equals(type) || TransactionType.PURCHASE.equals(type))) {
+        if (request.getProducts() != null
+                && (TransactionType.SALE.equals(type) || TransactionType.PURCHASE.equals(type))) {
             for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
                 Product product = productRepository.findById(item.getProductId())
                         .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
 
                 // Verify Product belongs to business?
-                 if (!product.getBusinessId().equals(businessId)) {
-                     throw new RuntimeException("Product does not belong to this business");
-                 }
+                if (!product.getBusinessId().equals(businessId)) {
+                    throw new RuntimeException("Product does not belong to this business");
+                }
 
                 TransactionProduct tp = new TransactionProduct();
                 tp.setBusinessId(businessId);
@@ -142,14 +153,16 @@ public class TransactionServiceImpl implements TransactionService {
                 tp.setFree(item.isFree());
 
                 transaction.addProduct(tp);
-                
+
                 // Update Inventory (Current Stock)
                 adjustStock(product, item.getQty(), type, false);
             }
         }
 
-        // Process Offers Entity Creation (only for SALE/PURCHASE, not for RECEIPT/PAYMENT)
-        if (request.getAppliedOffers() != null && (TransactionType.SALE.equals(type) || TransactionType.PURCHASE.equals(type))) {
+        // Process Offers Entity Creation (only for SALE/PURCHASE, not for
+        // RECEIPT/PAYMENT)
+        if (request.getAppliedOffers() != null
+                && (TransactionType.SALE.equals(type) || TransactionType.PURCHASE.equals(type))) {
             for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
                 TransactionOffer offer = new TransactionOffer();
                 offer.setOfferId(offerDto.getOfferId());
@@ -158,57 +171,59 @@ public class TransactionServiceImpl implements TransactionService {
                 transaction.addOffer(offer);
             }
         }
-            
+
         Transaction saved = transactionRepository.save(transaction);
 
         // Notify Smart Ops Service (After save to get Transaction ID)
         if (request.getAppliedOffers() != null) {
             for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
-                 recordOfferUsage(offerDto.getOfferId(), saved.getId().toString(), saved.getPartyId(), saved.getPartyName(), offerDto.getDiscountAmount());
+                recordOfferUsage(offerDto.getOfferId(), saved.getId().toString(), saved.getPartyId(),
+                        saved.getPartyName(), offerDto.getDiscountAmount());
             }
         }
 
         return saved.getId();
     }
 
-    private void recordOfferUsage(String offerId, String transactionsId, Long partyId, String partyName, BigDecimal discountAmount) {
+    private void recordOfferUsage(String offerId, String transactionsId, Long partyId, String partyName,
+            BigDecimal discountAmount) {
         try {
-            String url = "http://localhost:5002/api/smart-ops/offers/redemption";
-            
+            String url = smartOpsServiceUrl + "/api/smart-ops/offers/redemption";
+
             // Body
             Map<String, Object> body = Map.of(
-                "offerId", offerId,
-                "transactionId", transactionsId, 
-                "customerId", partyId != null ? partyId.toString() : "walk-in",
-                "partyName", partyName != null ? partyName : "Walk-in",
-                "discountAmount", discountAmount
-            );
+                    "offerId", offerId,
+                    "transactionId", transactionsId,
+                    "customerId", partyId != null ? partyId.toString() : "walk-in",
+                    "partyName", partyName != null ? partyName : "Walk-in",
+                    "discountAmount", discountAmount);
 
-             // Get Token
-             String token = null;
-             ServletRequestAttributes attributes = 
-                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-             
-             if (attributes != null) {
-                 String authHeader = attributes.getRequest().getHeader("Authorization");
-                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                     token = authHeader.substring(7);
-                 }
-             }
+            // Get Token
+            String token = null;
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
 
-             HttpHeaders headers = new HttpHeaders();
-             if (token != null) headers.setBearerAuth(token);
-             
-             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-             
-             // Async or Fire-and-forget? RestTemplate is sync. 
-             // We don't want to fail transaction if this fails? 
-             // Requirement says "make it work". Let's do sync for now.
-             restTemplate.postForEntity(url, entity, Void.class);
+            if (attributes != null) {
+                String authHeader = attributes.getRequest().getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7);
+                }
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            if (token != null)
+                headers.setBearerAuth(token);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+            // Async or Fire-and-forget? RestTemplate is sync.
+            // We don't want to fail transaction if this fails?
+            // Requirement says "make it work". Let's do sync for now.
+            restTemplate.postForEntity(url, entity, Void.class);
 
         } catch (Exception e) {
             System.err.println("Failed to record offer usage: " + e.getMessage());
-            // Don't throw exception to avoid rolling back transaction? 
+            // Don't throw exception to avoid rolling back transaction?
             // Or do we want strict consistency? Usually marketing stats are non-critical.
         }
     }
@@ -216,21 +231,22 @@ public class TransactionServiceImpl implements TransactionService {
     // Helper to adjust stock
     // Helper to adjust stock
     private void adjustStock(Product product, BigDecimal qty, TransactionType type, boolean isReversal) {
-        if (qty == null || qty.compareTo(BigDecimal.ZERO) == 0) return;
+        if (qty == null || qty.compareTo(BigDecimal.ZERO) == 0)
+            return;
 
         BigDecimal adjustment = qty;
-        
+
         // Logic:
         // Sale: -Qty
         // Purchase: +Qty
         // Reversal: Flip sign
-        
+
         if (TransactionType.SALE.equals(type)) {
             adjustment = adjustment.negate();
         } else if (TransactionType.PURCHASE.equals(type)) {
             // Keep positive
         }
-        
+
         if (isReversal) {
             adjustment = adjustment.negate();
         }
@@ -254,7 +270,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionResponse> searchTransactions(UUID businessId, String query, String type, String dateRange, LocalDate customStart, LocalDate customEnd) {
+    public List<TransactionResponse> searchTransactions(UUID businessId, String query, String type, String dateRange,
+            LocalDate customStart, LocalDate customEnd) {
         // Calculate Date Range
         LocalDate startDate = null;
         LocalDate endDate = LocalDate.now();
@@ -262,8 +279,10 @@ public class TransactionServiceImpl implements TransactionService {
         if (dateRange != null) {
             switch (dateRange) {
                 case "Custom Range":
-                    if (customStart != null) startDate = customStart;
-                    if (customEnd != null) endDate = customEnd;
+                    if (customStart != null)
+                        startDate = customStart;
+                    if (customEnd != null)
+                        endDate = customEnd;
                     break;
                 case "Today":
                     startDate = LocalDate.now();
@@ -278,7 +297,7 @@ public class TransactionServiceImpl implements TransactionService {
                 case "This Month":
                     startDate = LocalDate.now().withDayOfMonth(1);
                     break;
-                default: 
+                default:
                     // All Time: Use safe default range instead of nulls to simplify Query
                     startDate = LocalDate.of(1970, 1, 1);
                     endDate = LocalDate.of(2100, 12, 31);
@@ -290,14 +309,14 @@ public class TransactionServiceImpl implements TransactionService {
 
         List<Transaction> transactions;
         if ("All".equalsIgnoreCase(type)) {
-             transactions = transactionRepository.findByBusinessIdAndPartyNameContainingIgnoreCaseAndDateBetweenOrderByDateDesc(
-                 businessId, safeQuery, startDate, endDate
-             );
+            transactions = transactionRepository
+                    .findByBusinessIdAndPartyNameContainingIgnoreCaseAndDateBetweenOrderByDateDesc(
+                            businessId, safeQuery, startDate, endDate);
         } else {
-             TransactionType tType = TransactionType.valueOf(type.toUpperCase());
-             transactions = transactionRepository.findByBusinessIdAndPartyNameContainingIgnoreCaseAndTypeAndDateBetweenOrderByDateDesc(
-                 businessId, safeQuery, tType, startDate, endDate
-             );
+            TransactionType tType = TransactionType.valueOf(type.toUpperCase());
+            transactions = transactionRepository
+                    .findByBusinessIdAndPartyNameContainingIgnoreCaseAndTypeAndDateBetweenOrderByDateDesc(
+                            businessId, safeQuery, tType, startDate, endDate);
         }
 
         return transactions.stream().map(this::mapToResponse).collect(Collectors.toList());
@@ -305,15 +324,18 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public List<TransactionResponse> getTransactionsByParty(UUID businessId, Long partyId) {
-        List<Transaction> transactions = transactionRepository.findByBusinessIdAndPartyIdOrderByDateDesc(businessId, partyId);
+        List<Transaction> transactions = transactionRepository.findByBusinessIdAndPartyIdOrderByDateDesc(businessId,
+                partyId);
         return transactions.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     private TransactionResponse mapToResponse(Transaction t) {
         String status = "Unpaid";
         if (t.getPaidAmount() != null && t.getTotalAmount() != null) {
-            if (t.getPaidAmount().compareTo(t.getTotalAmount()) >= 0) status = "Paid";
-            else if (t.getPaidAmount().doubleValue() > 0) status = "Partial";
+            if (t.getPaidAmount().compareTo(t.getTotalAmount()) >= 0)
+                status = "Paid";
+            else if (t.getPaidAmount().doubleValue() > 0)
+                status = "Partial";
         }
 
         // Format time from createdAt timestamp
@@ -332,19 +354,19 @@ public class TransactionServiceImpl implements TransactionService {
         return TransactionResponse.builder()
                 .id(t.getId())
                 .partyId(t.getPartyId())
-                .party(t.getPartyName() != null ? t.getPartyName() : "Unknown") 
+                .party(t.getPartyName() != null ? t.getPartyName() : "Unknown")
                 .date(t.getDate())
                 .time(time)
                 .type(t.getType().name())
                 .status(status)
                 .amount(t.getTotalAmount())
                 .paidAmount(t.getPaidAmount())
-                .paymentMode(paymentModeStr) 
-            .subTotal(t.getSubTotal())
-            .discount(t.getDiscount())
+                .paymentMode(paymentModeStr)
+                .subTotal(t.getSubTotal())
+                .discount(t.getDiscount())
                 .products(t.getProducts().size())
-            .referenceNumber(t.getReferenceNumber())
-            .notes(t.getNotes())
+                .referenceNumber(t.getReferenceNumber())
+                .notes(t.getNotes())
                 .details(t.getProducts().stream().map(p -> TransactionResponse.DetailDto.builder()
                         .productId(p.getProduct().getId())
                         .name(p.getProduct().getName())
@@ -353,11 +375,11 @@ public class TransactionServiceImpl implements TransactionService {
                         .rate(p.getPrice())
                         .total(p.getAmount())
                         .build()).collect(Collectors.toList()))
-            .appliedOffers(t.getOffers().stream().map(o -> TransactionResponse.OfferDto.builder()
-                .offerId(o.getOfferId())
-                .offerName(o.getOfferName())
-                .discountAmount(o.getDiscountAmount())
-                .build()).collect(Collectors.toList()))
+                .appliedOffers(t.getOffers().stream().map(o -> TransactionResponse.OfferDto.builder()
+                        .offerId(o.getOfferId())
+                        .offerName(o.getOfferName())
+                        .discountAmount(o.getDiscountAmount())
+                        .build()).collect(Collectors.toList()))
                 .build();
     }
 
@@ -374,11 +396,11 @@ public class TransactionServiceImpl implements TransactionService {
         // 1. Revert Old Balance Impact
         if (existing.getPartyId() != null) {
             BigDecimal oldAdjustment = BigDecimal.ZERO;
-            
+
             TransactionType oldType = existing.getType();
             if (TransactionType.SALE.equals(oldType)) {
                 BigDecimal oldRemaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
-                oldAdjustment = oldRemaining; 
+                oldAdjustment = oldRemaining;
             } else if (TransactionType.PURCHASE.equals(oldType)) {
                 BigDecimal oldRemaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
                 oldAdjustment = oldRemaining.negate();
@@ -395,10 +417,10 @@ public class TransactionServiceImpl implements TransactionService {
         existing.setPartyId(request.getPartyId());
         existing.setPartyName(request.getPartyName());
         existing.setDate(request.getDate());
-        
+
         TransactionType newType = TransactionType.valueOf(request.getType().toUpperCase());
         existing.setType(newType);
-        
+
         existing.setSubTotal(request.getSubTotal());
         existing.setDiscount(request.getDiscount());
         existing.setTotalAmount(request.getTotalAmount());
@@ -421,11 +443,12 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         existing.getProducts().clear();
-        if (request.getProducts() != null && (TransactionType.SALE.equals(newType) || TransactionType.PURCHASE.equals(newType))) {
+        if (request.getProducts() != null
+                && (TransactionType.SALE.equals(newType) || TransactionType.PURCHASE.equals(newType))) {
             for (TransactionRequest.TransactionProductDto item : request.getProducts()) {
                 Product product = productRepository.findById(item.getProductId())
                         .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
-                
+
                 TransactionProduct tp = new TransactionProduct();
                 tp.setBusinessId(businessId);
                 tp.setTransaction(existing); // Important linkage
@@ -444,32 +467,35 @@ public class TransactionServiceImpl implements TransactionService {
         // 3.5 Handle Offers Update (only for SALE/PURCHASE)
         // A. Rollback Old Offers
         for (TransactionOffer oldOffer : existing.getOffers()) {
-             rollbackRedemption(oldOffer.getOfferId(), existing.getId().toString());
+            rollbackRedemption(oldOffer.getOfferId(), existing.getId().toString());
         }
         existing.getOffers().clear();
 
         // B. Add New Offers
-        if (request.getAppliedOffers() != null && (TransactionType.SALE.equals(newType) || TransactionType.PURCHASE.equals(newType))) {
+        if (request.getAppliedOffers() != null
+                && (TransactionType.SALE.equals(newType) || TransactionType.PURCHASE.equals(newType))) {
             for (TransactionRequest.TransactionOfferDto offerDto : request.getAppliedOffers()) {
                 TransactionOffer offer = new TransactionOffer();
-                // TransactionOffer entity defined doesn't have businessId, only ID, Transaction, OfferId, OfferName, Discount.
+                // TransactionOffer entity defined doesn't have businessId, only ID,
+                // Transaction, OfferId, OfferName, Discount.
                 // It relies on Transaction -> Business linkage.
-                
+
                 offer.setOfferId(offerDto.getOfferId());
                 offer.setOfferName(offerDto.getOfferName());
                 offer.setDiscountAmount(offerDto.getDiscountAmount());
-                
+
                 existing.addOffer(offer);
-                
+
                 // Notify Smart Ops (Record Usage)
-                recordOfferUsage(offerDto.getOfferId(), existing.getId().toString(), existing.getPartyId(), existing.getPartyName(), offerDto.getDiscountAmount());
+                recordOfferUsage(offerDto.getOfferId(), existing.getId().toString(), existing.getPartyId(),
+                        existing.getPartyName(), offerDto.getDiscountAmount());
             }
         }
 
         // 4. Apply New Balance Impact
         if (request.getPartyId() != null) {
             BigDecimal newAdjustment = BigDecimal.ZERO;
-            
+
             if (TransactionType.SALE.equals(newType)) {
                 BigDecimal newRemaining = request.getTotalAmount().subtract(request.getPaidAmount());
                 newAdjustment = newRemaining;
@@ -506,11 +532,11 @@ public class TransactionServiceImpl implements TransactionService {
         // 2. Revert Balance Impact
         if (existing.getPartyId() != null) {
             BigDecimal adjustment = BigDecimal.ZERO;
-            
+
             TransactionType type = existing.getType();
             if (TransactionType.SALE.equals(type)) {
                 BigDecimal remaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
-                adjustment = remaining; 
+                adjustment = remaining;
             } else if (TransactionType.PURCHASE.equals(type)) {
                 BigDecimal remaining = existing.getTotalAmount().subtract(existing.getPaidAmount());
                 adjustment = remaining.negate();
@@ -525,7 +551,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         // 3. Rollback Offers
         for (TransactionOffer offer : existing.getOffers()) {
-             rollbackRedemption(offer.getOfferId(), existing.getId().toString());
+            rollbackRedemption(offer.getOfferId(), existing.getId().toString());
         }
 
         // 4. Delete
@@ -534,50 +560,18 @@ public class TransactionServiceImpl implements TransactionService {
 
     private void rollbackRedemption(String offerId, String transactionId) {
         try {
-            String url = "http://localhost:5002/api/smart-ops/offers/redemption/rollback";
-             
-             // Body
+            String url = smartOpsServiceUrl + "/api/smart-ops/offers/redemption/rollback";
+
+            // Body
             Map<String, Object> body = Map.of(
-                "offerId", offerId,
-                "transactionId", transactionId
-            );
-
-             // Get Token
-             String token = null;
-             ServletRequestAttributes attributes = 
-                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-             
-             if (attributes != null) {
-                 String authHeader = attributes.getRequest().getHeader("Authorization");
-                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                     token = authHeader.substring(7);
-                 }
-             }
-
-             HttpHeaders headers = new HttpHeaders();
-             if (token != null) headers.setBearerAuth(token);
-             
-             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-             
-             restTemplate.postForEntity(url, entity, Void.class);
-
-        } catch (Exception e) {
-            System.err.println("Failed to rollback offer redemption: " + e.getMessage());
-        }
-    }
-
-    private void updatePartyBalance(Long partyId, BigDecimal adjustment) {
-        if (adjustment.compareTo(BigDecimal.ZERO) == 0) return;
-
-        try {
-            String url = "http://localhost:5000/api/Parties/" + partyId + "/balance";
-            Map<String, BigDecimal> body = Collections.singletonMap("amount", adjustment);
+                    "offerId", offerId,
+                    "transactionId", transactionId);
 
             // Get Token
             String token = null;
-            ServletRequestAttributes attributes = 
-                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
+
             if (attributes != null) {
                 String authHeader = attributes.getRequest().getHeader("Authorization");
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -586,8 +580,42 @@ public class TransactionServiceImpl implements TransactionService {
             }
 
             HttpHeaders headers = new HttpHeaders();
-            if (token != null) headers.setBearerAuth(token);
-            
+            if (token != null)
+                headers.setBearerAuth(token);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+            restTemplate.postForEntity(url, entity, Void.class);
+
+        } catch (Exception e) {
+            System.err.println("Failed to rollback offer redemption: " + e.getMessage());
+        }
+    }
+
+    private void updatePartyBalance(Long partyId, BigDecimal adjustment) {
+        if (adjustment.compareTo(BigDecimal.ZERO) == 0)
+            return;
+
+        try {
+            String url = partiesServiceUrl + "/api/Parties/" + partyId + "/balance";
+            Map<String, BigDecimal> body = Collections.singletonMap("amount", adjustment);
+
+            // Get Token
+            String token = null;
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
+
+            if (attributes != null) {
+                String authHeader = attributes.getRequest().getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7);
+                }
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            if (token != null)
+                headers.setBearerAuth(token);
+
             HttpEntity<Map<String, BigDecimal>> entity = new HttpEntity<>(body, headers);
             restTemplate.postForEntity(url, entity, Void.class);
 

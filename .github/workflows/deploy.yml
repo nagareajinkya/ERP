@@ -25,7 +25,7 @@ jobs:
           docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/parties-service:latest ./service-parties
           docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/smart-ops-service:latest ./service-smart-ops
           docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/api-gateway:latest ./api-gateway
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest ./client
+          docker build --build-arg VITE_API_BASE_URL=/api -t ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest ./client
 
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/auth-service:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/trading-service:latest
@@ -41,15 +41,19 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/gurudevWeb
+            cd ~/sbms
             git pull origin main
             
-            # Update .env with Docker Hub username
+            # Create .env file with all environment variables
             echo "DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}" > .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env
             echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env
+            echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+            echo "AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}" >> .env
+            echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" >> .env
             
             docker-compose pull
             docker-compose up -d

@@ -32,7 +32,8 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProductRepository productRepository;
     private final RestTemplate restTemplate;
 
-    private final String smartOpsServiceUrl = "http://localhost:5002";
+    @Value("${service.smartops.url}")
+    private String smartOpsServiceUrl;
 
     @Override
     public DashboardSummaryDto getDashboardSummary(UUID businessId, String period) {
@@ -116,10 +117,10 @@ public class DashboardServiceImpl implements DashboardService {
             // Use the internal count endpoint that doesn't require authentication
             String url = smartOpsServiceUrl + "/api/smart-ops/offers/count/" + businessId;
             log.info("Calling smart-ops service at: {}", url);
-            
+
             // Make HTTP call to service-smart-ops internal endpoint
             Map<String, Integer> response = restTemplate.getForObject(url, Map.class);
-            
+
             if (response != null && response.containsKey("count")) {
                 int count = response.get("count");
                 log.info("Active offers count: {}", count);
@@ -148,7 +149,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     private BigDecimal calculateDailyAverage(List<Transaction> transactions) {
         LocalDate thirtyDaysAgo = LocalDate.now().minusDays(30);
-        
+
         BigDecimal totalSales = transactions.stream()
                 .filter(t -> t.getDate().isAfter(thirtyDaysAgo.minusDays(1)))
                 .filter(t -> t.getType() == TransactionType.SALE)
@@ -166,8 +167,10 @@ public class DashboardServiceImpl implements DashboardService {
         return switch (period.toLowerCase()) {
             case "today" -> generateHourlyData(salesTransactions);
             case "yesterday" -> generateHourlyDataForYesterday(salesTransactions);
-            case "this_week" -> generateDailyData(salesTransactions, LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
-            case "last_week" -> generateDailyData(salesTransactions, LocalDate.now().minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+            case "this_week" -> generateDailyData(salesTransactions,
+                    LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+            case "last_week" -> generateDailyData(salesTransactions,
+                    LocalDate.now().minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
             case "this_month" -> generateWeeklyData(salesTransactions, LocalDate.now().withDayOfMonth(1));
             default -> generateHourlyData(salesTransactions);
         };
@@ -193,10 +196,10 @@ public class DashboardServiceImpl implements DashboardService {
         // Convert to chart data (show only business hours or all 24 hours)
         List<ChartDataPointDto> chartData = new ArrayList<>();
         for (int hour = 0; hour < 24; hour++) {
-            String label = String.format("%d %s", 
-                hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour),
-                hour < 12 ? "AM" : "PM");
-            
+            String label = String.format("%d %s",
+                    hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour),
+                    hour < 12 ? "AM" : "PM");
+
             chartData.add(ChartDataPointDto.builder()
                     .name(label)
                     .sales(hourlySales.get(hour))
@@ -223,10 +226,10 @@ public class DashboardServiceImpl implements DashboardService {
 
         List<ChartDataPointDto> chartData = new ArrayList<>();
         for (int hour = 0; hour < 24; hour++) {
-            String label = String.format("%d %s", 
-                hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour),
-                hour < 12 ? "AM" : "PM");
-            
+            String label = String.format("%d %s",
+                    hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour),
+                    hour < 12 ? "AM" : "PM");
+
             chartData.add(ChartDataPointDto.builder()
                     .name(label)
                     .sales(hourlySales.get(hour))
@@ -253,7 +256,7 @@ public class DashboardServiceImpl implements DashboardService {
         // Convert to chart data
         List<ChartDataPointDto> chartData = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE"); // Mon, Tue, etc.
-        
+
         for (int i = 0; i < 7; i++) {
             LocalDate day = weekStart.plusDays(i);
             chartData.add(ChartDataPointDto.builder()
@@ -376,5 +379,6 @@ public class DashboardServiceImpl implements DashboardService {
         return new DateRange(start, end);
     }
 
-    private record DateRange(LocalDate start, LocalDate end) {}
+    private record DateRange(LocalDate start, LocalDate end) {
+    }
 }

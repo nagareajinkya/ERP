@@ -7,15 +7,28 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Database Configuration
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? builder.Configuration["DB_HOST"] ?? "localhost";
+var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? builder.Configuration["DB_PORT"] ?? "5432";
+var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? builder.Configuration["DB_NAME"] ?? "trading_db";
+var dbUser = Environment.GetEnvironmentVariable("DB_USERNAME") ?? builder.Configuration["DB_USERNAME"] ?? "postgres";
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? builder.Configuration["DB_PASSWORD"] ?? "manager";
+
+var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Add JWT Authentication
-var jwtSecret = builder.Configuration["JwtSettings:SecretKey"];
-if (string.IsNullOrEmpty(jwtSecret))
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") 
+                ?? builder.Configuration["JwtSettings:SecretKey"];
+
+if (string.IsNullOrEmpty(jwtSecret) || jwtSecret == "${JWT_SECRET}")
 {
-    throw new Exception("JWT Secret Key is missing in configuration");
+    throw new Exception("JWT Secret Key is missing in configuration (Environment Variable JWT_SECRET is not set)");
 }
 
 builder.Services.AddAuthentication("Bearer")
@@ -37,7 +50,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseAuthentication();

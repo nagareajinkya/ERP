@@ -52,7 +52,6 @@ const BillPreview = () => {
             invoicePrefix: profileRes.data.invoicePrefix,
             profilePicUrl: profileRes.data.profilePicUrl,
             signatureUrl: profileRes.data.signatureUrl,
-            signatureUrl: profileRes.data.signatureUrl,
             stampUrl: profileRes.data.stampUrl,
             alwaysShowPaymentQr: profileRes.data.alwaysShowPaymentQr,
             upiId: profileRes.data.upiId
