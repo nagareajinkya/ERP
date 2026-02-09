@@ -35,11 +35,23 @@ log_info "Setting up SSL for: $FULL_DOMAIN ($SSL_EMAIL)"
 log_info "Creating directories..."
 mkdir -p certbot/conf certbot/www nginx/conf.d
 
-# Configure Nginx
+# Configure Nginx - Force replacement of placeholder or existing domain
 log_info "Configuring Nginx..."
 if [ -f nginx/conf.d/default.conf ]; then
-    sed -i "s/DOMAIN_PLACEHOLDER/$FULL_DOMAIN/g" nginx/conf.d/default.conf
-    # Fix deprecated directive if present (from deploy script)
+    # Reset to placeholder to ensure clean slate if needed, or just replace placeholder
+    # Ideally we should use a template, but for now let's try to replace DOMAIN_PLACEHOLDER
+    # If the file was already modified, DOMAIN_PLACEHOLDER might not exist.
+    # We should strictly rely on the file having DOMAIN_PLACEHOLDER for the first run.
+    # If it's already replaced, we assume it's correct or we might need to reset it.
+    
+    # Check if DOMAIN_PLACEHOLDER exists
+    if grep -q "DOMAIN_PLACEHOLDER" nginx/conf.d/default.conf; then
+        sed -i "s/DOMAIN_PLACEHOLDER/$FULL_DOMAIN/g" nginx/conf.d/default.conf
+    else
+        log_warn "DOMAIN_PLACEHOLDER not found in default.conf. Assuming it's already configured."
+    fi
+
+    # Fix deprecated directive if present
     sed -i "s/listen 443 ssl http2;/listen 443 ssl; http2 on;/g" nginx/conf.d/default.conf
 else
     log_error "nginx/conf.d/default.conf not found"
@@ -47,6 +59,8 @@ else
 fi
 
 # Create Dummy Certificate for Nginx to start
+# We must create it at the path Nginx expects: /etc/letsencrypt/live/$FULL_DOMAIN/fullchain.pem
+# Which maps to ./certbot/conf/live/$FULL_DOMAIN/fullchain.pem on host
 if [ ! -f "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" ]; then
     log_info "Creating dummy certificate for $FULL_DOMAIN..."
     mkdir -p "certbot/conf/live/$FULL_DOMAIN"
@@ -54,6 +68,9 @@ if [ ! -f "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" ]; then
         -keyout "certbot/conf/live/$FULL_DOMAIN/privkey.pem" \
         -out "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" \
         -subj "/CN=localhost"
+    
+    # Ensure permissions
+    chmod -R 755 certbot/conf/live/
 fi
 
 # Start Proxy
