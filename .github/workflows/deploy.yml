@@ -41,7 +41,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/sbms
+            cd ~/sbms/ERP
             git pull origin main
             
             # Create .env file with all environment variables
