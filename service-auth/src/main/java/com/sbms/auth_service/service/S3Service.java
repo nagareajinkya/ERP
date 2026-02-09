@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-
 /**
  * Service for handling S3 file uploads
  * Supports profile photos, signatures, and business stamps
@@ -39,8 +38,7 @@ public class S3Service {
     private static final List<String> ALLOWED_CONTENT_TYPES = Arrays.asList(
             "image/jpeg",
             "image/jpg",
-            "image/png"
-    );
+            "image/png");
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png");
 
     /**
@@ -59,12 +57,11 @@ public class S3Service {
         // Structure: folder/businessId/userId/filename
         String key = String.format("%s/%s/%s/%s", folder, businessId, userId, fileName);
 
-
         try {
             PutObjectRequest putRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
-                    .acl(ObjectCannedACL.PUBLIC_READ)
+                    // .acl(ObjectCannedACL.PUBLIC_READ) // Removed: Modern S3 buckets disable ACLs
                     .contentType(file.getContentType())
                     .build();
 
