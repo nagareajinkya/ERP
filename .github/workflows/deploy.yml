@@ -41,7 +41,10 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/sbms/ERP
+            # Navigate to the project directory
+            cd ~/ERP
+            
+            # Reset local changes and pull latest code
             git checkout .
             git pull origin main
             
@@ -59,15 +62,14 @@ jobs:
             echo "SSL_EMAIL=${{ secrets.SSL_EMAIL }}" >> .env
             echo "DUCKDNS_TOKEN=${{ secrets.DUCKDNS_TOKEN }}" >> .env
             
-            # Replace placeholder in Nginx config with actual domain
-            FULL_DOMAIN="${{ secrets.DOMAIN_NAME }}.duckdns.org"
-            sed -i "s/DOMAIN_PLACEHOLDER/$FULL_DOMAIN/g" nginx/conf.d/default.conf
-            # Fix deprecated http2 directive
-            sed -i "s/listen 443 ssl http2;/listen 443 ssl; http2 on;/g" nginx/conf.d/default.conf
-            
-            # Update DuckDNS IP (to be safe)
+            # Ensure scripts are executable
+            chmod +x scripts/*.sh
+
+            # Update DuckDNS
             ./scripts/update-duckdns.sh
-            
-            # Pull latest images and restart services
+
+            # Pull latest images
             docker compose pull
+            
+            # Restart services
             docker compose up -d
