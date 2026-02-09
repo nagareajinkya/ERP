@@ -44,7 +44,19 @@ builder.Services.AddAuthentication("Bearer")
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-                System.Text.Encoding.UTF8.GetBytes(jwtSecret))
+                System.Text.Encoding.UTF8.GetBytes(jwtSecret)),
+            // Explicitly allow HS256 algorithm (used by Java JWT library)
+            ValidAlgorithms = new[] { Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256 }
+        };
+        
+        // Add detailed logging for debugging
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine($"JWT Authentication failed: {context.Exception.Message}");
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
         };
     });
 
