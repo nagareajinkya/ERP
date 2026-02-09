@@ -54,14 +54,22 @@ echo -e "${YELLOW}Email:${NC} $SSL_EMAIL"
 echo ""
 
 # Function to check for docker compose or docker-compose
-if docker compose version >/dev/null 2>&1; then
+# We try several methods because 'sudo' often has a restricted PATH
+if sudo docker compose version >/dev/null 2>&1 || docker compose version >/dev/null 2>&1; then
     DOCKER_COMPOSE="docker compose"
-elif docker-compose version >/dev/null 2>&1; then
+elif sudo docker-compose version >/dev/null 2>&1 || docker-compose version >/dev/null 2>&1; then
     DOCKER_COMPOSE="docker-compose"
 else
-    echo -e "${RED}Error: Neither 'docker compose' nor 'docker-compose' found.${NC}"
-    echo "Please install Docker Compose first."
-    exit 1
+    # Fallback: try to find the absolute path of docker
+    DOCKER_PATH=$(which docker || command -v docker || echo "/usr/bin/docker")
+    if $DOCKER_PATH compose version >/dev/null 2>&1; then
+        DOCKER_COMPOSE="$DOCKER_PATH compose"
+    else
+        echo -e "${RED}Error: Neither 'docker compose' nor 'docker-compose' found even with absolute paths.${NC}"
+        echo "Please ensure docker-compose-plugin is installed."
+        echo "Try: sudo apt-get update && sudo apt-get install -y docker-compose-plugin"
+        exit 1
+    fi
 fi
 
 echo -e "${YELLOW}Using command:${NC} $DOCKER_COMPOSE"
