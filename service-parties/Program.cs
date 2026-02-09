@@ -3,6 +3,9 @@ using SBMS.Parties.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Force port 5000 to match API Gateway configuration
+builder.WebHost.UseUrls("http://*:5000");
+
 // Add services to the container.
 
 builder.Services.AddControllers();
