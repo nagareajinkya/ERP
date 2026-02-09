@@ -89,6 +89,9 @@ logs/
 *.tar
 docker-compose.override.yml
 
+# SSL certificates and Let's Encrypt data (private keys - never commit!)
+certbot/
+
 ########################################
 # Misc
 ########################################
