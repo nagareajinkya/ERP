@@ -41,12 +41,6 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Clone repository if it doesn't exist
-            if [ ! -d "~/sbms" ]; then
-              echo "Repository not found. Cloning..."
-              git clone https://github.com/${{ github.repository }}.git ~/sbms
-            fi
-            
             cd ~/sbms
             git pull origin main
             
