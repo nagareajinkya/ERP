@@ -39,9 +39,21 @@ mkdir -p certbot/conf certbot/www nginx/conf.d
 log_info "Configuring Nginx..."
 if [ -f nginx/conf.d/default.conf ]; then
     sed -i "s/DOMAIN_PLACEHOLDER/$FULL_DOMAIN/g" nginx/conf.d/default.conf
+    # Fix deprecated directive if present (from deploy script)
+    sed -i "s/listen 443 ssl http2;/listen 443 ssl; http2 on;/g" nginx/conf.d/default.conf
 else
     log_error "nginx/conf.d/default.conf not found"
     exit 1
+fi
+
+# Create Dummy Certificate for Nginx to start
+if [ ! -f "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" ]; then
+    log_info "Creating dummy certificate for $FULL_DOMAIN..."
+    mkdir -p "certbot/conf/live/$FULL_DOMAIN"
+    openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
+        -keyout "certbot/conf/live/$FULL_DOMAIN/privkey.pem" \
+        -out "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" \
+        -subj "/CN=localhost"
 fi
 
 # Start Proxy
