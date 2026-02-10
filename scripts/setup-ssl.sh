@@ -78,6 +78,12 @@ log_info "Starting nginx-proxy..."
 docker compose up -d nginx-proxy
 sleep 5
 
+# Remove dummy certificate so Certbot can use the correct path
+log_info "Removing dummy certificate to allow Certbot to place real certificate..."
+rm -rf "certbot/conf/live/$FULL_DOMAIN"
+rm -rf "certbot/conf/archive/$FULL_DOMAIN"
+rm -f "certbot/conf/renewal/$FULL_DOMAIN.conf"
+
 # Request Certificate
 log_info "Requesting SSL certificate..."
 docker compose run --rm certbot certonly \
