@@ -105,8 +105,7 @@ services:
   api-gateway:
     build: ./api-gateway
     image: ${DOCKER_HUB_USERNAME}/api-gateway:latest
-    ports:
-      - "8080:8080"
+    # Removed ports block. Gateway is now secured inside the Docker network.
     environment:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
       - AUTH_SERVICE_URL=http://auth-service:8081
@@ -121,11 +120,10 @@ services:
     networks:
       - sbms-network
 
-  # 4. Frontend (Served by Nginx)
+  # 4. Frontend 
   frontend:
     build: ./client
     image: ${DOCKER_HUB_USERNAME}/frontend:latest
-    # Port removed - accessed via nginx-proxy
     depends_on:
       - api-gateway
     networks:
@@ -135,15 +133,13 @@ services:
   nginx-proxy:
     image: nginx:alpine
     ports:
-      - "80:80"      # HTTP (redirects to HTTPS)
-      - "443:443"    # HTTPS
+      - "80:80"      
+      - "443:443"    
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
-    depends_on:
-      - frontend
+    # Removed depends_on: frontend to allow SSL script to run independently
     networks:
       - sbms-network
     restart: unless-stopped

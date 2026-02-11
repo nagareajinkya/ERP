@@ -41,14 +41,11 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Navigate to the project directory
             cd ~/ERP
             
-            # Reset local changes and pull latest code
             git checkout .
             git pull origin main
             
-            # Create .env file with all environment variables
             echo "DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}" > .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
@@ -62,14 +59,12 @@ jobs:
             echo "SSL_EMAIL=${{ secrets.SSL_EMAIL }}" >> .env
             echo "DUCKDNS_TOKEN=${{ secrets.DUCKDNS_TOKEN }}" >> .env
             
-            # Ensure scripts are executable
             chmod +x scripts/*.sh
 
             # Update DuckDNS
             ./scripts/update-duckdns.sh
 
-            # Pull latest images
+            ./scripts/setup-ssl.sh
+
             docker compose pull
-            
-            # Restart services
             docker compose up -d
