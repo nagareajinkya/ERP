@@ -25,7 +25,7 @@ const Login = () => {
 
   // --- CUSTOM HOOKS ---
   const { fieldErrors, touched, handleBlur, validateForm, resetValidation, setTouched } = useValidation();
-  const { loading, error, handleLogin, handleCompleteProfile, clearError } = useAuthForm();
+  const { loading, error, handleLogin, handleCompleteProfile, handleProfileUpdateSubmit, clearError } = useAuthForm();
 
   // --- HANDLERS ---
   const handleAuthSubmit = async (e) => {
@@ -37,7 +37,12 @@ const Login = () => {
     }
 
     if (mode === 'signup') {
-      setStep(3); // Go to final step
+      // Register user immediately with basic info
+      const registrationData = { ownerName, email, phone, password, storeName, bizState };
+      const success = await handleCompleteProfile(registrationData);
+      if (success) {
+        setStep(3); // Go to optional profile step
+      }
       return;
     }
 
@@ -45,10 +50,13 @@ const Login = () => {
     await handleLogin(email, password);
   };
 
-  const handleProfileSubmit = async (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    const formData = { ownerName, email, phone, password, storeName, bizState, gstin, upiId };
-    await handleCompleteProfile(formData);
+    // Update profile with GSTIN and UPI
+    const success = await handleProfileUpdateSubmit(gstin, upiId);
+    if (success) {
+      // Navigate to Dashboard after successful update
+    }
   };
 
   const toggleMode = () => {
@@ -124,8 +132,9 @@ const Login = () => {
             setGstin={setGstin}
             upiId={upiId}
             setUpiId={setUpiId}
-            onSubmit={handleProfileSubmit}
+            onSubmit={handleProfileUpdate}
             loading={loading}
+            error={error}
           />
         )}
       </div>

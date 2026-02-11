@@ -14,6 +14,7 @@ const ProductsTable = () => {
         handleRemoveProduct,
         handleViewProductHistory,
         handleAddProduct,
+        handleKeyDown,
         theme,
         setFocusedRowId,
     } = useNewTransactionContext();
@@ -42,6 +43,7 @@ const ProductsTable = () => {
                         allProducts={allProducts}
                         isLast={idx === products.length - 1}
                         onFocus={() => setFocusedRowId(product.id)}
+                        onKeyDown={(e) => handleKeyDown(e, product.id)}
                     />
                 ))}
             </div>

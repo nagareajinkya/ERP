@@ -1,5 +1,16 @@
 import { useState } from 'react';
 
+// List of valid Indian states
+export const VALID_INDIAN_STATES = [
+    'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam',
+    'Bihar', 'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir',
+    'Jharkhand', 'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh',
+    'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha',
+    'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
+    'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+];
+
 export const useValidation = () => {
     const [fieldErrors, setFieldErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -27,6 +38,15 @@ export const useValidation = () => {
 
     const validateRequired = (value, fieldName) => {
         if (!value || value.trim() === '') return `${fieldName} is required`;
+        return '';
+    };
+
+
+    const validateState = (state) => {
+        if (!state || state.trim() === '') return 'State is required';
+        if (!VALID_INDIAN_STATES.includes(state)) {
+            return 'Please select a valid state from the dropdown';
+        }
         return '';
     };
 
@@ -60,7 +80,7 @@ export const useValidation = () => {
                 if (mode === 'signup') error = validateRequired(value, 'Owner name');
                 break;
             case 'bizState':
-                if (mode === 'signup') error = validateRequired(value, 'State');
+                if (mode === 'signup') error = validateState(value);
                 break;
             default:
                 break;
@@ -92,7 +112,7 @@ export const useValidation = () => {
             const phoneError = validatePhone(formData.phone);
             const emailError = validateEmail(formData.email);
             const passwordError = validatePassword(formData.password);
-            const stateError = validateRequired(formData.bizState, 'State');
+            const stateError = validateState(formData.bizState);
 
             if (storeError) errors.storeName = storeError;
             if (ownerError) errors.ownerName = ownerError;

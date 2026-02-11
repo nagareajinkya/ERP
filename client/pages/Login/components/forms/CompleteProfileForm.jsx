@@ -10,9 +10,11 @@ const CompleteProfileForm = ({
     upiId,
     setUpiId,
     onSubmit,
-    loading
+    loading,
+    error
 }) => {
     const navigate = useNavigate();
+    const isFormEmpty = !gstin && !upiId;
 
     return (
         <div className="animate-in slide-in-from-right-4 fade-in">
@@ -40,6 +42,8 @@ const CompleteProfileForm = ({
                     icon={QrCode}
                 />
 
+                {error && <div className="text-sm text-red-400 font-medium">{error}</div>}
+
                 <div className="flex gap-4 mt-8">
                     <AuthButton
                         type="button"
@@ -50,7 +54,11 @@ const CompleteProfileForm = ({
                         Skip for now
                     </AuthButton>
 
-                    <AuthButton type="submit" loading={loading}>
+                    <AuthButton
+                        type="submit"
+                        loading={loading}
+                        disabled={isFormEmpty}
+                    >
                         Save & Start
                     </AuthButton>
                 </div>

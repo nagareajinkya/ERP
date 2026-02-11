@@ -168,6 +168,24 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
         }
     }, [formData, productsData]);
 
+    const handleKeyDown = useCallback((e, rowId) => {
+        if (!productsData.searchProducts.length) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            productsData.moveSelection(1);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            productsData.moveSelection(-1);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const product = productsData.searchProducts[productsData.selectedIndex];
+            if (product) {
+                handleProductSelect(rowId, product);
+            }
+        }
+    }, [productsData, handleProductSelect]);
+
     // ===== Edit Mode Initialization =====
     useEffect(() => {
         if (state && state.mode === 'edit' && state.transaction) {
@@ -337,6 +355,7 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
         handleRemoveProduct,
         handleUpdateProduct,
         handleProductSelect,
+        handleKeyDown,
         handleSave,
 
         // QR Modal

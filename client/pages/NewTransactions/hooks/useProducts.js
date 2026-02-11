@@ -8,6 +8,7 @@ export const useProducts = () => {
     const [allProducts, setAllProducts] = useState([]);
     const [searchProducts, setSearchProducts] = useState([]);
     const [focusedRowId, setFocusedRowId] = useState(null);
+    const [selectedIndex, setSelectedIndex] = useState(0);
 
     // Fetch products on mount
     useEffect(() => {
@@ -28,12 +29,23 @@ export const useProducts = () => {
     const filterProducts = (query) => {
         if (!query) {
             setSearchProducts(allProducts);
+            setSelectedIndex(0);
             return;
         }
         const filtered = allProducts.filter(p =>
             p.name.toLowerCase().includes(query.toLowerCase())
         );
         setSearchProducts(filtered);
+        setSelectedIndex(0);
+    };
+
+    const moveSelection = (direction) => {
+        setSelectedIndex(prev => {
+            const next = prev + direction;
+            if (next < 0) return 0;
+            if (next >= searchProducts.length) return searchProducts.length - 1;
+            return next;
+        });
     };
 
     return {
@@ -42,6 +54,12 @@ export const useProducts = () => {
         focusedRowId,
         setFocusedRowId,
         filterProducts,
-        resetSearch: () => setSearchProducts(allProducts),
+        resetSearch: () => {
+            setSearchProducts(allProducts);
+            setSelectedIndex(0);
+        },
+        selectedIndex,
+        setSelectedIndex,
+        moveSelection
     };
 };

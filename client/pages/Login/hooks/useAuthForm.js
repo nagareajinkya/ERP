@@ -104,6 +104,25 @@ export const useAuthForm = () => {
         }
     };
 
+    // Handle profile update (GSTIN/UPI) after registration
+    const handleProfileUpdateSubmit = async (gstin, upiId) => {
+        try {
+            setLoading(true);
+            setError('');
+
+            await api.put('/auth/profile', { gstin, upiId });
+            navigate('/Dashboard');
+            return true;
+        } catch (err) {
+            console.error("Profile update error:", err);
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to update profile';
+            setError(errorMessage);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const clearError = () => setError('');
 
     return {
@@ -111,6 +130,7 @@ export const useAuthForm = () => {
         error,
         handleLogin,
         handleCompleteProfile,
+        handleProfileUpdateSubmit,
         clearError
     };
 };

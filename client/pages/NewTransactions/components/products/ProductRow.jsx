@@ -12,7 +12,8 @@ const ProductRow = ({
     onViewHistory,
     allProducts,
     isLast,
-    onFocus
+    onFocus,
+    onKeyDown
 }) => {
     return (
         <div
@@ -28,6 +29,7 @@ const ProductRow = ({
                     value={product.name}
                     onChange={e => onUpdate(product.id, 'name', e.target.value)}
                     onFocus={onFocus}
+                    onKeyDown={onKeyDown}
                     disabled={product.isFree}
                     autoFocus={isLast && !product.name}
                 />
