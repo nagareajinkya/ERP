@@ -14,9 +14,9 @@ The backend is composed of multiple microservices using different technologies b
 *   **Parties Service**: C#, .NET 8.0
     *   *Responsibility*: Management of Customers, and Suppliers.
 *   **Smart Ops Service**: Node.js, Express
-    *   *Responsibility*: Background operations, Cron jobs, Utility tasks.
+    *   *Responsibility*: , Offer management, Message template creation and broadcasting, Cron job to automatically mangage offer period.
 *   **API Gateway**: Java 21, Spring Cloud Gateway
-    *   *Responsibility*: Centralized entry point, Routing, Load Balancing.
+    *   *Responsibility*: Centralized entry point, Routing.
 
 ### Frontend
 A high-performance Single Page Application (SPA) built with:
