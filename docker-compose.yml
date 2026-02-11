@@ -44,6 +44,7 @@ services:
 
   # 2. Main Services
   auth-service:
+    build: ./service-auth
     image: ${DOCKER_HUB_USERNAME}/auth-service:latest
     environment:
       - DB_URL=jdbc:postgresql://db-auth:5432/sbms_db
@@ -59,6 +60,7 @@ services:
       - sbms-network
 
   trading-service:
+    build: ./service-trading
     image: ${DOCKER_HUB_USERNAME}/trading-service:latest
     environment:
       - DB_URL=jdbc:postgresql://db-trading:5432/trading_db
@@ -74,6 +76,7 @@ services:
       - sbms-network
 
   parties-service:
+    build: ./service-parties
     image: ${DOCKER_HUB_USERNAME}/parties-service:latest
     environment:
       - DB_HOST=db-parties
@@ -88,6 +91,7 @@ services:
       - sbms-network
 
   smart-ops-service:
+    build: ./service-smart-ops
     image: ${DOCKER_HUB_USERNAME}/smart-ops-service:latest
     environment:
       - JWT_SECRET=${JWT_SECRET}
@@ -99,6 +103,7 @@ services:
 
   # 3. API Gateway
   api-gateway:
+    build: ./api-gateway
     image: ${DOCKER_HUB_USERNAME}/api-gateway:latest
     ports:
       - "8080:8080"
@@ -118,6 +123,7 @@ services:
 
   # 4. Frontend (Served by Nginx)
   frontend:
+    build: ./client
     image: ${DOCKER_HUB_USERNAME}/frontend:latest
     # Port removed - accessed via nginx-proxy
     depends_on:

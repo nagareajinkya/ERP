@@ -11,8 +11,17 @@ const TransactionFooter = () => {
         paymentMode, setPaymentMode,
         notes, setNotes,
         theme,
-        handleShowQR
+        handleShowQR,
+        isSale
     } = useNewTransactionContext();
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
 
     const balanceDue = Math.round(totals.total - (Number(paidAmount) || 0));
 
@@ -25,16 +34,16 @@ const TransactionFooter = () => {
 
     return (
         <div className="shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex flex-col gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
-            <div className="flex justify-between items-center h-12">
+            <div className="flex justify-between items-center min-h-[3rem] flex-wrap gap-y-2">
                 {/* Left: Totals & Paid Amount */}
                 <div className="flex items-center gap-6">
                     <div className="text-sm">
                         <span className="text-gray-400 block text-[10px] font-bold uppercase mb-0.5">Subtotal</span>
-                        <span className="font-bold text-gray-700">₹{totals.sub.toLocaleString()}</span>
+                        <span className="font-bold text-gray-700">{formatCurrency(totals.sub)}</span>
                     </div>
                     <div className="text-sm">
                         <span className="text-gray-400 block text-[10px] font-bold uppercase mb-0.5">Discount</span>
-                        <span className="font-bold text-red-500">- ₹{totals.disc.toLocaleString()}</span>
+                        <span className="font-bold text-red-500">- {formatCurrency(totals.disc)}</span>
                     </div>
                     <div className="h-8 w-px bg-gray-200"></div>
 
@@ -75,7 +84,7 @@ const TransactionFooter = () => {
                                 </button>
                             ))}
                         </div>
-                        {paymentMode === 'UPI' && useNewTransactionContext().isSale && (
+                        {paymentMode === 'UPI' && isSale && (
                             <button
                                 onClick={handleShowQR}
                                 className="mt-1 text-[10px] font-bold text-blue-600 hover:underline text-right"
@@ -102,7 +111,7 @@ const TransactionFooter = () => {
                 <div className="flex items-center gap-6">
                     <div className="text-right">
                         <span className="text-gray-400 block text-[10px] font-bold uppercase mb-0.5">Grand Total</span>
-                        <span className="text-2xl font-black text-gray-800">₹{totals.total.toLocaleString()}</span>
+                        <span className="text-2xl font-black text-gray-800">{formatCurrency(totals.total)}</span>
                     </div>
 
                     <div
@@ -110,7 +119,7 @@ const TransactionFooter = () => {
                             }`}
                     >
                         <span className="block text-[10px] font-bold uppercase opacity-70">Balance Due</span>
-                        <span className="text-lg font-bold">₹{balanceDue.toLocaleString()}</span>
+                        <span className="text-lg font-bold">{formatCurrency(balanceDue)}</span>
                     </div>
                 </div>
             </div>
