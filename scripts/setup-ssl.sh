@@ -85,13 +85,15 @@ rm -rf "certbot/conf/archive/$FULL_DOMAIN"
 rm -f "certbot/conf/renewal/$FULL_DOMAIN.conf"
 
 # Request Certificate
+# Request Certificate
 log_info "Requesting SSL certificate..."
-docker compose run --rm certbot certonly \
+docker compose run --rm --entrypoint "certbot" certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email "$SSL_EMAIL" \
     --agree-tos \
     --no-eff-email \
+    --non-interactive \
     -d "$FULL_DOMAIN"
 
 if [ $? -eq 0 ]; then
