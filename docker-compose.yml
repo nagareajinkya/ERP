@@ -24,16 +24,6 @@ services:
     networks:
       - sbms-network
 
-  db-parties:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: trading_db
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-manager}
-    volumes:
-      - parties_db_data:/var/lib/postgresql/data
-    networks:
-      - sbms-network
 
   db-smartops:
     image: mongo:6.0
@@ -79,14 +69,14 @@ services:
     build: ./service-parties
     image: ${DOCKER_HUB_USERNAME}/parties-service:latest
     environment:
-      - DB_HOST=db-parties
+      - DB_HOST=db-trading
       - DB_PORT=5432
       - DB_NAME=trading_db
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-manager}
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - db-parties
+      - db-trading
     networks:
       - sbms-network
 
@@ -161,5 +151,4 @@ networks:
 volumes:
   auth_db_data:
   trading_db_data:
-  parties_db_data:
   smartops_db_data:
