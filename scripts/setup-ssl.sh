@@ -64,13 +64,13 @@ fi
 if [ ! -f "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" ]; then
     log_info "Creating dummy certificate for $FULL_DOMAIN..."
     mkdir -p "certbot/conf/live/$FULL_DOMAIN"
-    openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
+    sudo openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
         -keyout "certbot/conf/live/$FULL_DOMAIN/privkey.pem" \
         -out "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" \
         -subj "/CN=localhost"
     
     # Ensure permissions
-    chmod -R 755 certbot/conf/live/
+    sudo chmod -R 755 certbot/conf/live/
 fi
 
 # Start Proxy
@@ -80,9 +80,9 @@ sleep 5
 
 # Remove dummy certificate so Certbot can use the correct path
 log_info "Removing dummy certificate to allow Certbot to place real certificate..."
-rm -rf "certbot/conf/live/$FULL_DOMAIN"
-rm -rf "certbot/conf/archive/$FULL_DOMAIN"
-rm -f "certbot/conf/renewal/$FULL_DOMAIN.conf"
+sudo rm -rf "certbot/conf/live/$FULL_DOMAIN"
+sudo rm -rf "certbot/conf/archive/$FULL_DOMAIN"
+sudo rm -f "certbot/conf/renewal/$FULL_DOMAIN.conf"
 
 # Request Certificate
 # Request Certificate

@@ -233,6 +233,13 @@ const BillPreview = () => {
                 <p style="font-weight: bold; text-transform: uppercase; font-size: 9px;">Authorized Signatory</p>
               </div>
             ` : ''}
+
+            ${layout?.showPaymentQr && businessProfile?.upiId ? `
+            <div style="margin-top: 20px; text-align: center; border-top: 1px dashed #ccc; padding-top: 10px;">
+              <p style="font-size: 10px; font-weight: bold; margin-bottom: 5px;">SCAN TO PAY</p>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`upi://pay?pa=${businessProfile.upiId}&pn=${businessProfile.businessName}&tn=InvoicePayment&am=${totals.grandTotal}&cu=INR`)}&size=100x100" style="width: 80px; height: 80px;" />
+            </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -448,7 +455,7 @@ const BillPreview = () => {
             )}
 
             {/* Payment QR Code */}
-            {businessProfile?.alwaysShowPaymentQr && businessProfile?.upiId && (
+            {layout?.showPaymentQr && businessProfile?.upiId && (
               <div className="mt-8 pt-4 border-t border-dashed border-gray-200 flex flex-col items-center">
                 <p className="text-[9px] font-bold uppercase text-gray-500 mb-2">Scan to Pay</p>
                 <img

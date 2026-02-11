@@ -40,7 +40,8 @@ const PrinterSettingsSchema = new mongoose.Schema({
         showWebsite: { type: Boolean, default: false },
         websiteUrl: { type: String, default: '' },
         showInstagram: { type: Boolean, default: true },
-        instagramHandle: { type: String, default: '' }
+        instagramHandle: { type: String, default: '' },
+        showPaymentQr: { type: Boolean, default: true } // New field
     }
 }, {
     timestamps: true

@@ -53,7 +53,8 @@ const Printer = () => {
     showWebsite: false,
     websiteUrl: '',
     showInstagram: false,
-    instagramHandle: ''
+    instagramHandle: '',
+    showPaymentQr: true // New Field
   });
 
   const [businessProfile, setBusinessProfile] = useState(null);
@@ -90,7 +91,8 @@ const Printer = () => {
             invoicePrefix: profileRes.data.invoicePrefix,
             profilePicUrl: profileRes.data.profilePicUrl,
             signatureUrl: profileRes.data.signatureUrl,
-            stampUrl: profileRes.data.stampUrl
+            stampUrl: profileRes.data.stampUrl,
+            upiId: profileRes.data.upiId // Add UPI ID
           };
           setBusinessProfile(profile);
 
@@ -102,7 +104,8 @@ const Printer = () => {
             showHeaderPhone: profile.phoneNumber ? prev.showHeaderPhone : false,
             showLogo: profile.profilePicUrl ? prev.showLogo : false,
             showSignature: profile.signatureUrl ? prev.showSignature : false,
-            showStamp: profile.stampUrl ? prev.showStamp : false
+            showStamp: profile.stampUrl ? prev.showStamp : false,
+            showPaymentQr: profile.upiId ? prev.showPaymentQr : false
           }));
         }
 
@@ -224,6 +227,13 @@ const Printer = () => {
           <img src="${businessProfile.stampUrl}" style="max-height: 60px; max-width: 150px; margin: 0 auto;" />
         </div>
         ` : ''}
+
+        ${layout.showPaymentQr && businessProfile?.upiId ? `
+        <div style="margin-top: 20px; text-align: center; border-top: 1px dashed #ccc; padding-top: 10px;">
+          <p style="font-size: 10px; font-weight: bold; margin-bottom: 5px;">SCAN TO PAY</p>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`upi://pay?pa=${businessProfile.upiId}&pn=${businessProfile.businessName}`)}&size=100x100" style="width: 80px; height: 80px;" />
+        </div>
+        ` : ''}
       </div>
     `;
 
@@ -278,6 +288,7 @@ const Printer = () => {
     if (key === 'showLogo') return !businessProfile.profilePicUrl;
     if (key === 'showSignature') return !businessProfile.signatureUrl;
     if (key === 'showStamp') return !businessProfile.stampUrl;
+    if (key === 'showPaymentQr') return !businessProfile.upiId;
     return false;
   };
 
@@ -383,7 +394,8 @@ const Printer = () => {
                       { l: 'Show Phone No', k: 'showHeaderPhone' },
                       { l: 'Store Address', k: 'showHeaderAddress' },
                       { l: 'Authorized Signature', k: 'showSignature' },
-                      { l: 'Business Stamp', k: 'showStamp' }
+                      { l: 'Business Stamp', k: 'showStamp' },
+                      { l: 'Show Payment QR', k: 'showPaymentQr' }
                     ].map(i => {
                       const missing = isDataMissing(i.k);
                       return (
@@ -606,6 +618,17 @@ const Printer = () => {
               </div>
             </div>
 
+            {/* Payment QR Code */}
+            {layout.showPaymentQr && businessProfile?.upiId && (
+              <div className="mt-8 pt-4 border-t border-dashed border-gray-200 flex flex-col items-center">
+                <p className="text-[9px] font-bold uppercase text-gray-500 mb-2">Scan to Pay</p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`upi://pay?pa=${businessProfile.upiId}&pn=${businessProfile.businessName}&tn=InvoicePayment&am=${grandTotal}&cu=INR`)}&size=120x120`}
+                  alt="Payment QR"
+                  className="w-20 h-20 mix-blend-multiply"
+                />
+              </div>
+            )}
             {/* Thermal Cut Indicator */}
             {printFormat === 'thermal' && (
               <div className="absolute -bottom-6 left-0 right-0 flex items-center gap-2 opacity-10">
