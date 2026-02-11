@@ -74,7 +74,6 @@ export const useAuthForm = () => {
 
             if (token) {
                 authLogin(token, user);
-                navigate('/Dashboard');
                 return true;
             } else {
                 setError('Registration successful but no token received. Please login.');
