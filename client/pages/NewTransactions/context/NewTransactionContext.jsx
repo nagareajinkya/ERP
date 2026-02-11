@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useRef, useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../src/api';
 import { getTheme } from '../config/theme';
@@ -21,6 +22,7 @@ const NewTransactionContext = createContext(null);
 
 export const NewTransactionProvider = ({ type = 'sale', children }) => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { state } = useLocation();
     const { refreshStats } = useUI();
     const { user, checkAuth } = useAuth();
@@ -284,6 +286,7 @@ export const NewTransactionProvider = ({ type = 'sale', children }) => {
             }
 
             refreshStats(); // Update Sidebar Stats
+            queryClient.invalidateQueries(['transactions']);
 
             // Navigate based on transaction type
             setTimeout(() => {

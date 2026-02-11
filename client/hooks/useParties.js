@@ -2,12 +2,14 @@ import { useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../src/api';
 import { toast } from 'react-toastify';
+import { useUI } from '../context/UIContext';
 
 /**
  * Custom hook for managing parties data with React Query
  */
 export const useParties = () => {
     const queryClient = useQueryClient();
+    const { refreshStats } = useUI();
 
     // Fetch parties using React Query
     const {
@@ -49,6 +51,7 @@ export const useParties = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
+            refreshStats();
             toast.success('Party added successfully');
         },
         onError: () => toast.error('Failed to add party')
@@ -60,6 +63,7 @@ export const useParties = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
+            refreshStats();
             toast.success('Party updated successfully');
         },
         onError: () => toast.error('Failed to update party')
@@ -71,6 +75,7 @@ export const useParties = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
+            refreshStats();
             toast.success('Party deleted successfully');
         },
         onError: () => toast.error('Failed to delete party')
