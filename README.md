@@ -83,7 +83,7 @@ A high-performance Single Page Application (SPA) built with:
 
 1.  **Build and Start Services**:
     ```bash
-    docker-compose up --build -d
+    docker compose up --build -d
     ```
 
 2.  **Access the Application**:
