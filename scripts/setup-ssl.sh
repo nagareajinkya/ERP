@@ -78,39 +78,51 @@ log_info "Starting nginx-proxy..."
 docker compose up -d nginx-proxy
 sleep 5
 
-# Remove dummy certificate so Certbot can use the correct path
-log_info "Removing dummy certificate to allow Certbot to place real certificate..."
-sudo rm -rf "certbot/conf/live/$FULL_DOMAIN"
-sudo rm -rf "certbot/conf/archive/$FULL_DOMAIN"
-sudo rm -f "certbot/conf/renewal/$FULL_DOMAIN.conf"
 
-# Request Certificate
-# Request Certificate
-log_info "Requesting SSL certificate..."
-docker compose run --rm --entrypoint "certbot" certbot certonly \
-    --webroot \
-    --webroot-path=/var/www/certbot \
-    --email "$SSL_EMAIL" \
-    --agree-tos \
-    --no-eff-email \
-    --non-interactive \
-    -d "$FULL_DOMAIN"
-
-if [ $? -eq 0 ]; then
-    log_info "SSL certificate obtained successfully."
-else
-    log_error "Failed to obtain SSL certificate."
-    exit 1
+# 1. CHECK IF REAL CERTIFICATE EXISTS
+# A real Let's Encrypt certificate will have the word "Let's Encrypt" or "R3" in the issuer data.
+# A dummy openssl certificate will usually say "localhost".
+IS_DUMMY=true
+if [ -f "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" ]; then
+    if sudo openssl x509 -in "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" -noout -issuer | grep -q "Let's Encrypt"; then
+        IS_DUMMY=false
+    fi
 fi
 
-# Restart Proxy
-log_info "Restarting nginx-proxy..."
-docker compose restart nginx-proxy
-sleep 3
+if [ "$IS_DUMMY" = true ]; then
+    log_warn "Real certificate not found or is a dummy. Proceeding with Let's Encrypt request..."
+    
+    # ONLY remove if it's actually a dummy to prevent Certbot conflicts
+    sudo rm -rf "certbot/conf/live/$FULL_DOMAIN"
+    sudo rm -rf "certbot/conf/archive/$FULL_DOMAIN"
+    sudo rm -f "certbot/conf/renewal/$FULL_DOMAIN.conf"
+
+    # Request Certificate
+    log_info "Requesting SSL certificate..."
+    docker compose run --rm --entrypoint "certbot" certbot certonly \
+        --webroot \
+        --webroot-path=/var/www/certbot \
+        --email "$SSL_EMAIL" \
+        --agree-tos \
+        --no-eff-email \
+        --non-interactive \
+        -d "$FULL_DOMAIN"
+
+    if [ $? -eq 0 ]; then
+        log_info "SSL certificate obtained successfully."
+        # Restart Proxy to pick up the new real cert
+        docker compose restart nginx-proxy
+    else
+        log_error "Failed to obtain SSL certificate."
+        exit 1
+    fi
+else
+    log_info "Valid Let's Encrypt certificate already exists. Skipping request to avoid rate limits."
+    docker compose run --rm --entrypoint "certbot" certbot renew --quiet
+fi
 
 # Start Services
 log_info "Starting all services..."
 docker compose up -d
-
 log_info "SSL Setup Complete! Application available at https://$FULL_DOMAIN"
 
