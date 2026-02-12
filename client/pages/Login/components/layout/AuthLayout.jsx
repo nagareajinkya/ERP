@@ -110,7 +110,7 @@ const AuthLayout = ({ children }) => {
 
             {children}
 
-            <p className="relative z-10 mt-12 text-sm text-gray-600 font-medium">© 2026 S-BMS Point of Sale</p>
+            <p className="relative z-10 mt-12 text-sm text-gray-600 font-medium">© 2026 SaralBMS: Smart Business Management System</p>
         </div>
     );
 };

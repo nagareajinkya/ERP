@@ -53,7 +53,7 @@ const SalesTrendChart = ({
     const handleExport = () => {
         // This would require html2canvas or similar library
         // For now, we'll just alert the user
-        alert('Chart export feature - Implementation requires html2canvas library');
+        alert('Chart export feature - Coming soon');
     };
 
     const renderChart = () => {

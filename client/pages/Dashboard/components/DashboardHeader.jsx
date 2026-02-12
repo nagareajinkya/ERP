@@ -14,7 +14,7 @@ const DashboardHeader = ({ onNewPurchase, onNewSale }) => {
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">Overview</h1>
                 <p className="text-sm text-gray-500 font-medium">
-                    Here's what's happening in your store today.
+                    Here's what's happening in your Business today.
                 </p>
             </div>
 

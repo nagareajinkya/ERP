@@ -46,7 +46,7 @@ const AddPropertyModal = ({ isOpen, onClose, type = 'category', onSuccess, initi
             } else {
                 await api.post('/trading/units', {
                     name: name,
-                    symbol: shortCode || name.substring(0, 3).toUpperCase() // Default logic if empty
+                    symbol: shortCode || name.substring(0, 3).toLowerCase() // Default logic if empty
                 });
             }
 
