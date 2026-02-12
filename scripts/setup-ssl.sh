@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSL Certificate Setup Script for ERP
-# Prerequisites: .env file with DOMAIN_NAME and SSL_EMAIL
+# Optimized to prevent Rate Limiting by checking for existing real certificates.
 
 set -e
 
@@ -29,76 +29,63 @@ if [ -z "$DOMAIN_NAME" ] || [ -z "$SSL_EMAIL" ]; then
 fi
 
 FULL_DOMAIN="${DOMAIN_NAME}.duckdns.org"
+CERT_PATH="certbot/conf/live/$FULL_DOMAIN/fullchain.pem"
 log_info "Setting up SSL for: $FULL_DOMAIN ($SSL_EMAIL)"
 
 # Create directories
 log_info "Creating directories..."
 mkdir -p certbot/conf certbot/www nginx/conf.d
 
-# Configure Nginx - Force replacement of placeholder or existing domain
+# Configure Nginx
 log_info "Configuring Nginx..."
 if [ -f nginx/conf.d/default.conf ]; then
-    # Reset to placeholder to ensure clean slate if needed, or just replace placeholder
-    # Ideally we should use a template, but for now let's try to replace DOMAIN_PLACEHOLDER
-    # If the file was already modified, DOMAIN_PLACEHOLDER might not exist.
-    # We should strictly rely on the file having DOMAIN_PLACEHOLDER for the first run.
-    # If it's already replaced, we assume it's correct or we might need to reset it.
-    
-    # Check if DOMAIN_PLACEHOLDER exists
     if grep -q "DOMAIN_PLACEHOLDER" nginx/conf.d/default.conf; then
         sed -i "s/DOMAIN_PLACEHOLDER/$FULL_DOMAIN/g" nginx/conf.d/default.conf
     else
-        log_warn "DOMAIN_PLACEHOLDER not found in default.conf. Assuming it's already configured."
+        log_warn "DOMAIN_PLACEHOLDER not found. Assuming already configured."
     fi
-
-    # Fix deprecated directive if present
+    # Fix deprecated directive
     sed -i "s/listen 443 ssl http2;/listen 443 ssl; http2 on;/g" nginx/conf.d/default.conf
 else
     log_error "nginx/conf.d/default.conf not found"
     exit 1
 fi
 
-# Create Dummy Certificate for Nginx to start
-# We must create it at the path Nginx expects: /etc/letsencrypt/live/$FULL_DOMAIN/fullchain.pem
-# Which maps to ./certbot/conf/live/$FULL_DOMAIN/fullchain.pem on host
-if [ ! -f "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" ]; then
-    log_info "Creating dummy certificate for $FULL_DOMAIN..."
+# --- INTELLIGENT CERTIFICATE LOGIC ---
+
+NEEDS_REAL_CERT=true
+
+if [ -f "$CERT_PATH" ]; then
+    # Check if the issuer is Let's Encrypt or just a local dummy
+    if sudo openssl x509 -in "$CERT_PATH" -noout -issuer | grep -q "Let's Encrypt"; then
+        log_info "Valid Let's Encrypt certificate detected. Skipping fresh request."
+        NEEDS_REAL_CERT=false
+    else
+        log_warn "Existing certificate is a dummy. Will attempt to replace with real SSL."
+    fi
+else
+    log_info "No certificate found. Creating temporary dummy for Nginx startup..."
     mkdir -p "certbot/conf/live/$FULL_DOMAIN"
     sudo openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
         -keyout "certbot/conf/live/$FULL_DOMAIN/privkey.pem" \
-        -out "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" \
+        -out "$CERT_PATH" \
         -subj "/CN=localhost"
-    
-    # Ensure permissions
     sudo chmod -R 755 certbot/conf/live/
 fi
 
-# Start Proxy
+# Start Proxy (Needs at least the dummy to start)
 log_info "Starting nginx-proxy..."
 docker compose up -d nginx-proxy
 sleep 5
 
-
-# 1. CHECK IF REAL CERTIFICATE EXISTS
-# A real Let's Encrypt certificate will have the word "Let's Encrypt" or "R3" in the issuer data.
-# A dummy openssl certificate will usually say "localhost".
-IS_DUMMY=true
-if [ -f "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" ]; then
-    if sudo openssl x509 -in "certbot/conf/live/$FULL_DOMAIN/fullchain.pem" -noout -issuer | grep -q "Let's Encrypt"; then
-        IS_DUMMY=false
-    fi
-fi
-
-if [ "$IS_DUMMY" = true ]; then
-    log_warn "Real certificate not found or is a dummy. Proceeding with Let's Encrypt request..."
+if [ "$NEEDS_REAL_CERT" = true ]; then
+    log_info "Requesting REAL SSL certificate from Let's Encrypt..."
     
-    # ONLY remove if it's actually a dummy to prevent Certbot conflicts
+    # Remove dummy only right before requesting real one
     sudo rm -rf "certbot/conf/live/$FULL_DOMAIN"
     sudo rm -rf "certbot/conf/archive/$FULL_DOMAIN"
     sudo rm -f "certbot/conf/renewal/$FULL_DOMAIN.conf"
 
-    # Request Certificate
-    log_info "Requesting SSL certificate..."
     docker compose run --rm --entrypoint "certbot" certbot certonly \
         --webroot \
         --webroot-path=/var/www/certbot \
@@ -110,19 +97,19 @@ if [ "$IS_DUMMY" = true ]; then
 
     if [ $? -eq 0 ]; then
         log_info "SSL certificate obtained successfully."
-        # Restart Proxy to pick up the new real cert
         docker compose restart nginx-proxy
     else
-        log_error "Failed to obtain SSL certificate."
+        log_error "Failed to obtain SSL certificate. You may have hit rate limits."
         exit 1
     fi
 else
-    log_info "Valid Let's Encrypt certificate already exists. Skipping request to avoid rate limits."
+    # Just run a renewal check. This is safe and doesn't count against the 'Duplicate' limit.
+    log_info "Checking if renewal is needed..."
     docker compose run --rm --entrypoint "certbot" certbot renew --quiet
 fi
 
-# Start Services
+# Start All Services
 log_info "Starting all services..."
 docker compose up -d
-log_info "SSL Setup Complete! Application available at https://$FULL_DOMAIN"
 
+log_info "SSL Setup Complete! Application available at https://$FULL_DOMAIN"
