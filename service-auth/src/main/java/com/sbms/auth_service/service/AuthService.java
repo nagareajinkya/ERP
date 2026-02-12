@@ -12,20 +12,29 @@ import com.sbms.auth_service.dto.UserRegisterDto;
 
 public interface AuthService {
 	AuthResponse register(UserRegisterDto registerDto);
+
 	AuthResponse login(UserLoginDto loginDto);
-	
 
 	SidebarDto getCurrentUser(String identifier);
+
 	CollapsedSidebarDetailDto getCollapsedSidebarDetail(String identifier);
-	
+
 	// Profile Methods
 	ProfileDto getProfile(String identifier);
+
 	ProfileDto updateProfile(String identifier, ProfileDto dto);
+
 	void changePassword(String identifier, ChangePasswordRequest request);
-	
+
 	// Image Upload Methods
 	ProfileDto uploadProfilePhoto(String identifier, org.springframework.web.multipart.MultipartFile file);
+
 	ProfileDto uploadSignature(String identifier, org.springframework.web.multipart.MultipartFile file);
+
 	ProfileDto uploadStamp(String identifier, org.springframework.web.multipart.MultipartFile file);
+
+	// Registration Details Update
+	com.sbms.auth_service.dto.RegistrationDetailsDto updateRegistrationDetails(String identifier,
+			com.sbms.auth_service.dto.RegistrationDetailsDto dto);
 
 }

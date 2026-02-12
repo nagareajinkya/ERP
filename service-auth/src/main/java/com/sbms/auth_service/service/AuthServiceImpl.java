@@ -8,14 +8,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.sbms.auth_service.custom_exceptions.UserAlreadyExistsException;
 import com.sbms.auth_service.custom_exceptions.UserNotFoundException;
 import com.sbms.auth_service.dto.AuthResponse;
 import com.sbms.auth_service.dto.ChangePasswordRequest;
 import com.sbms.auth_service.dto.CollapsedSidebarDetailDto;
-import com.sbms.auth_service.dto.OtpRequest;
-import com.sbms.auth_service.dto.OtpVerifyRequest;
 import com.sbms.auth_service.dto.ProfileDto;
 import com.sbms.auth_service.dto.SidebarDto;
 import com.sbms.auth_service.dto.UserLoginDto;
@@ -24,6 +23,7 @@ import com.sbms.auth_service.entity.Business;
 import com.sbms.auth_service.entity.User;
 import com.sbms.auth_service.repository.UserRepository;
 import com.sbms.auth_service.security.JwtService;
+import com.sbms.auth_service.dto.RegistrationDetailsDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -229,7 +229,7 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
-	public ProfileDto uploadProfilePhoto(String identifier, org.springframework.web.multipart.MultipartFile file) {
+	public ProfileDto uploadProfilePhoto(String identifier, MultipartFile file) {
 		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -248,7 +248,7 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
-	public ProfileDto uploadSignature(String identifier, org.springframework.web.multipart.MultipartFile file) {
+	public ProfileDto uploadSignature(String identifier, MultipartFile file) {
 		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -267,7 +267,7 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
-	public ProfileDto uploadStamp(String identifier, org.springframework.web.multipart.MultipartFile file) {
+	public ProfileDto uploadStamp(String identifier, MultipartFile file) {
 		User user = userRepository.findByEmail(identifier)
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -283,6 +283,36 @@ public class AuthServiceImpl implements AuthService {
 		userRepository.save(user);
 
 		return getProfile(user.getEmail());
+	}
+
+	@Override
+	public RegistrationDetailsDto updateRegistrationDetails(String identifier,
+			RegistrationDetailsDto dto) {
+		User user = userRepository.findByEmail(identifier)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+
+		Business biz = user.getBusiness();
+		if (biz == null) {
+			biz = new Business();
+		}
+
+		// Update only GSTIN and UPI ID
+		if (dto.getGstin() != null) {
+			biz.setGstin(dto.getGstin());
+		}
+		if (dto.getUpiId() != null) {
+			biz.setUpiId(dto.getUpiId());
+		}
+
+		user.setBusiness(biz);
+		userRepository.save(user);
+
+		// Return updated details
+		RegistrationDetailsDto response = new RegistrationDetailsDto();
+		response.setGstin(user.getBusiness().getGstin());
+		response.setUpiId(user.getBusiness().getUpiId());
+
+		return response;
 	}
 
 }

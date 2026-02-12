@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, ShoppingBag, AlertCircle, Zap } from 'lucide-react';
+import { IndianRupee, ShoppingBag, AlertCircle, Zap } from 'lucide-react';
 import StatCard from '../../../components/common/StatCard';
 
 /**
@@ -18,7 +18,7 @@ const StatsGrid = ({ stats = {}, loading = false }) => {
         {
             label: "Today's Sales",
             value: stats.todaysSales || 0,
-            icon: DollarSign,
+            icon: IndianRupee,
             iconColor: 'bg-green-50 text-green-600',
             borderColor: 'border-gray-100',
             onClick: () => navigate('/transactions')

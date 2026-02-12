@@ -19,6 +19,7 @@ import com.sbms.auth_service.dto.CollapsedSidebarDetailDto;
 import com.sbms.auth_service.dto.OtpRequest;
 import com.sbms.auth_service.dto.OtpVerifyRequest;
 import com.sbms.auth_service.dto.ProfileDto;
+import com.sbms.auth_service.dto.RegistrationDetailsDto;
 import com.sbms.auth_service.dto.SidebarDto;
 import com.sbms.auth_service.dto.UserLoginDto;
 import com.sbms.auth_service.dto.UserRegisterDto;
@@ -30,19 +31,17 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-	private final AuthServiceImpl authService;
-	
-	@PostMapping("/register")
-	public ResponseEntity<AuthResponse> register(@RequestBody UserRegisterDto userDto){
-		return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(userDto));
-	}
-	
-	@PostMapping("/login")
-	public ResponseEntity<AuthResponse> login(@RequestBody UserLoginDto request) {
+    private final AuthServiceImpl authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody UserRegisterDto userDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(userDto));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody UserLoginDto request) {
         return ResponseEntity.ok(authService.login(request));
     }
-	
-
 
     @GetMapping("/me")
     public ResponseEntity<SidebarDto> getCurrentUser(Principal principal) {
@@ -61,9 +60,16 @@ public class AuthController {
 
     @PutMapping("/profile")
     public ResponseEntity<ProfileDto> updateProfile(
-            Principal principal, 
+            Principal principal,
             @RequestBody ProfileDto dto) {
         return ResponseEntity.ok(authService.updateProfile(principal.getName(), dto));
+    }
+
+    @PutMapping("/registration-details")
+    public ResponseEntity<RegistrationDetailsDto> updateRegistrationDetails(
+            Principal principal,
+            @RequestBody RegistrationDetailsDto dto) {
+        return ResponseEntity.ok(authService.updateRegistrationDetails(principal.getName(), dto));
     }
 
     @PostMapping("/change-password")

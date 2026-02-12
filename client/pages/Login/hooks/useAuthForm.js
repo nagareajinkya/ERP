@@ -109,7 +109,7 @@ export const useAuthForm = () => {
             setLoading(true);
             setError('');
 
-            await api.put('/auth/profile', { gstin, upiId });
+            await api.put('/auth/registration-details', { gstin, upiId });
             navigate('/Dashboard');
             return true;
         } catch (err) {
