@@ -143,7 +143,7 @@ const PartyFormModal = ({ isOpen, onClose, onSubmit, type, initialData, isEditin
                                     onChange={e => setForm({ ...form, gstin: e.target.value.toUpperCase() })}
                                 />
 
-                                {!isEditing && (
+                                {!isEditing && isCustomer && (
                                     <div className="space-y-1.5">
                                         <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">{theme.balanceLabel}</label>
                                         <div className="relative group">
